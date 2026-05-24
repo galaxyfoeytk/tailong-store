@@ -541,7 +541,17 @@ function pushSaveRec(r){
   if(lv) totalSmall+=Number(lv)*qLM*qMS;
   totalSmall=Math.round(totalSmall*1000)/1000;
   var filledCount=[sv,mv,lv].filter(function(v){return v!=='';}).length;
-  var qtyTotal=filledCount>1&&totalSmall>0&&sn?totalSmall+' '+sn:'';
+  // 單一單位也顯示總數，多層單位才需要換算
+  var qtyTotal='';
+  if(filledCount===1){
+    // 只有一種單位，直接顯示數量+單位名
+    if(sv!=='') qtyTotal=sv+' '+sn;
+    else if(mv!=='') qtyTotal=mv+' '+mn;
+    else if(lv!=='') qtyTotal=lv+' '+ln;
+  } else if(filledCount>1&&totalSmall>0&&sn){
+    // 多層單位，顯示換算後的最小單位總數
+    qtyTotal=totalSmall+' '+sn;
+  }
 
   apiCall({
     action:'stockSave',
