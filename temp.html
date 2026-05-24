@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>溫度記錄</title>
+<style>
+:root{
+  --teal:#1D9E75;--teal-l:#E1F5EE;
+  --red:#D03030;--red-l:#FCEBEB;
+  --gray:#F5F5F2;--border:#ddd;
+  --text:#1a1a18;--text2:#666;--text3:#999;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:rgba(0,0,0,0.1)}
+body{font-family:-apple-system,sans-serif;background:var(--gray);font-size:16px;color:var(--text)}
+
+.topbar{background:var(--teal);color:#fff;padding:14px 16px}
+.logo{font-size:17px;font-weight:700}
+.sub{font-size:13px;opacity:.8;margin-top:2px}
+
+.tabs{display:flex;margin:12px;background:#fff;border-radius:10px;border:1px solid var(--border);overflow:hidden}
+.tab{flex:1;padding:13px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;color:var(--text2);border:none;background:transparent;font-family:inherit}
+.tab.on{background:var(--teal-l);color:var(--teal)}
+
+.page{padding:0 12px 20px}
+
+.block{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.block-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+
+.scroll-row{display:flex;gap:6px;overflow-x:scroll;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.scroll-row::-webkit-scrollbar{height:0}
+.s-btn{
+  flex-shrink:0;padding:9px 16px;
+  border-radius:20px;border:1.5px solid var(--border);
+  background:#fff;color:var(--text2);
+  font-size:14px;font-family:inherit;font-weight:500;
+  cursor:pointer;white-space:nowrap;
+  min-width:44px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
+}
+.s-btn.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.time-row{display:flex;gap:8px}
+.t-btn{
+  flex:1;padding:12px 8px;text-align:center;
+  border-radius:8px;border:1.5px solid var(--border);
+  background:#fff;color:var(--text2);
+  font-size:14px;font-family:inherit;font-weight:500;cursor:pointer;
+  min-height:48px;
+}
+.t-btn.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+.fridge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.f-btn{
+  padding:12px;border-radius:8px;
+  border:1.5px solid var(--border);background:#fff;
+  cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;gap:10px;
+  min-height:60px;text-align:left;
+}
+.f-btn:active{background:var(--teal-l)}
+.f-num{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--teal-l);color:var(--teal);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.f-info{flex:1}
+.f-name{font-size:13px;font-weight:600;color:var(--text2)}
+.f-val{font-size:18px;font-weight:700;color:var(--text3);margin-top:1px}
+.f-val.filled{color:var(--teal)}
+.f-val.warn{color:var(--red)}
+
+.emp-row{display:flex;gap:8px}
+.emp-sel{
+  flex:1;padding:12px;border:1.5px solid var(--border);
+  border-radius:8px;font-size:15px;font-family:inherit;
+  background:#fff;color:var(--text);outline:none;
+  min-height:48px;
+}
+.emp-sel:focus{border-color:var(--teal)}
+.add-btn{
+  padding:12px 16px;border:1.5px solid var(--border);
+  border-radius:8px;background:#fff;
+  font-size:14px;font-family:inherit;cursor:pointer;
+  white-space:nowrap;color:var(--text2);min-height:48px;
+}
+.add-btn:active{background:var(--gray)}
+
+.note-input{
+  width:100%;padding:12px;border:1.5px solid var(--border);
+  border-radius:8px;font-size:15px;font-family:inherit;
+  background:#fff;color:var(--text);outline:none;min-height:48px;
+}
+.note-input:focus{border-color:var(--teal)}
+
+.save-btn{
+  width:100%;padding:16px;background:var(--teal);color:#fff;
+  border:none;border-radius:10px;font-size:17px;font-weight:700;
+  cursor:pointer;font-family:inherit;margin-bottom:16px;min-height:54px;
+}
+.save-btn:active{opacity:.8}
+.save-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.4);z-index:100;
+  align-items:flex-end;justify-content:center;
+}
+.overlay.show{display:flex}
+.popup{
+  background:#fff;border-radius:16px 16px 0 0;
+  padding:24px 20px;width:100%;max-width:480px;
+}
+.popup-title{font-size:17px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.popup-badge{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--teal-l);color:var(--teal);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;
+}
+.temp-field{
+  width:100%;padding:20px;border:2px solid var(--border);
+  border-radius:10px;font-size:40px;font-weight:700;
+  text-align:center;font-family:inherit;
+  background:#fff;color:var(--text);outline:none;margin-bottom:12px;
+}
+.temp-field:focus{border-color:var(--teal)}
+.popup-hint{font-size:12px;color:var(--text3);text-align:center;margin-bottom:20px}
+.popup-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.p-btn{
+  padding:15px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;font-size:16px;font-weight:600;
+  cursor:pointer;font-family:inherit;color:var(--text2);min-height:52px;
+}
+.p-btn.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+.p-btn:active{opacity:.8}
+
+/* 數字鍵盤 */
+.numpad-last{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-top:8px}
+.nk-zero{font-size:22px}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.nk{
+  padding:16px 8px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;font-size:22px;font-weight:600;
+  cursor:pointer;font-family:inherit;color:var(--text);
+  min-height:56px;display:flex;align-items:center;justify-content:center;
+  user-select:none;
+}
+.nk:active{background:var(--teal-l);border-color:var(--teal)}
+.nk.neg{font-size:16px;color:var(--text2)}
+.nk.dot{font-size:26px}
+.nk.del{font-size:18px;color:var(--red);border-color:var(--red-l);background:var(--red-l)}
+.nk.del:active{background:var(--red);color:#fff}
+.temp-display{
+  width:100%;padding:16px;border:2px solid var(--border);
+  border-radius:10px;font-size:44px;font-weight:700;
+  text-align:center;font-family:inherit;background:#f9f9f7;
+  color:var(--text);margin-bottom:8px;min-height:76px;
+  display:flex;align-items:center;justify-content:center;
+  letter-spacing:2px;
+}
+.temp-display.has-val{border-color:var(--teal);background:var(--teal-l);color:var(--teal)}
+.temp-display.warn-val{border-color:var(--red);background:var(--red-l);color:var(--red)}
+
+.rec-card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.rec-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.day-circle{width:38px;height:38px;border-radius:50%;background:var(--teal-l);color:var(--teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.rec-day{font-size:16px;font-weight:600}
+.t-tag{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--teal-l);color:var(--teal);margin-bottom:8px}
+.view-temps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.vt-box{background:var(--gray);border-radius:6px;padding:6px;text-align:center}
+.vt-lbl{font-size:10px;color:var(--text3)}
+.vt-val{font-size:15px;font-weight:700;color:var(--text)}
+.vt-val.ok{color:var(--teal)}.vt-val.warn{color:var(--red)}
+.sign-row{font-size:13px;color:var(--text3)}
+.divider{border:none;border-top:1px solid #f0f0ee;margin:10px 0}
+.empty{text-align:center;color:var(--text3);padding:40px;font-size:15px}
+
+/* 載入中 */
+.loading{text-align:center;color:var(--text3);padding:30px;font-size:14px}
+.loading::after{content:'';display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:#1a1a18;color:#fff;padding:11px 22px;
+  border-radius:20px;font-size:14px;z-index:200;
+  display:none;pointer-events:none;white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🌊 瀧飲山潮</div>
+  <div class="sub">前冰仙凍溫度記錄 · 學士店</div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-a" onclick="showPage('input')">📝 填寫記錄</button>
+  <button class="tab"    id="tab-b" onclick="showPage('view')">📋 查看記錄</button>
+</div>
+
+<!-- 填寫頁 -->
+<div id="page-input" class="page">
+
+  <div class="block">
+    <div class="block-title">月份</div>
+    <div class="scroll-row" id="ym-row"></div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">日期</div>
+    <div class="scroll-row" id="day-row"></div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">時段</div>
+    <div class="time-row">
+      <button class="t-btn on" id="t10" onclick="pickTime('10')">上午<br>10:00</button>
+      <button class="t-btn"    id="t14" onclick="pickTime('14')">下午<br>14:00</button>
+      <button class="t-btn"    id="t18" onclick="pickTime('18')">下午<br>18:00</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">冰箱溫度（點擊填寫）</div>
+    <div class="fridge-grid" id="fridge-grid"></div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">負責人</div>
+    <div class="emp-row">
+      <select class="emp-sel" id="emp-sel"></select>
+      <button class="add-btn" onclick="addEmp()">＋ 新增</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">備註（選填）</div>
+    <input class="note-input" type="text" id="f-note" placeholder="異常狀況...">
+  </div>
+
+  <button class="save-btn" id="save-btn" onclick="doSave()">✓ 儲存記錄</button>
+</div>
+
+<!-- 查看頁 -->
+<div id="page-view" class="page" style="display:none">
+  <div class="block">
+    <div class="block-title">選擇月份</div>
+    <div class="scroll-row" id="view-ym-row"></div>
+  </div>
+  <div id="view-list"></div>
+</div>
+
+<!-- 溫度彈窗 -->
+<div class="overlay" id="overlay">
+  <div class="popup">
+    <div class="popup-title">
+      <div class="popup-badge" id="pop-badge">1</div>
+      <span id="pop-title">溫度填寫</span>
+    </div>
+    <div class="temp-display" id="temp-display">—</div>
+    <div class="popup-hint">正常範圍：-30°C ～ 10°C &nbsp; 負數請按 ±</div>
+    <div class="numpad">
+      <button class="nk" onclick="nkPress('7')">7</button>
+      <button class="nk" onclick="nkPress('8')">8</button>
+      <button class="nk" onclick="nkPress('9')">9</button>
+      <button class="nk" onclick="nkPress('4')">4</button>
+      <button class="nk" onclick="nkPress('5')">5</button>
+      <button class="nk" onclick="nkPress('6')">6</button>
+      <button class="nk" onclick="nkPress('1')">1</button>
+      <button class="nk" onclick="nkPress('2')">2</button>
+      <button class="nk" onclick="nkPress('3')">3</button>
+    </div>
+    <div class="numpad-last">
+      <button class="nk nk-zero" onclick="nkPress('0')">0</button>
+      <button class="nk neg" onclick="nkToggleNeg()">±</button>
+      <button class="nk dot" onclick="nkPress('.')">.</button>
+      <button class="nk del" onclick="nkDelete()">&#9003;</button>
+    </div>
+    <div class="popup-btns">
+      <button class="p-btn" onclick="closePopup()">取消</button>
+      <button class="p-btn primary" onclick="confirmTemp()">確認</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ★★★ 貼入你的 Google Apps Script 部署網址 ★★★
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+var POS = ['一號','二號','三號','四號','五號','六號','七號','八號'];
+var selYM = '', selDay = '', selTime = '10';
+var temps = ['','','','','','','',''];
+var popIdx = -1;
+
+// ── 呼叫 API（帶 timeout）
+function api(params) {
+  return new Promise(function(resolve, reject) {
+    if (!API_URL) { reject(new Error('請先設定 API_URL')); return; }
+    var qs = Object.keys(params).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    var timer = setTimeout(function(){ reject(new Error('連線逾時，請重試')); }, 15000);
+    fetch(API_URL + '?' + qs)
+      .then(function(r){ return r.json(); })
+      .then(function(d){ clearTimeout(timer); resolve(d); })
+      .catch(function(e){ clearTimeout(timer); reject(e); });
+  });
+}
+
+// ── 初始化
+window.onload = function() {
+  if (!API_URL) {
+    showToast('⚠️ 請先設定 API_URL！');
+  }
+  initYM();
+  initDay();
+  buildFridgeGrid();
+  loadEmps();
+};
+
+// ── 從 API 載入人員名單
+function loadEmps() {
+  api({ action: 'getEmps' }).then(function(res) {
+    if (res.ok && res.data.length) {
+      renderEmpSel(res.data);
+    } else {
+      renderEmpSel([]);
+    }
+  }).catch(function() {
+    renderEmpSel([]);
+  });
+}
+
+function renderEmpSel(list) {
+  var sel = document.getElementById('emp-sel');
+  sel.innerHTML = list.length
+    ? list.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')
+    : '<option value="">— 尚無人員 —</option>';
+}
+
+function initYM() {
+  var now = new Date();
+  var curM = now.getMonth() + 1;
+  var html = '';
+  for (var m = 1; m <= 12; m++) {
+    var v = '2026/' + (m < 10 ? '0' : '') + m;
+    var on = m === curM ? ' on' : '';
+    html += '<button class="s-btn'+on+'" onclick="pickYM(\''+v+'\')">'+v+'</button>';
+    if (m === curM) selYM = v;
+  }
+  if (!selYM) selYM = '2026/01';
+  document.getElementById('ym-row').innerHTML = html;
+  setTimeout(function(){
+    var el = document.querySelector('#ym-row .on');
+    if (el) el.scrollIntoView({inline:'center'});
+  }, 100);
+}
+
+function initDay() {
+  var today = new Date().getDate();
+  var html = '';
+  for (var i = 1; i <= 31; i++) {
+    var on = i === today ? ' on' : '';
+    html += '<button class="s-btn'+on+'" onclick="pickDay('+i+')">'+i+'日</button>';
+    if (i === today) selDay = String(i);
+  }
+  document.getElementById('day-row').innerHTML = html;
+  setTimeout(function(){
+    var el = document.querySelector('#day-row .on');
+    if (el) el.scrollIntoView({inline:'center'});
+  }, 100);
+}
+
+function buildFridgeGrid() {
+  // 排列順序：第一列 7,5,3,1 第二列 8,6,4,2
+  var order = [6, 4, 2, 0, 7, 5, 3, 1];
+  var html = '';
+  for (var j = 0; j < order.length; j++) {
+    var i = order[j];
+    html += '<button class="f-btn" id="fb'+i+'" onclick="openPopup('+i+')">'
+      + '<div class="f-num">'+(i+1)+'</div>'
+      + '<div class="f-info">'
+        + '<div class="f-name">'+POS[i]+'</div>'
+        + '<div class="f-val" id="fv'+i+'">—</div>'
+      + '</div>'
+      + '</button>';
+  }
+  document.getElementById('fridge-grid').innerHTML = html;
+}
+
+function refreshGrid() {
+  for (var i = 0; i < POS.length; i++) {
+    var el = document.getElementById('fv'+i);
+    var v = temps[i];
+    if (v === '') {
+      el.className = 'f-val';
+      el.textContent = '—';
+    } else {
+      var n = parseFloat(v);
+      var bad = !isNaN(n) && (n > 10 || n < -30);
+      el.className = 'f-val ' + (bad ? 'warn' : 'filled');
+      el.textContent = v + '°C';
+    }
+  }
+}
+
+// ── 選取
+function pickYM(v) {
+  selYM = v;
+  document.querySelectorAll('#ym-row .s-btn').forEach(function(b){
+    b.className = b.textContent === v ? 's-btn on' : 's-btn';
+  });
+}
+
+function pickDay(v) {
+  selDay = String(v);
+  document.querySelectorAll('#day-row .s-btn').forEach(function(b){
+    b.className = b.textContent === v+'日' ? 's-btn on' : 's-btn';
+  });
+}
+
+function pickTime(v) {
+  selTime = v;
+  document.getElementById('t10').className = 't-btn'+(v==='10'?' on':'');
+  document.getElementById('t14').className = 't-btn'+(v==='14'?' on':'');
+  document.getElementById('t18').className = 't-btn'+(v==='18'?' on':'');
+}
+
+// ── 新增人員（同步到 Google Sheet）
+function addEmp() {
+  var n = prompt('請輸入人員姓名：');
+  if (!n || !n.trim()) return;
+  var name = n.trim();
+  api({ action: 'addEmp', name: name }).then(function(res) {
+    if (res.ok) {
+      showToast('✓ 已新增：' + name);
+      loadEmps();
+      setTimeout(function(){
+        document.getElementById('emp-sel').value = name;
+      }, 500);
+    } else {
+      showToast('✗ ' + (res.error || '新增失敗'));
+    }
+  }).catch(function(e){ showToast('✗ ' + e.message); });
+}
+
+// ── 彈窗（內建數字鍵盤）
+var nkVal = '';
+
+function updateDisplay() {
+  var el = document.getElementById('temp-display');
+  if (nkVal === '' || nkVal === '-') {
+    el.textContent = nkVal || '—';
+    el.className = 'temp-display';
+  } else {
+    var n = parseFloat(nkVal);
+    var bad = !isNaN(n) && (n > 10 || n < -30);
+    el.textContent = nkVal + '°C';
+    el.className = 'temp-display ' + (bad ? 'warn-val' : 'has-val');
+  }
+}
+
+function nkPress(ch) {
+  if (ch === '.' && nkVal.indexOf('.') !== -1) return;
+  if (ch !== '.' && nkVal.replace('-','').length >= 5) return;
+  nkVal += ch;
+  updateDisplay();
+}
+
+function nkToggleNeg() {
+  if (nkVal.startsWith('-')) nkVal = nkVal.slice(1);
+  else nkVal = '-' + nkVal;
+  updateDisplay();
+}
+
+function nkDelete() {
+  nkVal = nkVal.slice(0, -1);
+  updateDisplay();
+}
+
+function openPopup(idx) {
+  popIdx = idx;
+  document.getElementById('pop-badge').textContent = idx + 1;
+  document.getElementById('pop-title').textContent = POS[idx] + ' 溫度';
+  nkVal = temps[idx] !== '' ? temps[idx] : '';
+  updateDisplay();
+  document.getElementById('overlay').className = 'overlay show';
+}
+
+function closePopup() {
+  document.getElementById('overlay').className = 'overlay';
+  popIdx = -1;
+}
+
+function confirmTemp() {
+  if (nkVal === '' || nkVal === '-') { showToast('請輸入溫度'); return; }
+  temps[popIdx] = nkVal;
+  refreshGrid();
+  closePopup();
+}
+
+document.getElementById('overlay').addEventListener('click', function(e){
+  if (e.target === this) closePopup();
+});
+
+// ── 儲存（呼叫 API）
+function doSave() {
+  if (!selYM || !selDay) { showToast('請選擇月份與日期'); return; }
+  var sign = document.getElementById('emp-sel').value;
+  if (!sign) { showToast('請選擇負責人'); return; }
+  if (temps.every(function(v){ return v === ''; })) { showToast('請至少填寫一個溫度'); return; }
+
+  var btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  var note = document.getElementById('f-note').value.trim();
+  var params = { action: 'saveTempRec', ym: selYM, day: selDay, time: selTime, sign: sign, note: note };
+  temps.forEach(function(v, i){ params['t'+(i+1)] = v; });
+
+  api(params).then(function(res) {
+    if (res.ok) {
+      temps = ['','','','','','','',''];
+      refreshGrid();
+      document.getElementById('f-note').value = '';
+      showToast('✓ ' + (res.message || '已儲存！'));
+    } else {
+      showToast('✗ ' + (res.error || '儲存失敗'));
+    }
+  }).catch(function(e){
+    showToast('✗ ' + e.message);
+  }).finally(function(){
+    btn.disabled = false;
+    btn.textContent = '✓ 儲存記錄';
+  });
+}
+
+// ── 查看頁
+function showPage(p) {
+  document.getElementById('page-input').style.display = p === 'input' ? 'block' : 'none';
+  document.getElementById('page-view').style.display  = p === 'view'  ? 'block' : 'none';
+  document.getElementById('tab-a').className = 'tab'+(p === 'input' ? ' on' : '');
+  document.getElementById('tab-b').className = 'tab'+(p === 'view'  ? ' on' : '');
+  if (p === 'view') initViewYM();
+}
+
+function initViewYM() {
+  var now = new Date();
+  var curM = now.getMonth() + 1;
+  var html = '';
+  for (var m = 1; m <= 12; m++) {
+    var v = '2026/' + (m < 10 ? '0' : '') + m;
+    var on = m === curM ? ' on' : '';
+    html += '<button class="s-btn'+on+'" onclick="pickViewYM(\''+v+'\')">'+v+'</button>';
+  }
+  document.getElementById('view-ym-row').innerHTML = html;
+  setTimeout(function(){
+    var el = document.querySelector('#view-ym-row .on');
+    if (el) el.scrollIntoView({inline:'center'});
+  }, 100);
+  // 預設載入當前月份
+  var curYM = '2026/' + (curM < 10 ? '0' : '') + curM;
+  loadView(curYM);
+}
+
+function pickViewYM(v) {
+  document.querySelectorAll('#view-ym-row .s-btn').forEach(function(b){
+    b.className = b.textContent === v ? 's-btn on' : 's-btn';
+  });
+  loadView(v);
+}
+
+// ── 從 API 載入記錄
+function loadView(ym) {
+  var el = document.getElementById('view-list');
+  el.innerHTML = '<div class="loading">載入中</div>';
+  api({ action: 'getTempData', ym: ym }).then(function(res) {
+    if (res.ok) renderView(ym, res.data);
+    else el.innerHTML = '<div class="empty">載入失敗：' + (res.error||'') + '</div>';
+  }).catch(function(e){
+    el.innerHTML = '<div class="empty">連線錯誤：' + e.message + '</div>';
+  });
+}
+
+function renderView(ym, list) {
+  var el = document.getElementById('view-list');
+  if (!list || !list.length) {
+    el.innerHTML = '<div class="empty">'+ym+' 尚無記錄</div>';
+    return;
+  }
+  list.sort(function(a,b){ return (+a.day - +b.day) || (+a.time - +b.time); });
+  var byDay = {};
+  list.forEach(function(r){ if(!byDay[r.day]) byDay[r.day]=[]; byDay[r.day].push(r); });
+  var tLabels = {'10':'上午 10:00','14':'下午 14:00','18':'下午 18:00'};
+  var html = Object.keys(byDay).sort(function(a,b){return+a-+b}).map(function(day){
+    var recs = byDay[day];
+    var body = recs.map(function(r, ri){
+      var boxes = POS.map(function(p,i){
+        var v = r.temps[i];
+        var n = parseFloat(v);
+        var cls = v==='' ? '' : (!isNaN(n)&&(n>10||n<-30)) ? 'warn' : 'ok';
+        return '<div class="vt-box"><div class="vt-lbl">'+p+'</div><div class="vt-val '+cls+'">'+(v!==''?v+'°':'—')+'</div></div>';
+      }).join('');
+      var updAt = r.updatedAt ? '<span style="float:right;font-size:11px">'+r.updatedAt+'</span>' : '';
+      return (ri>0?'<hr class="divider">':'')
+        +'<div class="t-tag">'+(tLabels[r.time]||r.time+':00')+'</div>'
+        +'<div class="view-temps">'+boxes+'</div>'
+        +'<div class="sign-row">負責人：'+(r.sign||'—')+(r.note?' ・ '+r.note:'')+updAt+'</div>';
+    }).join('');
+    return '<div class="rec-card"><div class="rec-hd">'
+      +'<div class="day-circle">'+day+'</div>'
+      +'<div class="rec-day">'+ym+' / '+day+' 日</div>'
+      +'</div>'+body+'</div>';
+  }).join('');
+  el.innerHTML = html;
+}
+
+function showToast(m) {
+  var t = document.getElementById('toast');
+  t.textContent = m; t.style.display = 'block';
+  setTimeout(function(){ t.style.display = 'none'; }, 2800);
+}
+</script>
+</body>
+</html>
