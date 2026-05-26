@@ -807,17 +807,44 @@ function delActive(id){
 // ═══════════════════════════════════
 // 渲染看板
 // ═══════════════════════════════════
+function barrelNum(b){
+  // 取桶號中的數字，如「14號桶」→14，找不到回傳0
+  var m=String(b).match(/(\d+)/);
+  return m?parseInt(m[1]):0;
+}
+function sortActives(list){
+  // 同品項排在一起，品項內按桶號數字排序
+  return list.slice().sort(function(a,b){
+    if(a.item!==b.item) return a.item.localeCompare(b.item,'zh-TW');
+    return barrelNum(a.barrel)-barrelNum(b.barrel);
+  });
+}
+
 function renderAll(){
   STAGES.forEach(function(s){
     var list=actives.filter(function(a){ return a.stage===s; });
     document.getElementById('cnt-'+s).textContent=list.length;
     var el=document.getElementById('zone-'+s);
-    el.innerHTML=list.length?list.map(buildBoardCard).join(''):'<div class="zone-empty">目前無</div>';
+    var sorted=sortActives(list);
+    el.innerHTML=sorted.length?sorted.map(buildBoardCard).join(''):'<div class="zone-empty">目前無</div>';
   });
+}
+function fmtTime(t){
+  if(!t) return '';
+  // 處理 ISO 格式（從 Sheets 同步回來的）：2026-05-24T02:36:00.000Z → 台灣時間
+  if(t.indexOf('T')>0){
+    var d=new Date(t);
+    if(!isNaN(d)){
+      var pad=function(n){return String(n).padStart(2,'0');};
+      return (d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    }
+  }
+  // 本地格式 2026/05/24 10:36 → 取 05/24 10:36
+  return t.slice(5);
 }
 function buildBoardCard(a){
   var latestKey=STAGES.slice().reverse().find(function(k){ return a[k].t; });
-  var latestTime=latestKey?a[latestKey].t.slice(5):'';
+  var latestTime=latestKey?fmtTime(a[latestKey].t):'';
   var timerStr='';
   if(a.lower.t){
     var ms=Date.now()-toTs(a.lower.t);
@@ -839,10 +866,11 @@ function renderTrack(){
   var zones=['lower','upper','bed'];
   zones.forEach(function(s){
     var list=actives.filter(function(a){ return a.stage===s; });
-    document.getElementById('tcnt-'+s).textContent=list.length;
+    var sorted=sortActives(list);
+    document.getElementById('tcnt-'+s).textContent=sorted.length;
     var el=document.getElementById('tz-'+s);
-    if(!list.length){ el.innerHTML='<div class="tz-empty">目前無</div>'; return; }
-    el.innerHTML=list.map(function(a){ return buildTrackCard(a,s); }).join('');
+    if(!sorted.length){ el.innerHTML='<div class="tz-empty">目前無</div>'; return; }
+    el.innerHTML=sorted.map(function(a){ return buildTrackCard(a,s); }).join('');
   });
 }
 function buildTrackCard(a,zone){
@@ -1006,7 +1034,7 @@ function showPage(p){
 // 工具
 // ═══════════════════════════════════
 function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
-function toTs(s){ if(!s)return null; var t=new Date(s.replace(/\//g,'-').replace(' ','T')); return isNaN(t)?null:t; }
+function toTs(s){ if(!s)return null; if(s.indexOf('T')>0){var t1=new Date(s);return isNaN(t1)?null:t1;} var t=new Date(s.replace(/\//g,'-').replace(' ','T')); return isNaN(t)?null:t; }
 function fmtDur(ms){ var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000); return h>0?h+'h'+m+'m':m+'分'; }
 function fmtDurLong(ms){ var days=Math.floor(ms/86400000); var h=Math.floor((ms%86400000)/3600000); var m=Math.floor((ms%3600000)/60000); return (days>0?days+'天':'')+(h>0?h+'小時':'')+(m+'分'); }
 function findActive(id){ return actives.find(function(a){ return String(a.id)===String(id); }); }
