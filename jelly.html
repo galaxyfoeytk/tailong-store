@@ -751,12 +751,14 @@ function doWash(id){
     var durMs=0,dur='';
     if(t1&&t2&&t2>t1){ durMs=t2-t1; dur=fmtDurLong(durMs); }
     var rec=JSON.parse(JSON.stringify(a)); rec.durMs=durMs; rec.dur=dur; rec.finishedAt=nowStr();
+    // 加入完成記錄
     logs.unshift(rec);
-    actives=actives.filter(function(x){ return x.id!==id; });
-    save(); pushFinish(rec, durMs, dur);
-    // 先關閉所有 overlay
+    // 用 String 比對，避免型別不一致問題
+    actives=actives.filter(function(x){ return String(x.id)!==String(id); });
+    // 儲存本地並同步到 Sheets
+    localSave(); pushFinish(rec, durMs, dur);
+    // 關閉 overlay，立即更新看板
     closeOv('detail');
-    // 重新渲染看板（桶子立即消失）
     renderAll(); renderTrack(); buildSumFilters();
     // 顯示完成摘要
     showWashResult(rec, dur);
@@ -798,8 +800,8 @@ function showWashResult(rec, dur){
 }
 function delActive(id){
   if(!confirm('確定刪除？')) return;
-  actives=actives.filter(function(a){ return a.id!==id; });
-  save(); pushDeleteActive(id); closeOv('detail'); renderAll(); renderTrack(); showToast('已刪除');
+  actives=actives.filter(function(a){ return String(a.id)!==String(id); });
+  localSave(); pushDeleteActive(id); closeOv('detail'); renderAll(); renderTrack(); showToast('已刪除');
 }
 
 // ═══════════════════════════════════
@@ -1007,7 +1009,7 @@ function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0
 function toTs(s){ if(!s)return null; var t=new Date(s.replace(/\//g,'-').replace(' ','T')); return isNaN(t)?null:t; }
 function fmtDur(ms){ var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000); return h>0?h+'h'+m+'m':m+'分'; }
 function fmtDurLong(ms){ var days=Math.floor(ms/86400000); var h=Math.floor((ms%86400000)/3600000); var m=Math.floor((ms%3600000)/60000); return (days>0?days+'天':'')+(h>0?h+'小時':'')+(m+'分'); }
-function findActive(id){ return actives.find(function(a){ return a.id==id; }); }
+function findActive(id){ return actives.find(function(a){ return String(a.id)===String(id); }); }
 function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 </script>
