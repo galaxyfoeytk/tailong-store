@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="電表記錄">
+<title>電表記錄</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF0D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:linear-gradient(135deg,#142E4A,#1E4A78);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.brand-name{color:#fff;font-size:16px;font-weight:900}
+.brand-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.home-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.home-btn:active{background:rgba(255,255,255,.3)}
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border:none;background:transparent;font-family:inherit;border-bottom:2.5px solid transparent}
+.tab.on{color:var(--b);font-weight:700;border-bottom-color:var(--b)}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:10px 12px 28px}
+.page.on{display:block}
+
+/* 統計卡 */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center}
+.stat-lbl{font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.stat-val{font-size:22px;font-weight:900;color:var(--b);margin-top:4px}
+.stat-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+
+/* 記錄列表 */
+.rec-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:8px;overflow:hidden}
+.rc-head{background:var(--b);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.rc-date{color:#fff;font-size:15px;font-weight:700}
+.rc-reading{color:rgba(255,255,255,.85);font-size:13px}
+.rc-body{padding:10px 14px;display:flex;align-items:center;gap:12px}
+.rc-usage{font-size:24px;font-weight:900;color:var(--b)}
+.rc-unit{font-size:13px;color:var(--ink3);margin-top:2px}
+.rc-note{flex:1;font-size:12px;color:var(--amber);background:var(--amberl);border-radius:6px;padding:5px 8px}
+.rc-del{padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--white);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.rc-del:active{background:var(--redl)}
+
+/* 新增表單 */
+.blk{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.blk-title{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field-label{font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:5px;display:block}
+.field input,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--bm)}
+.field textarea{resize:none;height:70px}
+.save-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+.save-btn:active{opacity:.8}
+
+/* 月份篩選 */
+.month-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.month-chips::-webkit-scrollbar{display:none}
+.mchip{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.mchip.on{background:var(--b);color:#fff;border-color:var(--b)}
+.mchip:active{opacity:.7}
+
+/* 圖表 */
+.chart-wrap{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.chart-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:120px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.bar-chart::-webkit-scrollbar{display:none}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
+.bar{width:28px;border-radius:4px 4px 0 0;background:var(--bm);min-height:4px;transition:height .2s;cursor:pointer;position:relative}
+.bar.high{background:var(--red)}
+.bar.low{background:var(--gm)}
+.bar-lbl{font-size:9px;color:var(--ink3);white-space:nowrap}
+.bar-val{font-size:9px;color:var(--ink2);font-weight:600}
+
+/* 特殊記錄 */
+.note-item{display:flex;gap:10px;padding:9px 12px;background:var(--amberl);border-radius:var(--r2);border:1px solid #F5C050;margin-bottom:6px;align-items:flex-start}
+.note-date{font-size:12px;font-weight:700;color:var(--amber);white-space:nowrap;flex-shrink:0}
+.note-text{font-size:13px;color:var(--amber)}
+
+.empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="brand-name">⚡ 電表記錄</div>
+    <div class="brand-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <button class="home-btn" onclick="location.href='index.html'">🏠 主頁</button>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-list" onclick="showPage('list')">📋 記錄列表</button>
+  <button class="tab" id="tab-add" onclick="showPage('add')">➕ 新增記錄</button>
+  <button class="tab" id="tab-stats" onclick="showPage('stats')">📊 統計</button>
+</div>
+
+<div class="pages">
+
+<!-- 記錄列表 -->
+<div class="page on" id="page-list">
+  <div class="month-chips" id="month-chips"></div>
+  <div class="stat-row" id="list-stats"></div>
+  <div id="list-content"></div>
+</div>
+
+<!-- 新增記錄 -->
+<div class="page" id="page-add">
+  <div class="blk">
+    <div class="blk-title">新增電表記錄</div>
+    <div class="field">
+      <label class="field-label">日期</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label class="field-label">電表讀數（度）</label>
+      <input type="number" id="f-reading" placeholder="例：65810" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label class="field-label">特殊備注（選填）</label>
+      <textarea id="f-note" placeholder="例：10:05 開製冰機、17:00 關製冰機"></textarea>
+    </div>
+  </div>
+  <button class="save-btn" onclick="doSave()">✓ 儲存記錄</button>
+</div>
+
+<!-- 統計 -->
+<div class="page" id="page-stats">
+  <div class="stat-row" id="stats-cards"></div>
+  <div class="chart-wrap">
+    <div class="chart-title">每日用電（度）</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+  <div class="blk">
+    <div class="blk-title">特殊狀況記錄</div>
+    <div id="notes-list"></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ══════════════════════════════
+// 初始資料
+// ══════════════════════════════
+var INIT_DATA=[
+  {date:'2026-05-10',reading:63703,note:''},
+  {date:'2026-05-11',reading:63807,note:''},
+  {date:'2026-05-12',reading:63928,note:''},
+  {date:'2026-05-13',reading:64020,note:''},
+  {date:'2026-05-14',reading:64155,note:''},
+  {date:'2026-05-15',reading:64326,note:'18:12 看表'},
+  {date:'2026-05-16',reading:64485,note:''},
+  {date:'2026-05-17',reading:64644,note:''},
+  {date:'2026-05-18',reading:64809,note:''},
+  {date:'2026-05-19',reading:64927,note:''},
+  {date:'2026-05-20',reading:65051,note:''},
+  {date:'2026-05-21',reading:65206,note:'09:30 看表'},
+  {date:'2026-05-22',reading:65270,note:''},
+  {date:'2026-05-23',reading:65398,note:''},
+  {date:'2026-05-24',reading:65532,note:'10:05 開製冰機、17:00 關製冰機'},
+  {date:'2026-05-25',reading:65680,note:''},
+  {date:'2026-05-26',reading:65810,note:'09:45 開製冰機'},
+];
+
+var records;
+function loadData(){
+  try{
+    var raw=localStorage.getItem('elec_v1');if(!raw)throw 0;
+    records=JSON.parse(raw);
+  }catch(e){
+    records=INIT_DATA.map(function(r,i){return{id:i+1,date:r.date,reading:r.reading,note:r.note};});
+    saveData();
+  }
+}
+function saveData(){ try{localStorage.setItem('elec_v1',JSON.stringify(records));}catch(e){} }
+
+// ══════════════════════════════
+// 計算用電
+// ══════════════════════════════
+function calcUsage(){
+  var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  return sorted.map(function(r,i){
+    var usage=i>0?r.reading-sorted[i-1].reading:null;
+    return Object.assign({},r,{usage:usage});
+  });
+}
+function getMonths(){
+  var months={};
+  records.forEach(function(r){ var m=r.date.slice(0,7); months[m]=true; });
+  return Object.keys(months).sort();
+}
+
+// ══════════════════════════════
+// 篩選月份
+// ══════════════════════════════
+var selMonth='';
+window.onload=function(){
+  loadData();
+  var months=getMonths();
+  selMonth=months[months.length-1]||'';
+  buildMonthChips();
+  renderList();
+  renderStats();
+  // 預設日期為今天
+  document.getElementById('f-date').value=todayStr();
+};
+
+function buildMonthChips(){
+  var months=getMonths();
+  document.getElementById('month-chips').innerHTML=months.map(function(m){
+    return '<button class="mchip'+(m===selMonth?' on':'')+'" onclick="pickMonth(\''+m+'\')">'
+      +m.replace('-','/')+'</button>';
+  }).join('');
+}
+function pickMonth(m){ selMonth=m; buildMonthChips(); renderList(); }
+
+// ══════════════════════════════
+// 列表
+// ══════════════════════════════
+function renderList(){
+  var data=calcUsage().filter(function(r){ return r.date.startsWith(selMonth); });
+  var el=document.getElementById('list-content');
+  if(!data.length){el.innerHTML='<div class="empty">此月份尚無記錄</div>';renderListStats([]);return;}
+
+  // 月統計
+  renderListStats(data);
+
+  // 倒序顯示（最新在上）
+  var rev=data.slice().reverse();
+  el.innerHTML=rev.map(function(r){
+    var usageHtml='';
+    if(r.usage!==null){
+      var cls=r.usage>180?'color:var(--red);font-weight:900':r.usage<80?'color:var(--gm);font-weight:900':'';
+      usageHtml='<div class="rc-usage" style="'+cls+'">'+r.usage+'</div>'
+        +'<div class="rc-unit">度</div>';
+    } else {
+      usageHtml='<div class="rc-usage" style="font-size:16px;color:var(--ink3)">首筆</div>'
+        +'<div class="rc-unit">無前日</div>';
+    }
+    return '<div class="rec-card">'
+      +'<div class="rc-head">'
+        +'<span class="rc-date">'+fmtDate(r.date)+'</span>'
+        +'<span class="rc-reading">電表 '+r.reading.toLocaleString()+' 度</span>'
+      +'</div>'
+      +'<div class="rc-body">'
+        +usageHtml
+        +(r.note?'<div class="rc-note">📌 '+r.note+'</div>':'<div style="flex:1"></div>')
+        +'<button class="rc-del" data-id="'+r.id+'" onclick="delRec(this.dataset.id)">刪除</button>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+function renderListStats(data){
+  var withUsage=data.filter(function(r){return r.usage!==null;});
+  var total=withUsage.reduce(function(s,r){return s+r.usage;},0);
+  var avg=withUsage.length?Math.round(total/withUsage.length):0;
+  var max=withUsage.length?Math.max.apply(null,withUsage.map(function(r){return r.usage;})):0;
+  document.getElementById('list-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-lbl">本月總用電</div><div class="stat-val">'+total+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">日均用電</div><div class="stat-val">'+avg+'</div><div class="stat-sub">度／天</div></div>';
+}
+
+// ══════════════════════════════
+// 新增
+// ══════════════════════════════
+function doSave(){
+  var date=document.getElementById('f-date').value;
+  var reading=document.getElementById('f-reading').value.trim();
+  var note=document.getElementById('f-note').value.trim();
+  if(!date){showToast('請選擇日期');return;}
+  if(!reading||isNaN(reading)){showToast('請填寫電表讀數');return;}
+  var rv=parseInt(reading);
+  // 防呆：讀數不能小於前一筆
+  var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var prev=sorted.filter(function(r){return r.date<date;}).pop();
+  if(prev&&rv<prev.reading){showToast('⚠ 電表讀數（'+rv+'）小於前一筆（'+prev.reading+'），請確認');return;}
+  // 同日已有記錄
+  var dup=records.find(function(r){return r.date===date;});
+  if(dup){if(!confirm('此日期已有記錄（'+dup.reading+'度），確定覆蓋？'))return; records=records.filter(function(r){return r.date!==date;});}
+  records.push({id:Date.now(),date:date,reading:rv,note:note});
+  saveData();
+  document.getElementById('f-reading').value='';
+  document.getElementById('f-note').value='';
+  document.getElementById('f-date').value=todayStr();
+  buildMonthChips();
+  selMonth=date.slice(0,7);
+  buildMonthChips();
+  renderList(); renderStats();
+  showPage('list');
+  showToast('✓ 已儲存：'+fmtDate(date)+' '+rv+'度');
+}
+function delRec(id){
+  if(!confirm('確定刪除？'))return;
+  records=records.filter(function(r){return String(r.id)!==String(id);});
+  saveData(); buildMonthChips(); renderList(); renderStats(); showToast('已刪除');
+}
+
+// ══════════════════════════════
+// 統計頁
+// ══════════════════════════════
+function renderStats(){
+  var data=calcUsage();
+  var withUsage=data.filter(function(r){return r.usage!==null;});
+  var months=getMonths();
+  var curMonth=selMonth||months[months.length-1]||'';
+  var monthData=withUsage.filter(function(r){return r.date.startsWith(curMonth);});
+  var total=monthData.reduce(function(s,r){return s+r.usage;},0);
+  var avg=monthData.length?Math.round(total/monthData.length):0;
+  var max=monthData.length?Math.max.apply(null,monthData.map(function(r){return r.usage;})):0;
+  var min=monthData.length?Math.min.apply(null,monthData.map(function(r){return r.usage;})):0;
+
+  document.getElementById('stats-cards').innerHTML=
+    '<div class="stat-card"><div class="stat-lbl">本月總用電</div><div class="stat-val">'+total+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">日均用電</div><div class="stat-val">'+avg+'</div><div class="stat-sub">度／天</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">最高單日</div><div class="stat-val" style="color:var(--red)">'+max+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">最低單日</div><div class="stat-val" style="color:var(--gm)">'+min+'</div><div class="stat-sub">度</div></div>';
+
+  // 長條圖
+  if(monthData.length){
+    var maxV=Math.max.apply(null,monthData.map(function(r){return r.usage;}));
+    var barH=100;
+    document.getElementById('bar-chart').innerHTML=monthData.map(function(r){
+      var h=maxV>0?Math.round((r.usage/maxV)*barH):4;
+      var cls=r.usage>180?'high':r.usage<80?'low':'';
+      return '<div class="bar-col">'
+        +'<div class="bar-val">'+r.usage+'</div>'
+        +'<div class="bar '+cls+'" style="height:'+h+'px" title="'+fmtDate(r.date)+': '+r.usage+'度"></div>'
+        +'<div class="bar-lbl">'+r.date.slice(8)+'日</div>'
+      +'</div>';
+    }).join('');
+  }
+
+  // 特殊備注
+  var notes=data.filter(function(r){return r.note;});
+  var nl=document.getElementById('notes-list');
+  if(!notes.length){nl.innerHTML='<div class="empty" style="padding:14px">無特殊記錄</div>';return;}
+  nl.innerHTML=notes.map(function(r){
+    return '<div class="note-item">'
+      +'<span class="note-date">'+fmtDate(r.date)+'</span>'
+      +'<span class="note-text">'+r.note+'</span>'
+    +'</div>';
+  }).join('');
+}
+
+// ══════════════════════════════
+// 頁籤 & 工具
+// ══════════════════════════════
+function showPage(p){
+  ['list','add','stats'].forEach(function(n){
+    document.getElementById('page-'+n).className='page'+(n===p?' on':'');
+    document.getElementById('tab-'+n).className='tab'+(n===p?' on':'');
+  });
+  if(p==='stats') renderStats();
+  if(p==='list') renderList();
+}
+function fmtDate(d){ return d.slice(5).replace('-','/'); }
+function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+</script>
+</body>
+</html>
