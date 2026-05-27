@@ -501,15 +501,25 @@ document.addEventListener('click',function(e){
 // ═══════════════════════════════════
 // Init
 // ═══════════════════════════════════
-var _lastWashTime = 0;
-var _washedIds = {}; // 已清洗的 id，防止 Sheets 同步把它們帶回來
+var _washedIds = {}; // 已清洗的 id，存 localStorage 確保重整後仍有效
+
+function loadWashedIds(){
+  try{ _washedIds=JSON.parse(localStorage.getItem('jelly_washed')||'{}'); }catch(e){ _washedIds={}; }
+}
+function saveWashedIds(){
+  // 只保留最近7天的記錄，避免無限累積
+  try{ localStorage.setItem('jelly_washed',JSON.stringify(_washedIds)); }catch(e){}
+}
 
 window.onload=function(){
+  loadWashedIds();
   if(!localLoad()){
     items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));
     persons=DEFAULT_PERSONS.slice();
     actives=[]; logs=[];
   }
+  // 確保本地 actives 中沒有已清洗的桶子
+  actives=actives.filter(function(a){ return !_washedIds[String(a.id)]; });
   renderAll(); renderTrack();
   setInterval(function(){ renderTrackTimers(); },60000);
 
@@ -522,22 +532,20 @@ window.onload=function(){
     });
     api({action:'jellyGetActives'},function(d,e){
       if(d&&d.ok&&d.data){
-        // 過濾掉已清洗的桶子（本地已移除，Sheets 可能還沒更新）
+        // 過濾掉已清洗的桶子
         var filtered=d.data.filter(function(x){
           return !_washedIds[String(x.id)];
         });
-        // 只有 Sheets 有本地沒有的記錄時才合併，不直接覆蓋
-        if(filtered.length>0 && actives.length===0){
-          actives=filtered; localSave(); renderAll(); renderTrack();
-        } else if(filtered.length>actives.length){
-          // Sheets 比本地多，合併新增的部分
-          var localIds={};
-          actives.forEach(function(a){ localIds[String(a.id)]=true; });
-          filtered.forEach(function(a){
-            if(!localIds[String(a.id)]) actives.push(a);
-          });
-          localSave(); renderAll(); renderTrack();
-        }
+        // 以本地為主：只補上本地沒有但 Sheets 有的新記錄
+        var localIds={};
+        actives.forEach(function(a){ localIds[String(a.id)]=true; });
+        var added=false;
+        filtered.forEach(function(a){
+          if(!localIds[String(a.id)]){
+            actives.push(a); added=true;
+          }
+        });
+        if(added){ localSave(); renderAll(); renderTrack(); }
         setStatus('已同步 ✓');
         setTimeout(function(){ setStatus(''); },3000);
       } else {
@@ -546,12 +554,13 @@ window.onload=function(){
     });
     api({action:'jellyGetLogs'},function(d,e){
       if(d&&d.ok&&d.data&&d.data.length>0){
-        // 合併：保留本地有但 Sheets 沒有的（剛清洗還沒上傳的）
         var sheetsIds={};
         d.data.forEach(function(r){ sheetsIds[String(r.id)]=true; });
         var localOnly=logs.filter(function(r){ return !sheetsIds[String(r.id)]; });
-        logs=d.data.concat(localOnly);
-        localSave();
+        if(d.data.length+localOnly.length !== logs.length){
+          logs=d.data.concat(localOnly);
+          localSave();
+        }
       }
     });
   } else {
@@ -774,8 +783,9 @@ function doWash(id){
     if(t1&&t2&&t2>t1){ durMs=t2-t1; dur=fmtDurLong(durMs); }
     var rec=JSON.parse(JSON.stringify(a));
     rec.durMs=durMs; rec.dur=dur; rec.finishedAt=nowStr();
-    // 標記此 id 已清洗，防止 Sheets 同步回呼把它帶回 actives
-    _washedIds[String(id)]=true;
+    // 標記此 id 已清洗，存到 localStorage 防止重整後失效
+    _washedIds[String(id)]=Date.now();
+    saveWashedIds();
     // 加入完成記錄
     logs.unshift(rec);
     // 從進行中移除（String 比對）
