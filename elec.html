@@ -49,6 +49,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .rc-note{flex:1;font-size:12px;color:var(--amber);background:var(--amberl);border-radius:6px;padding:5px 8px}
 .rc-del{padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--white);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0}
 .rc-del:active{background:var(--redl)}
+.rc-edit{padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--white);color:var(--b);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.rc-edit:active{background:var(--bl)}
+
+/* 編輯 overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;padding:16px 14px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sh-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1}
+.sh-ok{width:100%;margin-top:12px;padding:13px;background:var(--b);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;margin-top:12px}
+.edit-inp{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.edit-inp:focus{border-color:var(--bm)}
 
 /* 新增表單 */
 .blk{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
@@ -145,6 +160,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div id="notes-list"></div>
   </div>
 </div>
+</div>
+
+<!-- 編輯記錄 overlay -->
+<div class="ov" id="ov-edit">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">修改記錄 <button class="sh-close" onclick="closeEdit()">✕</button></div>
+    <div class="sec-lbl" style="margin-top:0">日期</div>
+    <input type="date" id="edit-date" class="edit-inp">
+    <div class="sec-lbl">電表讀數（度）</div>
+    <input type="number" id="edit-reading" class="edit-inp" inputmode="decimal">
+    <div class="sec-lbl">特殊備注</div>
+    <textarea id="edit-note" class="edit-inp" style="resize:none;height:80px" placeholder="備注說明（可留空）"></textarea>
+    <button class="sh-ok" onclick="saveEdit()">✓ 儲存修改</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -255,7 +285,8 @@ function renderList(){
       +'<div class="rc-body">'
         +usageHtml
         +(r.note?'<div class="rc-note">📌 '+r.note+'</div>':'<div style="flex:1"></div>')
-        +'<button class="rc-del" data-id="'+r.id+'" onclick="delRec(this.dataset.id)">刪除</button>'
+        +'<button class="rc-edit" data-id="'+r.id+'" onclick="event.stopPropagation();openEdit(this.dataset.id)">修改</button>'
+        +'<button class="rc-del" data-id="'+r.id+'" onclick="event.stopPropagation();delRec(this.dataset.id)">刪除</button>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -365,6 +396,45 @@ function showPage(p){
 }
 function fmtDate(d){ return d.slice(5).replace('-','/'); }
 function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+// ══════════════════════════════
+// 修改記錄
+// ══════════════════════════════
+var editId=null;
+function openEdit(id){
+  var r=records.find(function(x){return String(x.id)===String(id);});
+  if(!r) return;
+  editId=id;
+  document.getElementById('edit-date').value=r.date;
+  document.getElementById('edit-reading').value=r.reading;
+  document.getElementById('edit-note').value=r.note||'';
+  document.getElementById('ov-edit').classList.add('show');
+}
+function closeEdit(){
+  document.getElementById('ov-edit').classList.remove('show');
+  editId=null;
+}
+function saveEdit(){
+  var r=records.find(function(x){return String(x.id)===String(editId);});
+  if(!r){closeEdit();return;}
+  var date=document.getElementById('edit-date').value;
+  var reading=parseInt(document.getElementById('edit-reading').value);
+  var note=document.getElementById('edit-note').value.trim();
+  if(!date){showToast('請填寫日期');return;}
+  if(isNaN(reading)||reading<=0){showToast('請填寫正確的電表讀數');return;}
+  r.date=date; r.reading=reading; r.note=note;
+  saveData();
+  buildMonthChips();
+  selMonth=date.slice(0,7);
+  buildMonthChips();
+  renderList(); renderStats();
+  closeEdit();
+  showToast('✓ 已修改：'+fmtDate(date)+' '+reading+'度');
+}
+document.addEventListener('click',function(e){
+  var ov=document.getElementById('ov-edit');
+  if(e.target===ov) closeEdit();
+});
+
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 </script>
 </body>
