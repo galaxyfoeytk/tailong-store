@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="開班記錄">
+<title>開班 Checklist</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF8E6;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+.topbar{background:linear-gradient(135deg,#142E4A,#1E4A78);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.brand-name{color:#fff;font-size:16px;font-weight:900}
+.brand-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.top-btns{display:flex;gap:6px}
+.tib{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.tib:active{background:rgba(255,255,255,.3)}
+
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border:none;background:transparent;font-family:inherit;border-bottom:2.5px solid transparent}
+.tab.on{color:var(--b);font-weight:700;border-bottom-color:var(--b)}
+
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:12px 12px 32px}
+.page.on{display:block}
+
+/* 開班資訊卡 */
+.info-card{background:linear-gradient(135deg,var(--b),var(--bm));border-radius:var(--r);padding:16px;margin-bottom:12px;color:#fff}
+.info-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.info-row:last-child{margin-bottom:0}
+.info-lbl{font-size:11px;opacity:.7;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.info-val{font-size:15px;font-weight:700}
+.info-time{font-size:28px;font-weight:900;letter-spacing:-.5px}
+
+/* 進度條 */
+.progress-wrap{background:var(--white);border-radius:var(--r);padding:14px;margin-bottom:12px;border:1px solid var(--bd)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.progress-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.progress-pct{font-size:18px;font-weight:900;color:var(--b)}
+.progress-bar-bg{height:8px;background:var(--bd);border-radius:4px;overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--bm),var(--gm));border-radius:4px;transition:width .3s}
+.progress-bar-fill.done{background:linear-gradient(90deg,var(--g),var(--gm))}
+
+/* Checklist 項目 */
+.section-label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;padding-left:2px}
+.check-item{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);margin-bottom:6px;overflow:hidden;transition:border-color .15s,background .15s}
+.check-item.done{background:var(--gl);border-color:var(--gm)}
+.check-item.warn{background:var(--amberl);border-color:#E8C060}
+.ci-main{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer}
+.ci-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd);background:var(--white);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.check-item.done .ci-check{background:var(--g);border-color:var(--g);color:#fff;font-size:13px}
+.check-item.warn .ci-check{background:var(--amber);border-color:var(--amber);color:#fff;font-size:13px}
+.ci-content{flex:1}
+.ci-step{font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:2px;letter-spacing:.04em}
+.ci-name{font-size:14px;font-weight:600;color:var(--ink)}
+.check-item.done .ci-name{color:var(--g)}
+.ci-desc{font-size:12px;color:var(--ink3);margin-top:3px}
+.ci-time{font-size:11px;color:var(--gm);font-weight:600;margin-top:4px}
+.check-item.warn .ci-time{color:var(--amber)}
+.ci-note-btn{padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--white);font-size:11px;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0}
+.ci-note-btn:active{background:var(--bl)}
+.ci-note-area{padding:0 14px 12px;display:none}
+.ci-note-input{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;resize:none;height:60px}
+.ci-note-input:focus{border-color:var(--bm)}
+
+/* 完成橫幅 */
+.done-banner{background:linear-gradient(135deg,var(--g),var(--gm));border-radius:var(--r);padding:18px;text-align:center;margin-bottom:12px;color:#fff}
+.done-banner-icon{font-size:36px;margin-bottom:6px}
+.done-banner-title{font-size:18px;font-weight:900;margin-bottom:4px}
+.done-banner-sub{font-size:13px;opacity:.8}
+
+/* 歷史記錄 */
+.hist-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.hc-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.hc-date{font-size:15px;font-weight:700;color:var(--ink)}
+.hc-person{font-size:13px;color:var(--ink3)}
+.hc-badge{padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.hc-badge.full{background:var(--gl);color:var(--g)}
+.hc-badge.partial{background:var(--amberl);color:var(--amber)}
+.hc-body{padding:10px 14px}
+.hc-meta{font-size:12px;color:var(--ink3);margin-bottom:8px}
+.hc-steps{display:flex;flex-wrap:wrap;gap:5px}
+.hc-step{font-size:11px;padding:3px 8px;border-radius:6px}
+.hc-step.ok{background:var(--gl);color:var(--g)}
+.hc-step.skip{background:var(--redl);color:var(--red)}
+.hc-step.warn{background:var(--amberl);color:var(--amber)}
+
+/* 管理 */
+.blk{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.blk-title{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.mgmt-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--bd);margin-bottom:6px}
+.mgmt-drag{color:var(--ink4);font-size:16px;cursor:grab;flex-shrink:0}
+.mgmt-info{flex:1}
+.mgmt-name{font-size:14px;font-weight:600}
+.mgmt-desc{font-size:11px;color:var(--ink3);margin-top:2px}
+.mgmt-cat{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--bl);color:var(--b);font-weight:700;flex-shrink:0}
+.mgmt-del{padding:5px 10px;border:1px solid #F5A0A0;border-radius:6px;background:var(--redl);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0}
+.mgmt-del:active{background:var(--red);color:#fff}
+.add-inp{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;margin-bottom:8px}
+.add-inp:focus{border-color:var(--bm)}
+.add-row{display:flex;gap:7px}
+.add-btn{padding:10px 14px;background:var(--b);color:#fff;border:none;border-radius:var(--r2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-btn:active{opacity:.8}
+.person-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.p-btn{padding:12px 6px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center}
+.p-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
+.p-btn:active{opacity:.7}
+
+.save-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
+.save-btn:active{opacity:.8}
+
+.empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+
+/* overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:90dvh;overflow-y:auto;padding:16px 14px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sh-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1}
+.sh-ok{width:100%;margin-top:12px;padding:13px;background:var(--b);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;margin-top:14px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="brand-name">✅ 開班 Checklist</div>
+    <div class="brand-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <div class="top-btns">
+    <button class="tib" onclick="openMgmt()">⚙️ 設定</button>
+    <button class="tib" onclick="location.href='index.html'">🏠</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-check" onclick="showPage('check')">✅ 開班</button>
+  <button class="tab" id="tab-hist" onclick="showPage('hist')">📋 歷史記錄</button>
+</div>
+
+<div class="pages">
+
+<!-- 開班 checklist -->
+<div class="page on" id="page-check">
+
+  <!-- 尚未開始 -->
+  <div id="start-section">
+    <div class="blk">
+      <div class="blk-title">今日開班資訊</div>
+      <div style="margin-bottom:12px">
+        <div class="sec-lbl" style="margin-top:0">日期</div>
+        <input type="date" id="cl-date" class="add-inp" style="margin-bottom:0">
+      </div>
+      <div class="sec-lbl">開班人員</div>
+      <div class="person-grid" id="person-grid-check"></div>
+      <div class="sec-lbl">班別</div>
+      <div style="display:flex;gap:7px;margin-bottom:4px" id="shift-btns">
+        <button class="p-btn" onclick="pickShift('早班')">☀️ 早班</button>
+        <button class="p-btn" onclick="pickShift('中班')">🌤 中班</button>
+        <button class="p-btn" onclick="pickShift('晚班')">🌙 晚班</button>
+      </div>
+    </div>
+    <button class="save-btn" onclick="startChecklist()">▶ 開始開班流程</button>
+  </div>
+
+  <!-- 進行中 -->
+  <div id="check-section" style="display:none">
+    <div class="info-card" id="info-card">
+      <div class="info-row">
+        <div><div class="info-lbl">日期</div><div class="info-val" id="ic-date"></div></div>
+        <div style="text-align:right"><div class="info-lbl">班別</div><div class="info-val" id="ic-shift"></div></div>
+      </div>
+      <div class="info-row">
+        <div><div class="info-lbl">人員</div><div class="info-val" id="ic-person"></div></div>
+        <div style="text-align:right"><div class="info-lbl">開始時間</div><div class="info-time" id="ic-time"></div></div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-header">
+        <span class="progress-title">完成進度</span>
+        <span class="progress-pct" id="prog-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
+    </div>
+    <div id="checklist-body"></div>
+    <button class="save-btn" id="finish-btn" onclick="finishChecklist()" style="background:linear-gradient(135deg,var(--g),var(--gm));margin-top:4px" disabled>✓ 完成並儲存開班記錄</button>
+  </div>
+
+  <!-- 完成 -->
+  <div id="done-section" style="display:none">
+    <div class="done-banner">
+      <div class="done-banner-icon">🎉</div>
+      <div class="done-banner-title">開班完成！</div>
+      <div class="done-banner-sub" id="done-sub"></div>
+    </div>
+    <div id="done-summary"></div>
+    <button class="save-btn" onclick="resetChecklist()">➕ 開始新的開班記錄</button>
+  </div>
+
+</div>
+
+<!-- 歷史記錄 -->
+<div class="page" id="page-hist">
+  <div id="hist-content"></div>
+</div>
+
+</div><!-- /pages -->
+
+<!-- 設定 overlay -->
+<div class="ov" id="ov-mgmt">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">設定管理 <button class="sh-close" onclick="closeMgmt()">✕</button></div>
+
+    <!-- 人員 -->
+    <div class="blk-title" style="margin-top:4px">👤 人員管理</div>
+    <div id="ml-person"></div>
+    <div class="add-row">
+      <input class="add-inp" id="ai-person" placeholder="新增人員姓名" style="margin-bottom:0;flex:1">
+      <button class="add-btn" onclick="addPerson()">新增</button>
+    </div>
+
+    <!-- 步驟 -->
+    <div class="blk-title" style="margin-top:18px">📋 步驟管理</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">每個步驟完成時可打勾，勾選後自動記錄時間</div>
+    <div id="ml-steps"></div>
+    <div style="margin-top:8px">
+      <input class="add-inp" id="ai-step-name" placeholder="步驟名稱（如：開冷藏冰箱）">
+      <input class="add-inp" id="ai-step-desc" placeholder="說明（選填，如：確認溫度正常）">
+      <div style="display:flex;gap:7px;margin-bottom:8px">
+        <select id="ai-step-cat" style="flex:1;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+          <option>開店準備</option>
+          <option>設備確認</option>
+          <option>食材確認</option>
+          <option>清潔衛生</option>
+          <option>其他</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:6px;padding:0 8px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white)">
+          <span style="font-size:12px;color:var(--ink3)">必填</span>
+          <input type="checkbox" id="ai-step-req" style="width:16px;height:16px;cursor:pointer">
+        </div>
+      </div>
+      <button class="save-btn" onclick="addStep()" style="margin-top:0">新增步驟</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════
+// 預設資料
+// ══════════════════════════════
+var DEFAULT_PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var DEFAULT_STEPS=[
+  {id:1,name:'確認前一天記帳是否完成',desc:'',cat:'開店準備',req:true},
+  {id:2,name:'開啟所有冷藏冷凍設備',desc:'確認電源正常，溫度顯示正確',cat:'設備確認',req:true},
+  {id:3,name:'確認仙草凍製作進度',desc:'查看昨日是否有需移動的桶子',cat:'設備確認',req:true},
+  {id:4,name:'確認食材庫存',desc:'查看冷藏、冷凍、常溫食材是否充足',cat:'食材確認',req:true},
+  {id:5,name:'清潔工作台及設備',desc:'用食品級清潔劑擦拭',cat:'清潔衛生',req:true},
+  {id:6,name:'確認飲料機/茶桶設備',desc:'確認出水正常、溫度正確',cat:'設備確認',req:true},
+  {id:7,name:'確認收銀機/POS系統',desc:'確認可正常結帳，零錢準備充足',cat:'開店準備',req:true},
+  {id:8,name:'補充外帶杯、封膜、吸管',desc:'確認數量足夠',cat:'食材確認',req:false},
+  {id:9,name:'確認店內環境整潔',desc:'地板、桌椅、門窗清潔',cat:'清潔衛生',req:false},
+  {id:10,name:'翻開營業招牌/開燈',desc:'確認店面正常開業狀態',cat:'開店準備',req:true},
+];
+
+var persons, steps, history;
+function loadData(){
+  try{
+    var raw=localStorage.getItem('checklist_v1');if(!raw)throw 0;
+    var d=JSON.parse(raw); persons=d.persons; steps=d.steps; history=d.history||[];
+  }catch(e){
+    persons=DEFAULT_PERSONS.slice();
+    steps=JSON.parse(JSON.stringify(DEFAULT_STEPS));
+    history=[];
+  }
+}
+function saveData(){ try{localStorage.setItem('checklist_v1',JSON.stringify({persons,steps,history}));}catch(e){} }
+
+// ══════════════════════════════
+// 狀態
+// ══════════════════════════════
+var selPerson='', selShift='早班';
+var session=null; // 進行中的 checklist
+
+window.onload=function(){
+  loadData();
+  document.getElementById('cl-date').value=todayStr();
+  buildPersonGrid();
+  buildShiftBtns();
+};
+
+// ══════════════════════════════
+// 開始 / 完成 / 重設
+// ══════════════════════════════
+function startChecklist(){
+  if(!selPerson){showToast('請選擇開班人員');return;}
+  var date=document.getElementById('cl-date').value;
+  if(!date){showToast('請選擇日期');return;}
+  session={
+    date:date, person:selPerson, shift:selShift,
+    startTime:nowStr(),
+    items:steps.map(function(s){return{id:s.id,name:s.name,desc:s.desc,cat:s.cat,req:s.req,done:false,warn:false,time:'',note:''};})
+  };
+  document.getElementById('ic-date').textContent=fmtDate(date);
+  document.getElementById('ic-shift').textContent=selShift;
+  document.getElementById('ic-person').textContent=selPerson;
+  document.getElementById('ic-time').textContent=session.startTime.slice(11,16);
+  document.getElementById('start-section').style.display='none';
+  document.getElementById('check-section').style.display='block';
+  renderChecklist();
+}
+
+function finishChecklist(){
+  if(!session) return;
+  session.endTime=nowStr();
+  var total=session.items.length;
+  var done=session.items.filter(function(i){return i.done;}).length;
+  var warns=session.items.filter(function(i){return i.warn;}).length;
+  session.total=total; session.done=done; session.warns=warns;
+  history.unshift(JSON.parse(JSON.stringify(session)));
+  saveData();
+  // 顯示完成畫面
+  document.getElementById('check-section').style.display='none';
+  document.getElementById('done-section').style.display='block';
+  document.getElementById('done-sub').textContent=selPerson+' · '+selShift+' · '+done+'/'+total+' 項完成'+(warns>0?' · '+warns+'項需注意':'');
+  renderDoneSummary();
+}
+
+function resetChecklist(){
+  session=null; selPerson=''; selShift='早班';
+  document.getElementById('done-section').style.display='none';
+  document.getElementById('check-section').style.display='none';
+  document.getElementById('start-section').style.display='block';
+  document.getElementById('cl-date').value=todayStr();
+  buildPersonGrid(); buildShiftBtns();
+}
+
+// ══════════════════════════════
+// 渲染 Checklist
+// ══════════════════════════════
+function renderChecklist(){
+  if(!session) return;
+  var cats=[...new Set(session.items.map(function(i){return i.cat;}))];
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div class="section-label">'+catIcon(cat)+' '+cat+'</div>';
+    session.items.filter(function(i){return i.cat===cat;}).forEach(function(item,idx){
+      var globalIdx=session.items.findIndex(function(x){return x.id===item.id;});
+      var cls=item.warn?'warn':item.done?'done':'';
+      html+='<div class="check-item '+cls+'" id="ci-'+item.id+'">'
+        +'<div class="ci-main" onclick="toggleItem('+item.id+')">'
+          +'<div class="ci-check">'+(item.done||item.warn?'✓':'')+'</div>'
+          +'<div class="ci-content">'
+            +'<div class="ci-step">步驟 '+(globalIdx+1)+(item.req?' <span style="color:var(--red)">必填</span>':'')+'</div>'
+            +'<div class="ci-name">'+item.name+'</div>'
+            +(item.desc?'<div class="ci-desc">'+item.desc+'</div>':'')
+            +(item.time?'<div class="ci-time">✓ '+item.time.slice(11,16)+' 完成</div>':'')
+          +'</div>'
+          +'<button class="ci-note-btn" onclick="event.stopPropagation();toggleNote('+item.id+')">'+(item.note?'📝':'備注')+'</button>'
+        +'</div>'
+        +'<div class="ci-note-area" id="note-'+item.id+'">'
+          +'<textarea class="ci-note-input" id="note-inp-'+item.id+'" placeholder="備注說明..." oninput="saveNote('+item.id+',this.value)">'+item.note+'</textarea>'
+        +'</div>'
+      +'</div>';
+    });
+  });
+  document.getElementById('checklist-body').innerHTML=html;
+  updateProgress();
+}
+
+function toggleItem(id){
+  var item=session.items.find(function(x){return x.id===id;});
+  if(!item) return;
+  if(!item.done&&!item.warn){
+    // 第一次點 → 完成（打勾）
+    item.done=true; item.warn=false;
+    item.time=nowStr();
+  } else if(item.done){
+    // 第二次點 → 異常（打勾+警示）
+    item.done=false; item.warn=true;
+  } else {
+    // 第三次點 → 清除
+    item.done=false; item.warn=false; item.time='';
+  }
+  renderChecklist();
+}
+function toggleNote(id){
+  var el=document.getElementById('note-'+id);
+  el.style.display=el.style.display==='block'?'none':'block';
+  if(el.style.display==='block') document.getElementById('note-inp-'+id).focus();
+}
+function saveNote(id,val){
+  var item=session.items.find(function(x){return x.id===id;});
+  if(item) item.note=val;
+}
+function updateProgress(){
+  var total=session.items.length;
+  var done=session.items.filter(function(i){return i.done||i.warn;}).length;
+  var pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  var bar=document.getElementById('prog-bar');
+  bar.style.width=pct+'%';
+  bar.className='progress-bar-fill'+(pct===100?' done':'');
+  // 完成按鈕
+  var reqItems=session.items.filter(function(i){return i.req;});
+  var reqDone=reqItems.every(function(i){return i.done||i.warn;});
+  document.getElementById('finish-btn').disabled=!reqDone;
+  document.getElementById('finish-btn').style.opacity=reqDone?1:0.4;
+}
+
+function renderDoneSummary(){
+  if(!session) return;
+  var done=session.items.filter(function(i){return i.done;});
+  var warn=session.items.filter(function(i){return i.warn;});
+  var skip=session.items.filter(function(i){return !i.done&&!i.warn;});
+  var html='<div class="blk" style="margin-top:0">';
+  if(warn.length){
+    html+='<div class="section-label">⚠️ 需注意</div>';
+    warn.forEach(function(i){ html+='<div style="padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--amber)">'+i.name+(i.note?' — '+i.note:'')+'</div>'; });
+  }
+  if(skip.filter(function(i){return i.req;}).length){
+    html+='<div class="section-label">❌ 未完成（必填）</div>';
+    skip.filter(function(i){return i.req;}).forEach(function(i){ html+='<div style="padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--red)">'+i.name+'</div>'; });
+  }
+  html+='<div class="section-label" style="margin-top:8px">✅ 完成項目（'+done.length+'）</div>';
+  done.forEach(function(i){ html+='<div style="padding:6px 0;font-size:13px;color:var(--g)">'+i.name+' <span style="color:var(--ink3);font-size:11px">'+i.time.slice(11,16)+'</span></div>'; });
+  html+='</div>';
+  document.getElementById('done-summary').innerHTML=html;
+}
+
+// ══════════════════════════════
+// 歷史記錄
+// ══════════════════════════════
+function renderHist(){
+  var el=document.getElementById('hist-content');
+  if(!history.length){el.innerHTML='<div class="empty">尚無歷史記錄</div>';return;}
+  el.innerHTML=history.map(function(h){
+    var warns=h.items.filter(function(i){return i.warn;});
+    var isFull=h.done===h.total;
+    return '<div class="hist-card">'
+      +'<div class="hc-head">'
+        +'<div><div class="hc-date">'+fmtDate(h.date)+' '+h.shift+'</div>'
+          +'<div class="hc-person">'+h.person+' · '+h.startTime.slice(11,16)+' 開始</div></div>'
+        +'<span class="hc-badge '+(isFull?'full':'partial')+'">'+(isFull?'全部完成':h.done+'/'+h.total+'完成')+'</span>'
+      +'</div>'
+      +'<div class="hc-body">'
+        +'<div class="hc-meta">完成時間：'+h.endTime.slice(11,16)+(warns.length?' · <span style="color:var(--amber)">'+warns.length+'項需注意</span>':'')+'</div>'
+        +'<div class="hc-steps">'
+        +h.items.map(function(i){
+          var cls=i.warn?'warn':i.done?'ok':'skip';
+          return '<span class="hc-step '+cls+'">'+(i.warn?'⚠️':i.done?'✓':'✗')+' '+i.name+'</span>';
+        }).join('')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+// ══════════════════════════════
+// 管理
+// ══════════════════════════════
+function openMgmt(){ buildPersonMgmt(); buildStepMgmt(); document.getElementById('ov-mgmt').classList.add('show'); }
+function closeMgmt(){ document.getElementById('ov-mgmt').classList.remove('show'); }
+
+function buildPersonMgmt(){
+  var el=document.getElementById('ml-person');
+  el.innerHTML=persons.map(function(p,i){
+    return '<div class="mgmt-row"><span class="mgmt-info"><span class="mgmt-name">'+p+'</span></span>'
+      +'<button class="mgmt-del" onclick="delPerson('+i+')">刪除</button></div>';
+  }).join('');
+}
+function addPerson(){
+  var v=document.getElementById('ai-person').value.trim();
+  if(!v){showToast('請輸入姓名');return;}
+  if(persons.indexOf(v)!==-1){showToast('已存在');return;}
+  persons.push(v); saveData(); buildPersonMgmt(); buildPersonGrid();
+  document.getElementById('ai-person').value='';
+  showToast('✓ 已新增：'+v);
+}
+function delPerson(i){ if(!confirm('確定刪除？'))return; persons.splice(i,1); saveData(); buildPersonMgmt(); buildPersonGrid(); showToast('已刪除'); }
+
+function buildStepMgmt(){
+  var el=document.getElementById('ml-steps');
+  el.innerHTML=steps.map(function(s,i){
+    return '<div class="mgmt-row">'
+      +'<span class="mgmt-drag">☰</span>'
+      +'<div class="mgmt-info"><div class="mgmt-name">'+s.name+(s.req?' <span style="color:var(--red);font-size:10px">必填</span>':'')+'</div>'
+        +(s.desc?'<div class="mgmt-desc">'+s.desc+'</div>':'')
+      +'</div>'
+      +'<span class="mgmt-cat">'+s.cat+'</span>'
+      +'<button class="mgmt-del" onclick="delStep('+s.id+')">刪除</button>'
+    +'</div>';
+  }).join('');
+}
+function addStep(){
+  var name=document.getElementById('ai-step-name').value.trim();
+  if(!name){showToast('請輸入步驟名稱');return;}
+  var desc=document.getElementById('ai-step-desc').value.trim();
+  var cat=document.getElementById('ai-step-cat').value;
+  var req=document.getElementById('ai-step-req').checked;
+  var newId=steps.length?Math.max.apply(null,steps.map(function(s){return s.id;}))+1:1;
+  steps.push({id:newId,name:name,desc:desc,cat:cat,req:req});
+  saveData(); buildStepMgmt();
+  document.getElementById('ai-step-name').value='';
+  document.getElementById('ai-step-desc').value='';
+  document.getElementById('ai-step-req').checked=false;
+  showToast('✓ 已新增步驟：'+name);
+}
+function delStep(id){ if(!confirm('確定刪除？'))return; steps=steps.filter(function(s){return s.id!==id;}); saveData(); buildStepMgmt(); showToast('已刪除'); }
+
+// ══════════════════════════════
+// 人員 & 班別選擇
+// ══════════════════════════════
+function buildPersonGrid(){
+  document.getElementById('person-grid-check').innerHTML=persons.map(function(p){
+    return '<button class="p-btn'+(p===selPerson?' on':'')+'" onclick="pickPerson(\''+esc(p)+'\')">'+p+'</button>';
+  }).join('');
+}
+function pickPerson(p){ selPerson=p; buildPersonGrid(); }
+function buildShiftBtns(){
+  var shifts=[{id:'早班',icon:'☀️'},{id:'中班',icon:'🌤'},{id:'晚班',icon:'🌙'}];
+  document.getElementById('shift-btns').innerHTML=shifts.map(function(s){
+    return '<button class="p-btn'+(s.id===selShift?' on':'')+'" onclick="pickShift(\''+s.id+'\')">'+s.icon+' '+s.id+'</button>';
+  }).join('');
+}
+function pickShift(s){ selShift=s; buildShiftBtns(); }
+
+// ══════════════════════════════
+// 頁籤
+// ══════════════════════════════
+function showPage(p){
+  ['check','hist'].forEach(function(n){
+    document.getElementById('page-'+n).className='page'+(n===p?' on':'');
+    document.getElementById('tab-'+n).className='tab'+(n===p?' on':'');
+  });
+  if(p==='hist') renderHist();
+}
+
+// ══════════════════════════════
+// 工具
+// ══════════════════════════════
+function catIcon(cat){
+  var m={'開店準備':'🏪','設備確認':'🔧','食材確認':'🥤','清潔衛生':'🧹','其他':'📌'};
+  return m[cat]||'📌';
+}
+function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function fmtDate(d){ return d?d.slice(5).replace('-','/'):'';}
+function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+function esc(s){ return String(s).replace(/'/g,"\\'"); }
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+document.addEventListener('click',function(e){ var ov=document.getElementById('ov-mgmt'); if(e.target===ov) closeMgmt(); });
+</script>
+</body>
+</html>
