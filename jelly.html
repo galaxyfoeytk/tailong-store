@@ -271,16 +271,24 @@ tbody tr:hover td{background:#F8F7F3}
   <!-- 總表 -->
   <div class="page" id="page-summary">
     <div class="stat-row" id="stat-row"></div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
       <select class="fsel" id="sum-fi" onchange="renderSummary()"><option value="">全部品項</option></select>
-      <button onclick="clearAllLogs()" style="padding:7px 11px;border:1.5px solid #F5A0A0;border-radius:var(--r2);background:var(--redl);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🗑 清除全部</button>
+      <select class="fsel" id="sum-fy" onchange="renderSummary()"><option value="">全部年份</option></select>
+      <select class="fsel" id="sum-fm" onchange="renderSummary()"><option value="">全部月份</option></select>
+      <input type="date" id="sum-fd" onchange="renderSummary()" style="padding:7px 9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+      <button onclick="toggleSelectAll()" id="sel-all-btn" style="padding:6px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">全選</button>
+      <button onclick="delSelected()" style="padding:6px 12px;border:1.5px solid #F5A0A0;border-radius:var(--r2);background:var(--redl);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 刪除選取</button>
+      <span id="sel-count" style="font-size:12px;color:var(--ink3)">0 筆已選</span>
     </div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="chk-all" onchange="checkAll(this.checked)"></th>
           <th>品項</th><th>桶號</th><th>重量</th>
           <th>煮好</th><th>下層</th><th>上層</th><th>臥式</th><th>清洗</th>
-          <th>總時長</th><th></th>
+          <th>總時長</th>
         </tr></thead>
         <tbody id="sum-tbody"></tbody>
       </table>
@@ -769,16 +777,21 @@ function moveNext(id){
   var a=findActive(id); if(!a) return;
   var next=SNEXT[a.stage];
   if(!next){
-    // 清洗：先關閉 detail overlay，再選人員
     closeOv('detail');
     doWash(id);
     return;
   }
-  openPersonPicker('移入「'+SLNAME[next]+'」人員','',function(p){
-    a[next]={t:nowStr(),p:p}; a.stage=next;
-    save(); pushActive(a); renderAll(); renderTrack(); buildDetailBody(a); openOv('detail');
-    showToast('✓ 已移入：'+SLNAME[next]);
-  });
+  // 先關 detail，再開人員選擇
+  closeOv('detail');
+  setTimeout(function(){
+    openPersonPicker('移入「'+SLNAME[next]+'」人員','',function(p){
+      a=findActive(id); if(!a) return;
+      a[next]={t:nowStr(),p:p}; a.stage=next;
+      save(); pushActive(a); renderAll(); renderTrack();
+      buildDetailBody(a); openOv('detail');
+      showToast('✓ 已移入：'+SLNAME[next]);
+    });
+  },50);
 }
 
 function doWash(id){
@@ -860,8 +873,32 @@ function showWashResult(rec, dur){
 
   document.getElementById('detail-title').textContent='清洗完成';
   document.getElementById('detail-body').innerHTML=html
-    +'<button style="width:100%;margin-top:12px;padding:13px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit" onclick="closeOv(\'detail\')">關閉</button>';
+    +'<button style="width:100%;margin-top:12px;padding:13px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit" onclick="closeOv(\'detail\')">關閉</button>'
+    +'<button style="width:100%;margin-top:8px;padding:11px;background:var(--white);color:var(--amber);border:1.5px solid #E8C060;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="undoWash('+rec.id+')">↩ 撤銷清洗（放回臥式冰箱）</button>';
   openOv('detail');
+}
+
+function undoWash(id){
+  if(!confirm('確定撤銷清洗，將此桶放回臥式冰箱？')) return;
+  // 從 logs 找回記錄
+  var rec=logs.find(function(r){ return String(r.id)===String(id); });
+  if(!rec){ showToast('找不到記錄，無法撤銷'); return; }
+  // 清除 wash 記錄，放回 bed 階段
+  var restored=JSON.parse(JSON.stringify(rec));
+  restored.wash={t:'',p:''};
+  restored.stage='bed';
+  delete restored.durMs; delete restored.dur; delete restored.finishedAt;
+  // 從 logs 移除，加回 actives
+  logs=logs.filter(function(r){ return String(r.id)!==String(id); });
+  delete _washedIds[String(id)]; saveWashedIds();
+  actives.push(restored);
+  localSave();
+  // 通知 Sheets（把完成記錄刪除，重新存進行中）
+  pushDeleteLog(id);
+  pushActive(restored);
+  closeOv('detail');
+  renderAll(); renderTrack(); buildSumFilters();
+  showToast('↩ 已撤銷，放回臥式冰箱');
 }
 function delActive(id){
   if(!confirm('確定刪除？')) return;
@@ -968,10 +1005,33 @@ function buildSumFilters(){
   var cv=sel.value;
   sel.innerHTML='<option value="">全部品項</option>'+items.map(function(it){ return '<option>'+it.name+'</option>'; }).join('');
   sel.value=cv;
+  // 年份
+  var years=[...new Set(logs.map(function(r){ return getLogYear(r); }).filter(Boolean))].sort().reverse();
+  var fy=document.getElementById('sum-fy'); if(fy){ var cyv=fy.value; fy.innerHTML='<option value="">全部年份</option>'+years.map(function(y){return '<option>'+y+'</option>';}).join(''); fy.value=cyv; }
+  // 月份（格式 MM，如 05）
+  var months=[...new Set(logs.map(function(r){ return getLogMonth(r); }).filter(Boolean))].sort().reverse();
+  var fm=document.getElementById('sum-fm'); if(fm){ var cmv=fm.value; fm.innerHTML='<option value="">全部月份</option>'+months.map(function(m){return '<option value="'+m+'">'+parseInt(m)+'月</option>';}).join(''); fm.value=cmv; }
 }
+function getLogDate(r){
+  var t=r.finishedAt||(r.wash&&r.wash.t)||'';
+  if(!t) return '';
+  if(t.indexOf('T')>0){ var d=new Date(t); return isNaN(d)?'':d.getFullYear()+'-'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate(); }
+  return t.slice(0,10).replace(/\//g,'-');
+}
+function getLogYear(r){ var d=getLogDate(r); return d?d.slice(0,4):''; }
+function getLogMonth(r){ var d=getLogDate(r); return d?d.slice(5,7):''; }
 function renderSummary(){
   var fi=document.getElementById('sum-fi').value;
-  var arr=logs.filter(function(r){ return !fi||r.item===fi; });
+  var fy=document.getElementById('sum-fy')?document.getElementById('sum-fy').value:'';
+  var fm=document.getElementById('sum-fm')?document.getElementById('sum-fm').value:'';
+  var fd=document.getElementById('sum-fd')?document.getElementById('sum-fd').value:'';
+  var arr=logs.filter(function(r){
+    if(fi&&r.item!==fi) return false;
+    if(fy&&getLogYear(r)!==fy) return false;
+    if(fm&&getLogMonth(r)!==fm) return false;
+    if(fd){ var d=getLogDate(r); if(d!==fd) return false; }
+    return true;
+  });
   var withDur=arr.filter(function(r){ return r.durMs>0; });
   var avg=withDur.length?withDur.reduce(function(s,r){ return s+r.durMs; },0)/withDur.length:0;
   document.getElementById('stat-row').innerHTML=
@@ -979,31 +1039,43 @@ function renderSummary(){
     +'<div class="sc"><div class="sl">平均時長</div><div class="sv">'+(avg>0?fmtDur(avg):'—')+'</div></div>'
     +'<div class="sc"><div class="sl">品項種類</div><div class="sv">'+[...new Set(arr.map(function(r){return r.item;}))].length+'</div></div>';
   var tbody=document.getElementById('sum-tbody');
-  if(!arr.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--ink3)">尚無完成記錄</td></tr>'; return; }
-  // 時間格式：ISO 或本地 → 統一顯示 MM/DD HH:mm
+  if(!arr.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--ink3)">尚無完成記錄</td></tr>'; updateSelCount(); return; }
   function fmtT(t){
     if(!t) return '—';
-    if(t.indexOf('T')>0){
-      var d=new Date(t); if(isNaN(d)) return t;
-      var p=function(n){return String(n).padStart(2,'0');};
-      return (d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
-    }
-    return t.slice(5,16); // 2026/05/23 10:30 → 05/23 10:30
+    if(t.indexOf('T')>0){ var d=new Date(t); if(isNaN(d)) return t; var p=function(n){return String(n).padStart(2,'0');}; return (d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+    return t.slice(5,16);
   }
   function tc(r,k){ var t=fmtT(r[k]?r[k].t:''),p=r[k]?r[k].p||'':''; return '<span style="font-size:11px">'+t+(p?'<br><span style="color:var(--ink3)">'+p+'</span>':'')+'</span>'; }
   tbody.innerHTML=arr.map(function(r){
-    return '<tr><td class="td-g">'+r.item+'</td><td><span class="bdg bg-a">'+r.barrel+'</span></td>'
+    return '<tr>'
+      +'<td><input type="checkbox" class="row-chk" data-id="'+r.id+'" onchange="updateSelCount()"></td>'
+      +'<td class="td-g">'+r.item+'</td><td><span class="bdg bg-a">'+r.barrel+'</span></td>'
       +'<td style="color:var(--blue);font-weight:600">'+(r.weight?r.weight+'kg':'—')+'</td>'
       +'<td>'+tc(r,'cook')+'</td><td>'+tc(r,'lower')+'</td><td>'+tc(r,'upper')+'</td><td>'+tc(r,'bed')+'</td><td>'+tc(r,'wash')+'</td>'
       +'<td class="td-dur">'+(r.dur||'—')+'</td>'
-      +'<td><button class="del-btn" data-id="'+r.id+'" onclick="delLog(this.dataset.id)">刪</button></td></tr>';
+      +'</tr>';
   }).join('');
+  var ca=document.getElementById('chk-all'); if(ca) ca.checked=false;
+  updateSelCount();
 }
-function clearAllLogs(){
-  if(!confirm('確定要清除所有完成記錄嗎？此操作無法復原。')) return;
-  logs=[]; localSave(); renderSummary(); showToast('已清除所有完成記錄');
+function updateSelCount(){ var n=document.querySelectorAll('.row-chk:checked').length; var el=document.getElementById('sel-count'); if(el) el.textContent=n+' 筆已選'; }
+function checkAll(checked){ document.querySelectorAll('.row-chk').forEach(function(c){ c.checked=checked; }); updateSelCount(); }
+function toggleSelectAll(){
+  var all=document.querySelectorAll('.row-chk'); var checked=document.querySelectorAll('.row-chk:checked').length;
+  var ns=checked<all.length; all.forEach(function(c){ c.checked=ns; });
+  var ca=document.getElementById('chk-all'); if(ca) ca.checked=ns;
+  var btn=document.getElementById('sel-all-btn'); if(btn) btn.textContent=ns?'取消全選':'全選';
+  updateSelCount();
 }
-function delLog(id){ if(!confirm('確定刪除？'))return; logs=logs.filter(function(r){return r.id!==id;}); save(); pushDeleteLog(id); renderSummary(); showToast('已刪除'); }
+function delSelected(){
+  var ids=[]; document.querySelectorAll('.row-chk:checked').forEach(function(c){ ids.push(c.dataset.id); });
+  if(!ids.length){ showToast('請先勾選要刪除的記錄'); return; }
+  if(!confirm('確定刪除選取的 '+ids.length+' 筆記錄？')) return;
+  ids.forEach(function(id){ logs=logs.filter(function(r){ return String(r.id)!==String(id); }); pushDeleteLog(id); });
+  localSave(); renderSummary(); buildSumFilters(); showToast('已刪除 '+ids.length+' 筆記錄');
+}
+function clearAllLogs(){ if(!confirm('確定要清除所有完成記錄嗎？')) return; logs=[]; localSave(); renderSummary(); showToast('已清除所有完成記錄'); }
+function delLog(id){ if(!confirm('確定刪除？'))return; logs=logs.filter(function(r){return String(r.id)!==String(id);}); localSave(); pushDeleteLog(id); renderSummary(); showToast('已刪除'); }
 
 // ═══════════════════════════════════
 // 手動重新同步
