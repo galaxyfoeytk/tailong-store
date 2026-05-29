@@ -534,6 +534,9 @@ window.onload=function(){
 
   if(API_URL){
     setStatus('同步中…');
+    // 有 API 時，先清空 actives 等 Sheets 回來再顯示，避免顯示舊資料
+    actives=[];
+    renderAll(); renderTrack();
     api({action:'jellyGetConfig'},function(d,e){
       if(d&&d.ok&&d.items&&d.items.length){
         items=d.items; persons=d.persons; localSave(); renderAll();
@@ -541,20 +544,19 @@ window.onload=function(){
     });
     api({action:'jellyGetActives'},function(d,e){
       if(d&&d.ok&&d.data){
-        // 過濾掉已清洗的桶子
+        // Sheets 為主：直接用 Sheets 資料，過濾掉已清洗的桶子
         var filtered=d.data.filter(function(x){
           return !_washedIds[String(x.id)];
         });
-        // 以本地為主：只補上本地沒有但 Sheets 有的新記錄
-        var localIds={};
-        actives.forEach(function(a){ localIds[String(a.id)]=true; });
-        var added=false;
-        filtered.forEach(function(a){
-          if(!localIds[String(a.id)]){
-            actives.push(a); added=true;
-          }
+        // 保留本地剛新增但還沒推到 Sheets 的桶子（id 不在 Sheets 裡）
+        var sheetsIds={};
+        filtered.forEach(function(a){ sheetsIds[String(a.id)]=true; });
+        var localOnly=actives.filter(function(a){
+          return !sheetsIds[String(a.id)] && !_washedIds[String(a.id)];
         });
-        if(added){ localSave(); renderAll(); renderTrack(); }
+        // 合併：Sheets資料 + 本地新增未推送的
+        actives=filtered.concat(localOnly);
+        localSave(); renderAll(); renderTrack();
         setStatus('已同步 ✓');
         setTimeout(function(){ setStatus(''); },3000);
       } else {
