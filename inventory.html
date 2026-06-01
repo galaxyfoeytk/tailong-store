@@ -128,7 +128,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .nk:active{background:var(--bg)}
 .nk.del{background:var(--redl);color:var(--red);border-color:#F5A0A0}
 .nk.confirm{background:var(--g);color:#fff;border-color:var(--g);font-size:15px}
-.nk.zero{grid-column:span 2}
+.nk.zero{}
 .unit-hint{text-align:center;font-size:12px;color:var(--ink3);margin-bottom:8px}
 
 /* 歷史記錄 overlay */
@@ -247,7 +247,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
       <button class="nk" onclick="nkPress('1')">1</button>
       <button class="nk" onclick="nkPress('2')">2</button>
       <button class="nk" onclick="nkPress('3')">3</button>
-      <button class="nk zero" onclick="nkPress('0')">0</button>
+      <button class="nk" onclick="nkPress('0')">0</button>
+      <button class="nk" onclick="nkPress('.')">．</button>
       <button class="nk del" onclick="nkDel()">⌫</button>
     </div>
     <button class="nk confirm" style="width:100%;padding:16px" onclick="nkConfirm()">✓ 確認數量</button>
@@ -516,12 +517,13 @@ function buildItemList(zone){
   document.getElementById('item-list').innerHTML = zone.items.map(function(item){
     var qty = data[item.id];
     var filled = qty !== undefined && qty !== null;
-    var needRestock = filled && parseFloat(qty) < item.minVal;
+    var qtyNum = filled ? parseFloat(qty) : null;
+    var needRestock = filled && (qtyNum < item.minVal || (qtyNum === 0 && item.targetVal > 0));
     var cls = !filled ? '' : (needRestock ? 'need-restock' : 'ok');
     var restock = '';
     if(filled){
-      var diff = item.targetVal - parseFloat(qty);
-      if(diff > 0) restock = '<div class="item-restock need">需補：'+(mode==='daily'?'補':'叫')+diff+item.unit+'</div>';
+      var diff = item.targetVal - qtyNum;
+      if(diff > 0 && needRestock) restock = '<div class="item-restock need">需'+(mode==='daily'?'補':'叫')+' '+diff+' '+item.unit+'</div>';
       else restock = '<div class="item-restock ok">✓ 足夠</div>';
     }
     return '<div class="item-card '+cls+'" onclick="openNumpad(\''+zone.id+'\',\''+item.id+'\')">'
@@ -606,9 +608,12 @@ function showResult(rec){
     var data = rec.zones[zone.id]||{};
     zone.items.forEach(function(item){
       var qty = data[item.id];
-      if(qty===undefined) return;
-      var diff = item.targetVal - parseFloat(qty);
-      if(diff>0) supplyItems.push({zone:zone.name,zone_icon:zone.icon,item:item.name,unit:item.unit,current:qty,need:diff});
+      if(qty===undefined||qty===null) return; // 未填跳過
+      var qtyNum = parseFloat(qty);
+      var diff = item.targetVal - qtyNum;
+      // qty < minVal 或 qty === 0 且 targetVal > 0 都需要補
+      var needSupply = diff > 0 && (qtyNum < item.minVal || (qtyNum === 0 && item.targetVal > 0));
+      if(needSupply) supplyItems.push({zone:zone.name,zone_icon:zone.icon,item:item.name,unit:item.unit,current:qty,need:diff});
       else okItems.push({zone:zone.name,item:item.name,unit:item.unit,current:qty});
     });
   });
@@ -675,9 +680,9 @@ function updateNpDisplay(){
   document.getElementById('num-display').textContent = npStr||'—';
 }
 function nkConfirm(){
-  if(npStr==='') return;
+  if(npStr===''){ showToast('請輸入數量'); return; }
   var qty = parseFloat(npStr);
-  if(isNaN(qty)){ showToast('請輸入有效數字'); return; }
+  if(isNaN(qty)||qty<0){ showToast('請輸入有效數字（0以上）'); return; }
   zoneData[npZoneId][npItemId] = qty;
   closeOv('num');
   var zone = currentZones.find(function(z){ return z.id===npZoneId; });
