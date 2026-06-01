@@ -224,10 +224,11 @@ function loadData(){
 }
 function saveData(){ try{localStorage.setItem('elec_v1',JSON.stringify(records));}catch(e){} }
 
-// 從 Sheets 同步（以 Sheets 為主）
+// 從 Sheets 同步（以 Sheets 為主，但絕不用空資料覆蓋本地）
 function syncFromSheets(){
   api({action:'elecGetAll'},function(d,e){
-    if(!d||!d.ok||!d.data||!d.data.length) return;
+    if(e||!d||!d.ok) return; // API 失敗，保留本地
+    if(!d.data||!d.data.length) return; // Sheets 回傳空，保留本地
     // 轉換格式
     var sheetsRecs = d.data.map(function(r){
       return {
@@ -237,6 +238,9 @@ function syncFromSheets(){
         note: r.note||''
       };
     });
+    // 過濾掉日期格式不對的
+    sheetsRecs = sheetsRecs.filter(function(r){ return r.date.match(/^\d{4}-\d{2}-\d{2}$/); });
+    if(!sheetsRecs.length) return; // 過濾後為空，保留本地
     // 合併：Sheets有的用Sheets，本地新增的保留
     var sheetsIds={};
     sheetsRecs.forEach(function(r){ sheetsIds[String(r.id)]=true; });
@@ -247,6 +251,14 @@ function syncFromSheets(){
     selMonth=months[months.length-1]||'';
     buildMonthChips(); renderList(); renderStats();
   });
+}
+
+// 若本地是空的，先用內建資料補回
+function ensureData(){
+  if(!records||!records.length){
+    records=INIT_DATA.map(function(r,i){return{id:i+1,date:r.date,reading:r.reading,note:r.note};});
+    saveData();
+  }
 }
 
 // ══════════════════════════════
@@ -271,15 +283,15 @@ function getMonths(){
 var selMonth='';
 window.onload=function(){
   loadData();
+  ensureData(); // 若本地是空的先補回內建資料
   var months=getMonths();
   selMonth=months[months.length-1]||'';
   buildMonthChips();
   renderList();
   renderStats();
   document.getElementById('f-date').value=todayStr();
-  // 從 Sheets 同步最新資料
+  // 從 Sheets 同步（部署新版後才會生效）
   syncFromSheets();
-};
 };
 
 function buildMonthChips(){
