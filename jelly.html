@@ -747,7 +747,7 @@ function buildDetailBody(a){
     html+='<div class="detail-step">'
       +'<div class="ds-left">'
         +'<div class="ds-label">'+SLBL[k]+'</div>'
-        +(done?'<div class="ds-time">'+a[k].t+'</div><div class="ds-person">'+(a[k].p||'未指定')+'</div>'
+        +(done?'<div class="ds-time">'+fmtTime(a[k].t)+'</div><div class="ds-person">'+(a[k].p||'未指定')+'</div>'
                :'<div class="ds-empty">尚未記錄</div>')
       +'</div>'
       +(done?'<div class="ds-right">'
@@ -862,7 +862,7 @@ function showWashResult(rec, dur){
   ].filter(function(s){ return rec[s.key]&&rec[s.key].t; }).map(function(s){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)">'
       +'<span style="font-size:12px;color:var(--ink3)">'+s.label+'</span>'
-      +'<span style="font-size:12px;font-weight:600;color:var(--ink)">'+rec[s.key].t.slice(5)
+      +'<span style="font-size:12px;font-weight:600;color:var(--ink)">'+fmtTime(rec[s.key].t)
         +(rec[s.key].p?' <span style="color:var(--ink3)">'+rec[s.key].p+'</span>':'')
       +'</span></div>';
   }).join('')
