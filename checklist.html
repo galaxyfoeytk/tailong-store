@@ -211,8 +211,6 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
       <input type="date" id="cl-date" class="add-inp" style="margin-bottom:0">
       <div class="sec-lbl">人員</div>
       <div class="person-grid" id="person-grid-check"></div>
-      <div class="sec-lbl">班別</div>
-      <div style="display:flex;gap:7px;margin-bottom:4px" id="shift-btns"></div>
     </div>
     <button class="save-btn" id="start-btn" onclick="startChecklist()">▶ 開始</button>
   </div>
@@ -368,7 +366,6 @@ window.onload=function(){
   loadData();
   document.getElementById('cl-date').value=todayStr();
   buildPersonGrid();
-  buildShiftBtns();
 };
 
 // ══════════════════════════════
@@ -377,15 +374,13 @@ window.onload=function(){
 function showSetup(type){
   checkType=type;
   var isOpen=type==='open';
+  selShift=isOpen?'早班':'晚班'; // 固定：開班=早班，收班=晚班
   document.getElementById('mode-section').style.display='none';
   document.getElementById('start-section').style.display='block';
   document.getElementById('setup-icon').textContent=isOpen?'☀️':'🌙';
   document.getElementById('setup-type-label').textContent=isOpen?'開班 Checklist':'收班 Checklist';
   document.getElementById('start-btn').className='save-btn '+(isOpen?'save-open':'save-close');
   document.getElementById('start-btn').textContent='▶ 開始'+(isOpen?'開班':'收班');
-  // 調整班別選項
-  selShift=isOpen?'早班':'晚班';
-  buildShiftBtns();
   buildPersonGrid();
 }
 function backToMode(){
@@ -450,7 +445,7 @@ function resetChecklist(){
   document.getElementById('start-section').style.display='none';
   document.getElementById('mode-section').style.display='block';
   document.getElementById('cl-date').value=todayStr();
-  buildPersonGrid(); buildShiftBtns();
+  buildPersonGrid();
 }
 
 // ══════════════════════════════
