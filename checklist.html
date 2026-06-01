@@ -161,7 +161,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
   </div>
   <div class="top-btns">
     <button class="tib" onclick="openMgmt()">⚙️ 設定</button>
-    <button class="tib" onclick="window.top.location.href='index.html'">🏠</button>
+    <button class="tib" onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}">🏠</button>
   </div>
 </div>
 
