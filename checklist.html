@@ -314,9 +314,42 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════
-// 預設資料
-// ══════════════════════════════
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+function api(params, cb){
+  if(!API_URL){ if(cb) cb(null,'未設定API'); return; }
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+
+// 從 Sheets 同步步驟（開啟時自動執行）
+function syncStepsFromSheets(){
+  api({action:'clGetSteps'},function(d,e){
+    if(!d||!d.ok) return;
+    // 只有 Sheets 有資料才覆蓋本地
+    if(d.open&&d.open.length>0){
+      openSteps=d.open;
+    }
+    if(d.close&&d.close.length>0){
+      closeSteps=d.close;
+    }
+    if((d.open&&d.open.length)||(d.close&&d.close.length)){
+      saveData();
+    }
+  });
+}
+
+// 儲存步驟到 Sheets
+function pushStepsToSheets(type){
+  var steps=type==='open'?openSteps:closeSteps;
+  api({action:'clSaveSteps',type:type,steps:JSON.stringify(steps)},function(d,e){
+    if(d&&d.ok) showToast('✓ 已同步到雲端');
+    else showToast('同步失敗，已儲存在本機');
+  });
+}
 var DEFAULT_PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 
 var DEFAULT_OPEN_STEPS=[
@@ -378,6 +411,8 @@ window.onload=function(){
   loadData();
   document.getElementById('cl-date').value=todayStr();
   buildPersonGrid();
+  // 從 Sheets 同步最新步驟設定
+  syncStepsFromSheets();
 };
 
 // ══════════════════════════════
@@ -641,6 +676,7 @@ function addStep(){
   document.getElementById('ai-step-desc').value='';
   document.getElementById('ai-step-req').checked=false;
   showToast('✓ 已新增：'+name);
+  pushStepsToSheets(mgmtType);
 }
 
 function exportSteps(){
@@ -673,14 +709,15 @@ function importSteps(){
   else closeSteps=newSteps;
   saveData(); buildStepMgmt();
   document.getElementById('bulk-import-txt').value='';
-  showToast('✓ 已匯入 '+newSteps.length+' 個步驟');
+  showToast('✓ 已匯入 '+newSteps.length+' 個步驟，同步中...');
+  pushStepsToSheets(mgmtType);
 }
 function delStep(type,id){
   if(!confirm('確定刪除？'))return;
   if(type==='open') openSteps=openSteps.filter(function(s){return s.id!==id;});
   else closeSteps=closeSteps.filter(function(s){return s.id!==id;});
-  saveData(); buildStepMgmt();
-}
+  saveData(); buildStepMgmt(); showToast('已刪除');
+  pushStepsToSheets(type==='open'?'open':'close');
 
 // ══════════════════════════════
 // 人員 & 班別
