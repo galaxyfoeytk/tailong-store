@@ -110,7 +110,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div class="brand-name">⚡ 電表記錄</div>
     <div class="brand-sub">瀧飲山潮 · 學士店</div>
   </div>
-  <button class="home-btn" onclick="location.href='index.html'">🏠 主頁</button>
+  <button class="home-btn" onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}">🏠 主頁</button>
 </div>
 
 <div class="tabs">
@@ -203,6 +203,16 @@ var INIT_DATA=[
 ];
 
 var records;
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+function api(params, cb){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e);});
+}
+
 function loadData(){
   try{
     var raw=localStorage.getItem('elec_v1');if(!raw)throw 0;
@@ -213,6 +223,31 @@ function loadData(){
   }
 }
 function saveData(){ try{localStorage.setItem('elec_v1',JSON.stringify(records));}catch(e){} }
+
+// 從 Sheets 同步（以 Sheets 為主）
+function syncFromSheets(){
+  api({action:'elecGetAll'},function(d,e){
+    if(!d||!d.ok||!d.data||!d.data.length) return;
+    // 轉換格式
+    var sheetsRecs = d.data.map(function(r){
+      return {
+        id: r.id,
+        date: String(r.date).replace(/\//g,'-').slice(0,10),
+        reading: parseInt(r.reading)||0,
+        note: r.note||''
+      };
+    });
+    // 合併：Sheets有的用Sheets，本地新增的保留
+    var sheetsIds={};
+    sheetsRecs.forEach(function(r){ sheetsIds[String(r.id)]=true; });
+    var localOnly=records.filter(function(r){ return !sheetsIds[String(r.id)]; });
+    records = sheetsRecs.concat(localOnly);
+    saveData();
+    var months=getMonths();
+    selMonth=months[months.length-1]||'';
+    buildMonthChips(); renderList(); renderStats();
+  });
+}
 
 // ══════════════════════════════
 // 計算用電
@@ -241,8 +276,10 @@ window.onload=function(){
   buildMonthChips();
   renderList();
   renderStats();
-  // 預設日期為今天
   document.getElementById('f-date').value=todayStr();
+  // 從 Sheets 同步最新資料
+  syncFromSheets();
+};
 };
 
 function buildMonthChips(){
@@ -320,6 +357,8 @@ function doSave(){
   if(dup){if(!confirm('此日期已有記錄（'+dup.reading+'度），確定覆蓋？'))return; records=records.filter(function(r){return r.date!==date;});}
   records.push({id:Date.now(),date:date,reading:rv,note:note});
   saveData();
+  // 同步到 Sheets
+  api({action:'elecSave',date:date,reading:rv,note:note,id:records[records.length-1].id},null);
   document.getElementById('f-reading').value='';
   document.getElementById('f-note').value='';
   document.getElementById('f-date').value=todayStr();
@@ -333,7 +372,9 @@ function doSave(){
 function delRec(id){
   if(!confirm('確定刪除？'))return;
   records=records.filter(function(r){return String(r.id)!==String(id);});
-  saveData(); buildMonthChips(); renderList(); renderStats(); showToast('已刪除');
+  saveData();
+  api({action:'elecDelete',id:id},null);
+  buildMonthChips(); renderList(); renderStats(); showToast('已刪除');
 }
 
 // ══════════════════════════════
