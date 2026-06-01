@@ -161,7 +161,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
   </div>
   <div class="top-btns">
     <button class="tib" onclick="openMgmt()">⚙️ 設定</button>
-    <button class="tib" onclick="location.href='index.html'">🏠</button>
+    <button class="tib" onclick="window.top.location.href='index.html'">🏠</button>
   </div>
 </div>
 
@@ -281,20 +281,32 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <!-- 步驟管理 -->
     <div class="blk-title" style="margin-top:18px">📋 步驟管理 <span id="mgmt-step-label" style="font-size:11px;font-weight:400;color:var(--ink3)">（開班）</span></div>
     <div id="ml-steps"></div>
-    <div style="margin-top:8px">
-      <input class="add-inp" id="ai-step-name" placeholder="步驟名稱（如：關閉所有設備）">
+
+    <!-- 批量匯入 -->
+    <div style="margin-top:10px;background:var(--bg);border-radius:var(--r2);padding:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">批量匯入步驟</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:8px">每行一個步驟，格式：<code style="background:var(--bd);padding:1px 5px;border-radius:4px">步驟名稱｜說明（選填）｜分類｜必填(y/n)</code><br>
+      例：<code style="background:var(--bd);padding:1px 5px;border-radius:4px">關閉所有設備｜確認電源關閉｜收店流程｜y</code></div>
+      <textarea id="bulk-import-txt" style="width:100%;height:120px;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:12px;font-family:inherit;outline:none;resize:vertical" placeholder="每行一個步驟，貼上後按「匯入」覆蓋現有步驟"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="exportSteps()" style="flex:1;padding:10px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">📤 匯出現有</button>
+        <button onclick="importSteps()" style="flex:1;padding:10px;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:var(--g)">📥 匯入覆蓋</button>
+      </div>
+    </div>
+
+    <!-- 單筆新增 -->
+    <div style="margin-top:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">新增單一步驟</div>
+      <input class="add-inp" id="ai-step-name" placeholder="步驟名稱">
       <input class="add-inp" id="ai-step-desc" placeholder="說明（選填）">
       <div style="display:flex;gap:7px;margin-bottom:8px">
-        <select id="ai-step-cat" style="flex:1;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
-          <option>開店準備</option><option>設備確認</option><option>食材確認</option>
-          <option>清潔衛生</option><option>收店流程</option><option>結帳確認</option><option>其他</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:6px;padding:0 8px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white)">
+        <input class="add-inp" id="ai-step-cat" placeholder="分類（如：收店流程）" style="margin-bottom:0;flex:1">
+        <div style="display:flex;align-items:center;gap:6px;padding:0 10px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white);flex-shrink:0">
           <span style="font-size:12px;color:var(--ink3)">必填</span>
           <input type="checkbox" id="ai-step-req" style="width:16px;height:16px;cursor:pointer">
         </div>
       </div>
-      <button class="save-btn save-open" id="add-step-btn" onclick="addStep()">新增步驟</button>
+      <button class="save-btn save-open" id="add-step-btn" onclick="addStep()">＋ 新增步驟</button>
     </div>
   </div>
 </div>
@@ -619,7 +631,7 @@ function addStep(){
   var name=document.getElementById('ai-step-name').value.trim();
   if(!name){showToast('請輸入步驟名稱');return;}
   var desc=document.getElementById('ai-step-desc').value.trim();
-  var cat=document.getElementById('ai-step-cat').value;
+  var cat=document.getElementById('ai-step-cat').value.trim()||'其他';
   var req=document.getElementById('ai-step-req').checked;
   var steps=mgmtType==='open'?openSteps:closeSteps;
   var newId=steps.length?Math.max.apply(null,steps.map(function(s){return s.id;}))+1:1;
@@ -628,7 +640,40 @@ function addStep(){
   document.getElementById('ai-step-name').value='';
   document.getElementById('ai-step-desc').value='';
   document.getElementById('ai-step-req').checked=false;
-  showToast('✓ 已新增步驟：'+name);
+  showToast('✓ 已新增：'+name);
+}
+
+function exportSteps(){
+  var steps=mgmtType==='open'?openSteps:closeSteps;
+  var txt=steps.map(function(s){
+    return [s.name, s.desc||'', s.cat||'其他', s.req?'y':'n'].join('｜');
+  }).join('\n');
+  document.getElementById('bulk-import-txt').value=txt;
+  showToast('已匯出到上方文字框，可直接編輯後按「匯入覆蓋」');
+}
+
+function importSteps(){
+  var txt=document.getElementById('bulk-import-txt').value.trim();
+  if(!txt){showToast('請先填入步驟內容');return;}
+  var lines=txt.split('\n').filter(function(l){return l.trim();});
+  if(!lines.length){showToast('沒有有效的步驟');return;}
+  if(!confirm('確定用這'+lines.length+'個步驟取代現有的所有步驟嗎？')) return;
+  var newSteps=lines.map(function(line,i){
+    var parts=line.split('｜');
+    // 也支援 | 分隔
+    if(parts.length<2) parts=line.split('|');
+    var name=(parts[0]||'').trim();
+    var desc=(parts[1]||'').trim();
+    var cat=(parts[2]||'其他').trim();
+    var req=(parts[3]||'').trim().toLowerCase()==='y';
+    return {id:i+1, name:name, desc:desc, cat:cat, req:req};
+  }).filter(function(s){return s.name;});
+  if(!newSteps.length){showToast('格式錯誤，無法匯入');return;}
+  if(mgmtType==='open') openSteps=newSteps;
+  else closeSteps=newSteps;
+  saveData(); buildStepMgmt();
+  document.getElementById('bulk-import-txt').value='';
+  showToast('✓ 已匯入 '+newSteps.length+' 個步驟');
 }
 function delStep(type,id){
   if(!confirm('確定刪除？'))return;
