@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="盤補貨">
+<title>每日盤補貨</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF8E6;
+  --red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* 頂部 */
+.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-title{color:#fff;font-size:16px;font-weight:900}
+.top-sub{color:rgba(255,255,255,.65);font-size:11px;margin-top:2px}
+.home-btn{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit}
+
+/* 頁面 */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:14px 14px 32px}
+.page.on{display:block}
+
+/* 主選單 */
+.mode-cards{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.mode-card{background:var(--white);border-radius:16px;padding:22px;display:flex;align-items:center;gap:16px;cursor:pointer;border:2px solid var(--bd);transition:border-color .15s,box-shadow .15s}
+.mode-card:active{transform:scale(.98)}
+.mode-card.daily{border-color:#4A7CB5}
+.mode-card.weekly{border-color:#5B2D8E}
+.mode-icon{font-size:36px;flex-shrink:0;width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.mc-daily{background:#E8F0FA}
+.mc-weekly{background:#F3E8FF}
+.mode-info .mode-name{font-size:18px;font-weight:900;margin-bottom:4px}
+.mode-info .mode-desc{font-size:13px;color:var(--ink3)}
+.daily-clr{color:#1A3A5C}
+.weekly-clr{color:#5B2D8E}
+
+/* 開始設定頁 */
+.setup-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:16px;margin-bottom:12px}
+.setup-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.person-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.p-btn{padding:12px 6px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center;transition:all .12s}
+.p-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
+.p-btn:active{opacity:.7}
+.start-btn{width:100%;padding:15px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:4px}
+.start-daily{background:linear-gradient(135deg,#1A3A5C,#4A7CB5)}
+.start-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+
+/* 區塊選擇 */
+.section-info{background:var(--white);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;border:1px solid var(--bd)}
+.section-meta{font-size:13px;color:var(--ink3);display:flex;gap:16px;flex-wrap:wrap}
+.section-meta span{font-weight:600;color:var(--ink)}
+.zone-list{display:flex;flex-direction:column;gap:10px}
+.zone-card{background:var(--white);border-radius:var(--r);padding:18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:2px solid var(--bd);transition:all .12s}
+.zone-card:active{transform:scale(.98)}
+.zone-card.done{border-color:var(--gm);background:var(--gl)}
+.zone-card.daily-zone{border-left:4px solid var(--bm)}
+.zone-card.weekly-zone{border-left:4px solid var(--purple)}
+.zone-left{display:flex;align-items:center;gap:14px}
+.zone-icon{font-size:28px}
+.zone-name{font-size:16px;font-weight:700}
+.zone-count{font-size:12px;color:var(--ink3);margin-top:3px}
+.zone-status{font-size:13px;font-weight:700;color:var(--ink4)}
+.zone-card.done .zone-status{color:var(--gm)}
+.zone-arrow{font-size:20px;color:var(--ink4)}
+.zone-card.done .zone-arrow{color:var(--gm)}
+
+/* 品項填寫 */
+.section-header{background:var(--white);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--bd);display:flex;align-items:center;gap:12px}
+.sh-icon{font-size:28px}
+.sh-name{font-size:17px;font-weight:900}
+.sh-sub{font-size:12px;color:var(--ink3);margin-top:2px}
+.item-list{display:flex;flex-direction:column;gap:8px}
+.item-card{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .12s}
+.item-card.filled{border-color:var(--gm);background:var(--gl)}
+.item-card.need-restock{border-color:var(--amber);background:var(--amberl)}
+.item-card.ok{border-color:var(--gm);background:var(--gl)}
+.item-info{flex:1}
+.item-name{font-size:14px;font-weight:600}
+.item-threshold{font-size:11px;color:var(--ink3);margin-top:2px}
+.item-result{text-align:right;flex-shrink:0}
+.item-qty{font-size:16px;font-weight:900}
+.item-restock{font-size:11px;margin-top:2px;font-weight:700}
+.item-restock.need{color:var(--amber)}
+.item-restock.ok{color:var(--gm)}
+.confirm-zone-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:14px;background:linear-gradient(135deg,var(--g),var(--gm))}
+
+/* 結果頁 */
+.result-banner{border-radius:var(--r);padding:20px;text-align:center;margin-bottom:14px;color:#fff}
+.rb-daily{background:linear-gradient(135deg,#1A3A5C,#4A7CB5)}
+.rb-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.rb-icon{font-size:40px;margin-bottom:8px}
+.rb-title{font-size:20px;font-weight:900;margin-bottom:4px}
+.rb-meta{font-size:13px;opacity:.85}
+.result-section{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.rs-head{padding:12px 14px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.rs-head.supply{background:#FFF8E6;color:var(--amber)}
+.rs-head.ok{background:var(--gl);color:var(--g)}
+.rs-item{padding:10px 14px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.ri-name{font-size:14px;font-weight:600}
+.ri-detail{font-size:12px;color:var(--ink3);margin-top:2px}
+.ri-qty{font-size:16px;font-weight:900}
+.ri-qty.supply{color:var(--amber)}
+.ri-qty.order{color:var(--purple)}
+.new-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--white);color:var(--b);border:2px solid var(--b);margin-top:4px}
+
+/* 數量輸入 overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;padding:16px 16px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px}
+.sh-title{font-size:16px;font-weight:900;margin-bottom:4px}
+.sh-threshold{font-size:12px;color:var(--ink3);margin-bottom:16px;padding:8px 12px;background:var(--bg);border-radius:var(--r2)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.num-display{font-size:36px;font-weight:900;text-align:center;padding:14px;background:var(--bg);border-radius:var(--r2);margin-bottom:12px;color:var(--ink);letter-spacing:2px;min-height:72px;display:flex;align-items:center;justify-content:center}
+.nk{padding:16px;font-size:20px;font-weight:700;border:none;background:var(--white);border-radius:var(--r2);cursor:pointer;font-family:inherit;border:1.5px solid var(--bd)}
+.nk:active{background:var(--bg)}
+.nk.del{background:var(--redl);color:var(--red);border-color:#F5A0A0}
+.nk.confirm{background:var(--g);color:#fff;border-color:var(--g);font-size:15px}
+.nk.zero{grid-column:span 2}
+.unit-hint{text-align:center;font-size:12px;color:var(--ink3);margin-bottom:8px}
+
+/* 歷史記錄 overlay */
+.hist-item{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:flex-start}
+.hi-date{font-size:13px;font-weight:700}
+.hi-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.hi-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px}
+.hi-daily{background:var(--bl);color:var(--b)}
+.hi-weekly{background:var(--purplel);color:var(--purple)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;font-weight:500;white-space:nowrap}
+.empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
+.progress-bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s;background:var(--gm)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="top-title">📋 盤補貨系統</div>
+    <div class="top-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="home-btn" onclick="showHist()">📂 記錄</button>
+    <button class="home-btn" onclick="location.href='index.html'">🏠</button>
+  </div>
+</div>
+
+<div class="pages">
+
+  <!-- 主選單 -->
+  <div class="page on" id="page-home">
+    <div style="padding:8px 0 16px;font-size:15px;font-weight:700;color:var(--ink2)">請選擇盤點類型</div>
+    <div class="mode-cards">
+      <div class="mode-card daily" onclick="showSetup('daily')">
+        <div class="mode-icon mc-daily">📅</div>
+        <div class="mode-info">
+          <div class="mode-name daily-clr">每日盤補貨</div>
+          <div class="mode-desc">三區塊盤點 · 計算需補貨量<br>耗材 · 食材 · 冷凍</div>
+        </div>
+      </div>
+      <div class="mode-card weekly" onclick="showSetup('weekly')">
+        <div class="mode-icon mc-weekly">📆</div>
+        <div class="mode-info">
+          <div class="mode-name weekly-clr">每週盤叫貨</div>
+          <div class="mode-desc">完整盤點 · 計算需叫貨量<br>耗材 · 食材 · 冷凍 · 茶葉原料</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開始設定 -->
+  <div class="page" id="page-setup">
+    <div class="setup-card">
+      <div class="setup-title">盤點人員</div>
+      <div class="person-grid" id="person-grid"></div>
+    </div>
+    <div class="setup-card">
+      <div class="setup-title">日期</div>
+      <input type="date" id="setup-date" style="width:100%;padding:12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;outline:none">
+    </div>
+    <button class="start-btn" id="start-btn" onclick="startInventory()">開始盤點</button>
+  </div>
+
+  <!-- 區塊選擇 -->
+  <div class="page" id="page-zones">
+    <div class="section-info">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px" id="zone-mode-title"></div>
+      <div class="section-meta">
+        <div>日期：<span id="zm-date"></span></div>
+        <div>人員：<span id="zm-person"></span></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="zone-progress" style="width:0%"></div></div>
+    </div>
+    <div class="zone-list" id="zone-list"></div>
+    <button class="confirm-zone-btn" id="finish-all-btn" onclick="finishAll()" style="display:none">✓ 完成盤點，查看結果</button>
+  </div>
+
+  <!-- 品項填寫 -->
+  <div class="page" id="page-items">
+    <div class="section-header" id="item-section-header"></div>
+    <div class="item-list" id="item-list"></div>
+    <button class="confirm-zone-btn" id="confirm-zone-btn" onclick="confirmZone()">✓ 確認此區塊完成</button>
+  </div>
+
+  <!-- 結果頁 -->
+  <div class="page" id="page-result">
+    <div class="result-banner" id="result-banner">
+      <div class="rb-icon" id="rb-icon"></div>
+      <div class="rb-title" id="rb-title"></div>
+      <div class="rb-meta" id="rb-meta"></div>
+    </div>
+    <div id="result-content"></div>
+    <button class="new-btn" onclick="goHome()">← 返回主選單</button>
+  </div>
+
+</div><!-- /pages -->
+
+<!-- 數量輸入 overlay -->
+<div class="ov" id="ov-num">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="num-title"></div>
+    <div class="sh-threshold" id="num-threshold"></div>
+    <div class="num-display" id="num-display">—</div>
+    <div class="unit-hint" id="num-unit"></div>
+    <div class="numpad">
+      <button class="nk" onclick="nkPress('7')">7</button>
+      <button class="nk" onclick="nkPress('8')">8</button>
+      <button class="nk" onclick="nkPress('9')">9</button>
+      <button class="nk" onclick="nkPress('4')">4</button>
+      <button class="nk" onclick="nkPress('5')">5</button>
+      <button class="nk" onclick="nkPress('6')">6</button>
+      <button class="nk" onclick="nkPress('1')">1</button>
+      <button class="nk" onclick="nkPress('2')">2</button>
+      <button class="nk" onclick="nkPress('3')">3</button>
+      <button class="nk zero" onclick="nkPress('0')">0</button>
+      <button class="nk del" onclick="nkDel()">⌫</button>
+    </div>
+    <button class="nk confirm" style="width:100%;padding:16px" onclick="nkConfirm()">✓ 確認數量</button>
+  </div>
+</div>
+
+<!-- 歷史記錄 overlay -->
+<div class="ov" id="ov-hist">
+  <div class="sh" style="max-height:85dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:900">盤點記錄</div>
+      <button onclick="closeOv('hist')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// Apps Script API
+// ══════════════════════════════════════
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+function api(params, cb){
+  if(!API_URL){ if(cb) cb(null,'未設定API'); return; }
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+
+// ══════════════════════════════════════
+// 品項資料（日盤）
+// ══════════════════════════════════════
+var ZONES_DAILY = [
+  {
+    id:'consumable', name:'耗材', icon:'🧴',
+    items:[
+      {id:'straw_big',   name:'大吸管',    unit:'包', min:'半包', target:'1包',   minVal:0.5, targetVal:1},
+      {id:'straw_small', name:'小吸管',    unit:'包', min:'1/3包',target:'1包',   minVal:0.33,targetVal:1},
+      {id:'bag_outside', name:'1/2/4/6外袋',unit:'捆',min:'0捆', target:'2捆',   minVal:0,   targetVal:2},
+      {id:'cup_holder',  name:'2/4/6杯架', unit:'(鐵盒高)',min:'鐵盒高',target:'吸管高',minVal:1,targetVal:2},
+      {id:'cup_lid',     name:'就口杯蓋',  unit:'條', min:'0條', target:'1條',   minVal:0,   targetVal:1},
+      {id:'cup_sleeve',  name:'熟杯套',    unit:'包', min:'2包', target:'5包',   minVal:2,   targetVal:5},
+      {id:'menu',        name:'菜單',      unit:'公分',min:'-',  target:'3公分', minVal:0,   targetVal:3},
+      {id:'cup_paper',   name:'飲料紙杯',  unit:'條', min:'10條',target:'叫貨',  minVal:10,  targetVal:99},
+      {id:'tasting_cup', name:'試喝杯',    unit:'條', min:'1條', target:'1箱',   minVal:1,   targetVal:10},
+      {id:'label_roll',  name:'貼紙卷',    unit:'條', min:'1條', target:'3條',   minVal:1,   targetVal:3},
+      {id:'receipt_roll',name:'發票捲',    unit:'顆', min:'1顆', target:'6顆',   minVal:1,   targetVal:6},
+    ]
+  },
+  {
+    id:'ingredient', name:'食材', icon:'🥛',
+    items:[
+      {id:'oat_milk',   name:'冰燕麥奶',  unit:'罐', min:'3罐', target:'6罐',  minVal:3, targetVal:6},
+      {id:'orig_juice', name:'冰仙原汁',  unit:'罐', min:'0罐', target:'1罐',  minVal:0, targetVal:1},
+      {id:'milk_cap',   name:'奶蓋',      unit:'罐', min:'0.5罐',target:'1罐', minVal:0.5,targetVal:1},
+      {id:'ice_maker',  name:'製冰機',    unit:'罐', min:'0罐', target:'1罐',  minVal:0, targetVal:1},
+      {id:'topping_box',name:'分裝糖盒',  unit:'盒', min:'-',   target:'滿',   minVal:0, targetVal:1},
+      {id:'gelatin',    name:'分裝先凍粉',unit:'袋', min:'-',   target:'滿',   minVal:0, targetVal:1},
+      {id:'milk_powder',name:'分裝奶蓋粉',unit:'盒', min:'2盒', target:'4盒',  minVal:2, targetVal:4},
+      {id:'black_tea',  name:'紅茶包',    unit:'袋', min:'半袋',target:'補1包',minVal:0.5,targetVal:1},
+      {id:'oolong_tea', name:'烏龍茶包',  unit:'袋', min:'半袋',target:'補1包',minVal:0.5,targetVal:1},
+      {id:'green_tea',  name:'青茶包',    unit:'袋', min:'各半包',target:'補1包',minVal:0.5,targetVal:1},
+    ]
+  },
+  {
+    id:'frozen', name:'冷凍', icon:'🧊',
+    items:[
+      {id:'red_tea_f',  name:'紅茶（冷凍）',unit:'壺', min:'-',   target:'補滿', minVal:0, targetVal:5},
+      {id:'check_f',    name:'清查',        unit:'包', min:'1包', target:'5包',  minVal:1, targetVal:5},
+      {id:'oolong_f',   name:'烏龍茶包',    unit:'包', min:'1包', target:'2包',  minVal:1, targetVal:2},
+      {id:'ice_block',  name:'冰塊',        unit:'條', min:'0條', target:'1條',  minVal:0, targetVal:1},
+      {id:'semi_box',   name:'半盒類',      unit:'盒', min:'半盒',target:'補滿', minVal:0.5,targetVal:1},
+    ]
+  }
+];
+
+// 週盤額外品項（含日盤全部 + 額外）
+var ZONES_WEEKLY = ZONES_DAILY.map(function(z){
+  return JSON.parse(JSON.stringify(z));
+});
+// 加入週盤額外區塊
+ZONES_WEEKLY.push({
+  id:'tea_material', name:'茶葉原料', icon:'🍃',
+  items:[
+    {id:'black_tea_bag',  name:'紅茶包（大袋）', unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
+    {id:'oolong_bag',     name:'烏龍茶（大袋）', unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
+    {id:'green_tea_bag',  name:'青茶（大袋）',   unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
+    {id:'xiancao_dry',    name:'仙草乾',         unit:'包', min:'2包', target:'5包', minVal:2, targetVal:5},
+    {id:'sugar',          name:'糖',             unit:'包', min:'1包', target:'3包', minVal:1, targetVal:3},
+    {id:'oat_bulk',       name:'燕麥奶（大箱）', unit:'箱', min:'1箱', target:'2箱', minVal:1, targetVal:2},
+    {id:'milk_cap_bulk',  name:'奶蓋粉（大袋）', unit:'袋', min:'1袋', target:'2袋', minVal:1, targetVal:2},
+  ]
+});
+
+var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+
+// ══════════════════════════════════════
+// 狀態
+// ══════════════════════════════════════
+var mode = 'daily'; // 'daily' | 'weekly'
+var selPerson = '';
+var curZoneId = '';
+var currentZones = [];
+var zoneData = {}; // {zoneId: {itemId: qty}}
+var zoneDone = {}; // {zoneId: true}
+var npStr = '';
+var npItemId = '';
+var npZoneId = '';
+var records = [];
+
+function loadRecords(){
+  try{ records=JSON.parse(localStorage.getItem('inv_records')||'[]'); }catch(e){ records=[]; }
+}
+function saveRecords(){
+  try{ localStorage.setItem('inv_records',JSON.stringify(records.slice(0,100))); }catch(e){}
+}
+
+// ══════════════════════════════════════
+// 流程
+// ══════════════════════════════════════
+window.onload = function(){
+  loadRecords();
+  document.getElementById('setup-date').value = todayStr();
+  buildPersonGrid();
+};
+
+function showSetup(m){
+  mode = m;
+  currentZones = m==='daily' ? ZONES_DAILY : ZONES_WEEKLY;
+  zoneData = {}; zoneDone = {};
+  currentZones.forEach(function(z){ zoneData[z.id]={}; });
+  document.getElementById('start-btn').className = 'start-btn ' + (m==='daily'?'start-daily':'start-weekly');
+  document.getElementById('start-btn').textContent = m==='daily'?'▶ 開始日盤':'▶ 開始週盤';
+  showPage('setup');
+}
+
+function buildPersonGrid(){
+  document.getElementById('person-grid').innerHTML = PERSONS.map(function(p){
+    return '<button class="p-btn'+(p===selPerson?' on':'')+'" onclick="pickPerson(\''+p+'\')" >'+p+'</button>';
+  }).join('');
+}
+function pickPerson(p){ selPerson=p; buildPersonGrid(); }
+
+function startInventory(){
+  if(!selPerson){ showToast('請選擇盤點人員'); return; }
+  var date = document.getElementById('setup-date').value;
+  if(!date){ showToast('請選擇日期'); return; }
+  showPage('zones');
+  buildZoneList();
+}
+
+function buildZoneList(){
+  var modeLabel = mode==='daily'?'每日盤補貨':'每週盤叫貨';
+  document.getElementById('zone-mode-title').textContent = modeLabel;
+  document.getElementById('zm-date').textContent = document.getElementById('setup-date').value;
+  document.getElementById('zm-person').textContent = selPerson;
+
+  var done = Object.keys(zoneDone).length;
+  var total = currentZones.length;
+  document.getElementById('zone-progress').style.width = (done/total*100)+'%';
+
+  document.getElementById('zone-list').innerHTML = currentZones.map(function(z){
+    var isDone = zoneDone[z.id];
+    var filled = Object.keys(zoneData[z.id]||{}).length;
+    return '<div class="zone-card '+(mode==='daily'?'daily-zone':'weekly-zone')+(isDone?' done':'')+'" onclick="openZone(\''+z.id+'\')">'
+      +'<div class="zone-left">'
+        +'<div class="zone-icon">'+z.icon+'</div>'
+        +'<div><div class="zone-name">'+z.name+'</div>'
+          +'<div class="zone-count">'+z.items.length+'個品項'+(filled>0?' · 已填'+filled+'項':'')+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<span class="zone-status">'+(isDone?'✓ 完成':'未完成')+'</span>'
+        +'<span class="zone-arrow">›</span>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+
+  // 全部完成才顯示完成按鈕
+  var allDone = currentZones.every(function(z){ return zoneDone[z.id]; });
+  document.getElementById('finish-all-btn').style.display = allDone?'block':'none';
+}
+
+function openZone(zoneId){
+  curZoneId = zoneId;
+  var zone = currentZones.find(function(z){ return z.id===zoneId; });
+  if(!zone) return;
+  document.getElementById('item-section-header').innerHTML =
+    '<div class="sh-icon">'+zone.icon+'</div>'
+    +'<div><div class="sh-name">'+zone.name+'</div>'
+    +'<div class="sh-sub">點選品項輸入現有數量</div></div>';
+  buildItemList(zone);
+  showPage('items');
+}
+
+function buildItemList(zone){
+  var data = zoneData[zone.id]||{};
+  document.getElementById('item-list').innerHTML = zone.items.map(function(item){
+    var qty = data[item.id];
+    var filled = qty !== undefined && qty !== null;
+    var needRestock = filled && parseFloat(qty) < item.minVal;
+    var cls = !filled ? '' : (needRestock ? 'need-restock' : 'ok');
+    var restock = '';
+    if(filled){
+      var diff = item.targetVal - parseFloat(qty);
+      if(diff > 0) restock = '<div class="item-restock need">需補：'+(mode==='daily'?'補':'叫')+diff+item.unit+'</div>';
+      else restock = '<div class="item-restock ok">✓ 足夠</div>';
+    }
+    return '<div class="item-card '+cls+'" onclick="openNumpad(\''+zone.id+'\',\''+item.id+'\')">'
+      +'<div class="item-info">'
+        +'<div class="item-name">'+item.name+'</div>'
+        +'<div class="item-threshold">低於 '+item.min+' 需補 → 補至 '+item.target+'</div>'
+      +'</div>'
+      +'<div class="item-result">'
+        +'<div class="item-qty">'+(filled?qty+'<span style="font-size:12px;color:var(--ink3)">'+item.unit+'</span>':'—')+'</div>'
+        +restock
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function confirmZone(){
+  var zone = currentZones.find(function(z){ return z.id===curZoneId; });
+  var data = zoneData[curZoneId]||{};
+  var unfilled = zone.items.filter(function(item){ return data[item.id]===undefined; });
+  if(unfilled.length>0){
+    if(!confirm('還有 '+unfilled.length+' 項未填寫，確定完成此區塊嗎？')){ return; }
+  }
+  zoneDone[curZoneId] = true;
+  showPage('zones');
+  buildZoneList();
+  showToast('✓ '+zone.name+'區塊已確認');
+}
+
+function finishAll(){
+  var date = document.getElementById('setup-date').value;
+  var rec = {
+    id: Date.now(),
+    mode: mode,
+    date: date,
+    person: selPerson,
+    createdAt: nowStr(),
+    zones: JSON.parse(JSON.stringify(zoneData))
+  };
+  records.unshift(rec);
+  saveRecords();
+  // 推送到 Sheets
+  pushToSheets(rec);
+  showResult(rec);
+}
+
+function pushToSheets(rec){
+  // 整理所有需補/叫貨項目
+  var supplyItems = [];
+  currentZones.forEach(function(zone){
+    var data = rec.zones[zone.id]||{};
+    zone.items.forEach(function(item){
+      var qty = data[item.id];
+      if(qty===undefined) return;
+      var diff = item.targetVal - parseFloat(qty);
+      supplyItems.push({
+        zone:zone.name, item:item.name, unit:item.unit,
+        current:qty, target:item.targetVal, need:diff>0?diff:0
+      });
+    });
+  });
+  api({
+    action: 'invSave',
+    mode: rec.mode,
+    date: rec.date,
+    person: rec.person,
+    createdAt: rec.createdAt,
+    data: JSON.stringify(supplyItems)
+  }, function(d,e){
+    if(d&&d.ok) showToast('✓ 已同步至 Google Sheets');
+  });
+}
+
+function showResult(rec){
+  var isDaily = rec.mode==='daily';
+  document.getElementById('result-banner').className = 'result-banner ' + (isDaily?'rb-daily':'rb-weekly');
+  document.getElementById('rb-icon').textContent = isDaily?'📋':'📦';
+  document.getElementById('rb-title').textContent = isDaily?'今日補貨清單':'本週叫貨清單';
+  document.getElementById('rb-meta').textContent = rec.date+' · '+rec.person;
+
+  var supplyItems = [], okItems = [];
+  currentZones.forEach(function(zone){
+    var data = rec.zones[zone.id]||{};
+    zone.items.forEach(function(item){
+      var qty = data[item.id];
+      if(qty===undefined) return;
+      var diff = item.targetVal - parseFloat(qty);
+      if(diff>0) supplyItems.push({zone:zone.name,zone_icon:zone.icon,item:item.name,unit:item.unit,current:qty,need:diff});
+      else okItems.push({zone:zone.name,item:item.name,unit:item.unit,current:qty});
+    });
+  });
+
+  var html = '';
+  if(supplyItems.length){
+    var actionWord = isDaily?'需補貨':'需叫貨';
+    html += '<div class="result-section">'
+      +'<div class="rs-head supply">⚠ '+actionWord+' — '+supplyItems.length+' 項</div>'
+      +supplyItems.map(function(r){
+        return '<div class="rs-item">'
+          +'<div><div class="ri-name">'+r.zone_icon+' '+r.item+'</div>'
+            +'<div class="ri-detail">現有：'+r.current+r.unit+' · 需達：'+r.need+r.unit+'以上</div></div>'
+          +'<div class="ri-qty '+(isDaily?'supply':'order')+'">+'+r.need+' '+r.unit+'</div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  } else {
+    html += '<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需補貨</div></div>';
+  }
+
+  if(okItems.length){
+    html += '<div class="result-section">'
+      +'<div class="rs-head ok">✓ 庫存足夠 — '+okItems.length+' 項</div>'
+      +okItems.map(function(r){
+        return '<div class="rs-item">'
+          +'<div class="ri-name">'+r.item+'</div>'
+          +'<div class="ri-qty" style="color:var(--gm)">'+r.current+' '+r.unit+'</div>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  }
+
+  document.getElementById('result-content').innerHTML = html;
+  showPage('result');
+}
+
+// ══════════════════════════════════════
+// 數字鍵盤
+// ══════════════════════════════════════
+function openNumpad(zoneId, itemId){
+  curZoneId = zoneId;
+  npZoneId = zoneId;
+  npItemId = itemId;
+  var zone = currentZones.find(function(z){ return z.id===zoneId; });
+  var item = zone.items.find(function(i){ return i.id===itemId; });
+  npStr = zoneData[zoneId][itemId]!==undefined ? String(zoneData[zoneId][itemId]) : '';
+  document.getElementById('num-title').textContent = item.name;
+  document.getElementById('num-threshold').textContent =
+    '📌 低於 '+item.min+' 需'+(mode==='daily'?'補':'叫')+'　→　補至 '+item.target;
+  document.getElementById('num-unit').textContent = '單位：'+item.unit;
+  updateNpDisplay();
+  openOv('num');
+}
+function nkPress(v){
+  if(npStr.length>=6) return;
+  if(v==='.'&&npStr.includes('.')) return;
+  if(npStr==='0'&&v!=='.') npStr=v;
+  else npStr+=v;
+  updateNpDisplay();
+}
+function nkDel(){ npStr=npStr.slice(0,-1); updateNpDisplay(); }
+function updateNpDisplay(){
+  document.getElementById('num-display').textContent = npStr||'—';
+}
+function nkConfirm(){
+  if(npStr==='') return;
+  var qty = parseFloat(npStr);
+  if(isNaN(qty)){ showToast('請輸入有效數字'); return; }
+  zoneData[npZoneId][npItemId] = qty;
+  closeOv('num');
+  var zone = currentZones.find(function(z){ return z.id===npZoneId; });
+  buildItemList(zone);
+}
+
+// ══════════════════════════════════════
+// 歷史記錄
+// ══════════════════════════════════════
+function showHist(){
+  loadRecords();
+  var el = document.getElementById('hist-list');
+  if(!records.length){ el.innerHTML='<div class="empty">尚無盤點記錄</div>'; openOv('hist'); return; }
+  el.innerHTML = records.slice(0,30).map(function(r){
+    var label = r.mode==='daily'?'日盤':'週盤';
+    var cls = r.mode==='daily'?'hi-daily':'hi-weekly';
+    // 計算需補項數
+    var needCount = 0;
+    currentZones.forEach(function(zone){
+      var data = (r.zones&&r.zones[zone.id])||{};
+      zone.items.forEach(function(item){
+        var qty=data[item.id];
+        if(qty!==undefined && item.targetVal-parseFloat(qty)>0) needCount++;
+      });
+    });
+    return '<div class="hist-item">'
+      +'<div><div class="hi-date">'+r.date+'</div>'
+        +'<div class="hi-meta">'+r.person+' · '+r.createdAt.slice(11,16)+'　需補/叫：'+needCount+'項</div></div>'
+      +'<span class="hi-badge '+cls+'">'+label+'</span>'
+    +'</div>';
+  }).join('');
+  openOv('hist');
+}
+
+// ══════════════════════════════════════
+// 頁面 & 工具
+// ══════════════════════════════════════
+function showPage(p){
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('on'); });
+  document.getElementById('page-'+p).classList.add('on');
+}
+function goHome(){
+  zoneData={}; zoneDone={}; selPerson='';
+  buildPersonGrid();
+  showPage('home');
+}
+function openOv(id){ document.getElementById('ov-'+id).classList.add('show'); }
+function closeOv(id){ document.getElementById('ov-'+id).classList.remove('show'); }
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.ov.show').forEach(function(ov){ if(e.target===ov) ov.classList.remove('show'); });
+});
+function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+</script>
+</body>
+</html>
