@@ -176,7 +176,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div class="top-title">📋 盤點系統</div>
     <div class="top-sub">瀧飲山潮 · 學士店</div>
   </div>
-  <div style="display:flex;gap:6px">
+  <div style="display:flex;gap:6px;align-items:center">
+    <span id="sync-status" style="font-size:11px;color:rgba(255,255,255,.6)">🔄</span>
     <button class="tib" onclick="showHist()">📂 記錄</button>
     <button class="tib" onclick="openCfg()">⚙️ 設定</button>
     <button class="tib" onclick="goHome2()">🏠</button>
@@ -400,19 +401,68 @@ var DEFAULT_ITEMS=[
 var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 var items=[],counts={},selPerson='',curMode='daily',curItemId='',records=[],cfgMode='daily';
 
+// ── 通用雲端 cfg helper ──────────────────
+function cfgSet(key, value, cb){
+  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+}
+function cfgGet(key, cb){
+  api({action:'cfgGet', key:key}, function(d){
+    if(d&&d.ok&&d.value!=null){
+      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+    }
+    cb(null);
+  });
+}
+function setSyncStatus(ok){
+  var el=document.getElementById('sync-status');
+  if(el) el.textContent=ok?'☁️':'🔄';
+}
+
 // ── 初始化 ────────────────────────────────────────────────────
 window.onload=function(){
-  loadAll();
+  loadLocal(); // 先從本機快速載入
   document.getElementById('setup-date').value=todayStr();
   buildPersonGrid();
+  syncFromCloud(); // 再從雲端同步覆蓋
 };
-function loadAll(){
+
+function loadLocal(){
   try{var r=localStorage.getItem('inv3_items');items=r?JSON.parse(r):JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
   catch(e){items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
-  try{var r=localStorage.getItem('inv3_records');records=r?JSON.parse(r):[];}catch(e){records=[];}
+  try{var r2=localStorage.getItem('inv3_records');records=r2?JSON.parse(r2):[];}catch(e){records=[];}
 }
-function saveItems(){localStorage.setItem('inv3_items',JSON.stringify(items));}
-function saveRecords(){localStorage.setItem('inv3_records',JSON.stringify(records.slice(0,50)));}
+
+function saveItems(){
+  localStorage.setItem('inv3_items',JSON.stringify(items));
+  cfgSet('inv:items', items);
+}
+function saveRecords(){
+  var trimmed=records.slice(0,50);
+  localStorage.setItem('inv3_records',JSON.stringify(trimmed));
+  cfgSet('inv:records', trimmed);
+}
+
+function syncFromCloud(){
+  setSyncStatus(false);
+  var loaded={items:false, records:false};
+  function checkDone(){
+    if(loaded.items&&loaded.records){ setSyncStatus(true); buildPersonGrid(); }
+  }
+  cfgGet('inv:items', function(v){
+    if(v&&Array.isArray(v)&&v.length>0){
+      items=v;
+      try{localStorage.setItem('inv3_items',JSON.stringify(v));}catch(e){}
+    }
+    loaded.items=true; checkDone();
+  });
+  cfgGet('inv:records', function(v){
+    if(v&&Array.isArray(v)){
+      records=v;
+      try{localStorage.setItem('inv3_records',JSON.stringify(v));}catch(e){}
+    }
+    loaded.records=true; checkDone();
+  });
+}
 function getItemsForMode(mode){
   if(mode==='monthly') return items;
   return items.filter(function(i){ return i.modes&&i.modes.indexOf(mode==='daily'?'D':'W')>-1; });

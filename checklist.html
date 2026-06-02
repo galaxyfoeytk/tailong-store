@@ -160,6 +160,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div class="brand-sub">瀧飲山潮 · 學士店</div>
   </div>
   <div class="top-btns">
+    <span id="sync-status" style="font-size:11px;color:rgba(255,255,255,.6);padding:0 4px">🔄 同步中...</span>
     <button class="tib" onclick="openMgmt()">⚙️ 設定</button>
     <button class="tib" onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}">🏠</button>
   </div>
@@ -325,23 +326,6 @@ function api(params, cb){
     .catch(function(e){if(cb)cb(null,e.toString());});
 }
 
-// 從 Sheets 同步步驟（開啟時自動執行）
-function syncStepsFromSheets(){
-  api({action:'clGetSteps'},function(d,e){
-    if(!d||!d.ok) return;
-    // 只有 Sheets 有資料才覆蓋本地
-    if(d.open&&d.open.length>0){
-      openSteps=d.open;
-    }
-    if(d.close&&d.close.length>0){
-      closeSteps=d.close;
-    }
-    if((d.open&&d.open.length)||(d.close&&d.close.length)){
-      saveData();
-    }
-  });
-}
-
 // 儲存步驟到 Sheets
 function pushStepsToSheets(type){
   var steps=type==='open'?openSteps:closeSteps;
@@ -381,15 +365,32 @@ var DEFAULT_CLOSE_STEPS=[
 var persons, openSteps, closeSteps, history;
 var checkType = 'open'; // 'open' | 'close'
 var mgmtType = 'open';
+var _cloudReady = false; // 雲端載入完成標記
+
+// ── 通用雲端 cfg helper ──────────────────
+function cfgSet(key, value, cb){
+  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+}
+function cfgGet(key, cb){
+  api({action:'cfgGet', key:key}, function(d){
+    if(d&&d.ok&&d.value!=null){
+      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+    }
+    cb(null);
+  });
+}
 
 function loadData(){
+  // 先從 localStorage 快速載入（避免白屏）
   try{
-    var raw=localStorage.getItem('checklist_v2');if(!raw)throw 0;
-    var d=JSON.parse(raw);
-    persons=d.persons;
-    openSteps=d.openSteps;
-    closeSteps=d.closeSteps;
-    history=d.history||[];
+    var raw=localStorage.getItem('checklist_v2');
+    if(raw){
+      var d=JSON.parse(raw);
+      persons=d.persons||DEFAULT_PERSONS.slice();
+      openSteps=d.openSteps||JSON.parse(JSON.stringify(DEFAULT_OPEN_STEPS));
+      closeSteps=d.closeSteps||JSON.parse(JSON.stringify(DEFAULT_CLOSE_STEPS));
+      history=d.history||[];
+    } else { throw 0; }
   }catch(e){
     persons=DEFAULT_PERSONS.slice();
     openSteps=JSON.parse(JSON.stringify(DEFAULT_OPEN_STEPS));
@@ -397,8 +398,57 @@ function loadData(){
     history=[];
   }
 }
+
 function saveData(){
-  try{localStorage.setItem('checklist_v2',JSON.stringify({persons,openSteps,closeSteps,history}));}catch(e){}
+  // 同時寫 localStorage 和雲端
+  var payload={persons:persons,openSteps:openSteps,closeSteps:closeSteps,history:history};
+  try{localStorage.setItem('checklist_v2',JSON.stringify(payload));}catch(e){}
+  cfgSet('cl:persons', persons);
+  cfgSet('cl:history', history.slice(0,60)); // 最多存60筆
+}
+
+// 從雲端同步（啟動時呼叫）
+function syncFromCloud(){
+  setSyncStatus(false);
+  var loaded={persons:false, steps:false, history:false};
+  function checkDone(){
+    if(loaded.persons&&loaded.steps&&loaded.history){
+      _cloudReady=true;
+      setSyncStatus(true);
+      buildPersonGrid();
+      renderHist();
+    }
+  }
+  // 同步人員
+  cfgGet('cl:persons', function(v){
+    if(v&&Array.isArray(v)&&v.length>0){
+      persons=v;
+      try{var d=JSON.parse(localStorage.getItem('checklist_v2')||'{}');d.persons=v;localStorage.setItem('checklist_v2',JSON.stringify(d));}catch(e){}
+    }
+    loaded.persons=true; checkDone();
+  });
+  // 同步步驟（已有專屬 API）
+  api({action:'clGetSteps'}, function(d,e){
+    if(!e&&d&&d.ok){
+      if(d.open&&d.open.length>0) openSteps=d.open;
+      if(d.close&&d.close.length>0) closeSteps=d.close;
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.openSteps=openSteps;s.closeSteps=closeSteps;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e2){}
+    }
+    loaded.steps=true; checkDone();
+  });
+  // 同步歷史
+  cfgGet('cl:history', function(v){
+    if(v&&Array.isArray(v)&&v.length>0){
+      history=v;
+      try{var d=JSON.parse(localStorage.getItem('checklist_v2')||'{}');d.history=v;localStorage.setItem('checklist_v2',JSON.stringify(d));}catch(e){}
+    }
+    loaded.history=true; checkDone();
+  });
+}
+
+function setSyncStatus(ok){
+  var el=document.getElementById('sync-status');
+  if(el) el.textContent=ok?'☁️ 已同步':'🔄 同步中...';
 }
 
 // ══════════════════════════════
@@ -411,8 +461,7 @@ window.onload=function(){
   loadData();
   document.getElementById('cl-date').value=todayStr();
   buildPersonGrid();
-  // 從 Sheets 同步最新步驟設定
-  syncStepsFromSheets();
+  syncFromCloud(); // 從雲端同步（會覆蓋 localStorage 的舊資料）
 };
 
 // ══════════════════════════════
@@ -473,7 +522,8 @@ function finishChecklist(){
   var warns=session.items.filter(function(i){return i.warn;}).length;
   session.total=total; session.done=done; session.warns=warns;
   history.unshift(JSON.parse(JSON.stringify(session)));
-  saveData();
+  if(history.length>60) history=history.slice(0,60);
+  saveData(); // 同時寫本機+雲端
   var isOpen=session.type==='open';
   document.getElementById('check-section').style.display='none';
   document.getElementById('done-section').style.display='block';

@@ -223,6 +223,7 @@ function loadData(){
   }
 }
 function saveData(){ try{localStorage.setItem('elec_v1',JSON.stringify(records));}catch(e){} }
+// elec 記錄由 elecSave/elecDelete API 直接寫 Sheets，saveData 只更新本機快取
 
 // 從 Sheets 同步（以 Sheets 為主，但絕不用空資料覆蓋本地）
 function syncFromSheets(){

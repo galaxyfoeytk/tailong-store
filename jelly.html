@@ -510,18 +510,41 @@ document.addEventListener('click',function(e){
 // ═══════════════════════════════════
 // Init
 // ═══════════════════════════════════
-var _washedIds = {}; // 已清洗的 id，存 localStorage 確保重整後仍有效
+var _washedIds = {}; // 已清洗的 id
+
+function cfgSet(key, value, cb){
+  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+}
+function cfgGet(key, cb){
+  api({action:'cfgGet', key:key}, function(d){
+    if(d&&d.ok&&d.value!=null){
+      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+    }
+    cb(null);
+  });
+}
 
 function loadWashedIds(){
   try{ _washedIds=JSON.parse(localStorage.getItem('jelly_washed')||'{}'); }catch(e){ _washedIds={}; }
 }
 function saveWashedIds(){
-  // 只保留最近7天的記錄，避免無限累積
   try{ localStorage.setItem('jelly_washed',JSON.stringify(_washedIds)); }catch(e){}
+  // 雲端同步，只保留 7 天內的 ID
+  var now=Date.now();
+  var clean={};
+  Object.keys(_washedIds).forEach(function(k){ if(now-_washedIds[k]<7*24*3600*1000) clean[k]=_washedIds[k]; });
+  cfgSet('jelly:washed', clean);
 }
 
 window.onload=function(){
   loadWashedIds();
+  // 同步雲端 washedIds（有新裝置也能知道哪些已清洗）
+  cfgGet('jelly:washed', function(v){
+    if(v&&typeof v==='object'){
+      Object.keys(v).forEach(function(k){ _washedIds[k]=v[k]; });
+      try{localStorage.setItem('jelly_washed',JSON.stringify(_washedIds));}catch(e){}
+    }
+  });
   if(!localLoad()){
     items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));
     persons=DEFAULT_PERSONS.slice();

@@ -209,7 +209,7 @@ tbody tr:last-child td{border-bottom:none}
     <div class="brand-sub">瀧飲山潮 · 學士店</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-    <div class="top-btns"><button onclick="location.href='index.html'" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap">🏠 主頁</button>
+    <div class="top-btns"><button onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap">🏠 主頁</button>
       <button class="tib" onclick="openMgmt('person')">👤</button>
       <button class="tib" onclick="openMgmt('item')">🗂</button>
       <button class="tib" onclick="openMgmt('source')">🚚</button>
@@ -591,6 +591,24 @@ var CATS=[
 ];
 
 var persons,items,sources,records;
+
+// ── 通用雲端 cfg helper ──────────────────
+function cfgSet(key, value, cb){
+  apiCall2({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+}
+function cfgGet(key, cb){
+  apiCall2({action:'cfgGet', key:key}, function(d){
+    if(d&&d.ok&&d.value!=null){
+      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+    }
+    cb(null);
+  });
+}
+function apiCall2(params,cb){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs).then(function(r){return r.json();}).then(function(d){if(cb)cb(d,null);}).catch(function(e){if(cb)cb(null,e);});
+}
+
 function loadData(){
   try{
     var r=localStorage.getItem('stock_v2');if(!r)throw 0;
@@ -606,7 +624,13 @@ function loadData(){
     records=[];
   }
 }
-function save(){try{localStorage.setItem('stock_v2',JSON.stringify({persons,items,sources,records}));}catch(e){}}
+function save(){
+  try{localStorage.setItem('stock_v2',JSON.stringify({persons,items,sources,records}));}catch(e){}
+  // 同步設定到雲端
+  cfgSet('stock:persons', persons);
+  cfgSet('stock:items', items);
+  cfgSet('stock:sources', sources);
+}
 
 // ── Overlay
 function openOv(id){document.getElementById('ov-'+id).classList.add('show');}
@@ -620,18 +644,37 @@ document.addEventListener('click',function(e){
 window.onload=function(){
   loadData();
   buildStep1();
-  // 有 API 則自動從 Sheets 同步最新資料
   if(API_URL){
     setSync('同步中…');
+    // 同步進貨記錄
     apiCall({action:'stockGetAll'},function(d){
       if(d&&d.ok){
         records=d.data;
-        save();
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.records=records;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e2){}
         buildListFilters();
-        setSync('✓ 已同步');
-        setTimeout(function(){ setSync(''); },3000);
-      } else {
-        setSync('離線模式');
+      }
+    });
+    // 同步設定（人員/品項/來源）
+    cfgGet('stock:persons', function(v){
+      if(v&&Array.isArray(v)&&v.length>0){
+        persons=v;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.persons=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+        buildStep1();
+      }
+    });
+    cfgGet('stock:items', function(v){
+      if(v&&Array.isArray(v)&&v.length>0){
+        items=v;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.items=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+        buildStep1();
+      }
+      setSync('☁️ 已同步');
+      setTimeout(function(){ setSync(''); },3000);
+    });
+    cfgGet('stock:sources', function(v){
+      if(v&&Array.isArray(v)&&v.length>0){
+        sources=v;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.sources=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
       }
     });
   }
