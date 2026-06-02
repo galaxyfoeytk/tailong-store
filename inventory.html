@@ -158,6 +158,40 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .mode-toggles{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .mt-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--bd);background:var(--white);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink3)}
 .mt-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
+
+/* 品項排序按鈕 */
+.sort-btns{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.sort-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.sort-btn:active{background:var(--bl)}
+.sort-btn:disabled{opacity:.25;cursor:default}
+.cir-head-inner{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cir-name-inp{font-size:14px;font-weight:700;border:none;background:transparent;color:var(--ink);font-family:inherit;width:100%;outline:none;padding:2px 0;border-bottom:1.5px solid transparent}
+.cir-name-inp:focus{border-bottom-color:var(--bm)}
+.cir-cat-inp{font-size:11px;color:var(--ink3);border:none;background:transparent;font-family:inherit;width:100%;outline:none;padding:1px 0;border-bottom:1.5px solid transparent}
+.cir-cat-inp:focus{border-bottom-color:var(--bm);color:var(--ink2)}
+
+/* 自訂數字鍵盤 */
+.numpad-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:flex-end;justify-content:center}
+.numpad-ov.show{display:flex}
+.numpad-wrap{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:420px;padding:14px 14px 28px;user-select:none}
+.numpad-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.numpad-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.numpad-label{font-size:13px;font-weight:700;color:var(--ink3)}
+.numpad-display{flex:1;text-align:right;font-size:32px;font-weight:900;color:var(--ink);background:var(--bg);border-radius:var(--r2);padding:8px 14px;min-height:54px;letter-spacing:-.5px;line-height:1.2;word-break:break-all}
+.numpad-hint{font-size:11px;color:var(--ink3);text-align:center;margin-bottom:10px;min-height:16px}
+.numpad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.nk{padding:16px 6px;border-radius:var(--r2);border:none;font-size:22px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:var(--bg);transition:background .1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.nk:active{background:var(--bd)}
+.nk.nk-del{background:var(--amberl);color:var(--amber);font-size:18px}
+.nk.nk-del:active{background:#f0d060}
+.nk.nk-dot{font-size:26px;font-weight:900}
+.nk.nk-clear{background:var(--redl);color:var(--red);font-size:14px;font-weight:700}
+.nk.nk-clear:active{background:#f5b0a8}
+.numpad-ok{width:100%;padding:15px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
+.numpad-ok:active{opacity:.85}
+.numpad-total{background:var(--gl);border-radius:var(--r2);padding:9px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.nt-lbl{font-size:12px;font-weight:700;color:var(--g)}
+.nt-val{font-size:20px;font-weight:900;color:var(--g)}
 .add-inp{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;margin-bottom:8px}
 .add-inp:focus{border-color:var(--bm)}
 .btn{padding:9px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px}
@@ -257,6 +291,37 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 </div>
 
 </div><!-- /pages -->
+
+<!-- 自訂數字小鍵盤 overlay -->
+<div class="numpad-ov" id="numpad-ov">
+  <div class="numpad-wrap">
+    <div class="numpad-handle"></div>
+    <div class="numpad-meta">
+      <div class="numpad-label" id="np-label">輸入數量</div>
+      <div class="numpad-display" id="np-display">0</div>
+    </div>
+    <div class="numpad-hint" id="np-hint"></div>
+    <div class="numpad-total" id="np-total-row" style="display:none">
+      <div class="nt-lbl">最小單位合計</div>
+      <div class="nt-val"><span id="np-total">0</span> <span id="np-total-unit" style="font-size:13px;font-weight:400"></span></div>
+    </div>
+    <div class="numpad-grid">
+      <button class="nk" onclick="npKey('7')">7</button>
+      <button class="nk" onclick="npKey('8')">8</button>
+      <button class="nk" onclick="npKey('9')">9</button>
+      <button class="nk" onclick="npKey('4')">4</button>
+      <button class="nk" onclick="npKey('5')">5</button>
+      <button class="nk" onclick="npKey('6')">6</button>
+      <button class="nk" onclick="npKey('1')">1</button>
+      <button class="nk" onclick="npKey('2')">2</button>
+      <button class="nk" onclick="npKey('3')">3</button>
+      <button class="nk nk-clear" onclick="npKey('C')">清除</button>
+      <button class="nk" onclick="npKey('0')">0</button>
+      <button class="nk nk-del" onclick="npKey('DEL')">⌫</button>
+    </div>
+    <button class="numpad-ok" id="np-ok-btn" onclick="npConfirm()">✓ 確認</button>
+  </div>
+</div>
 
 <!-- 數量輸入 overlay -->
 <div class="ov" id="ov-num">
@@ -770,6 +835,171 @@ function openNumOv(itemId){
   },100);
 }
 
+// ══════════════════════════════════════════════════════════════
+// 自訂數字小鍵盤
+// ══════════════════════════════════════════════════════════════
+var _np = {
+  val: '0',       // 目前顯示值（字串）
+  mode: '',       // 'count' | 'cfg'
+  itemId: '',     // 品項 id
+  field: '',      // 'l'|'m'|'s'|'w'（盤點） 或 'ms'|'lm'|'sw'|'daily:min' 等（設定）
+  inpEl: null,    // cfg 模式下的 input DOM
+  isMonthly: false,
+};
+
+function npKey(k){
+  var v=_np.val==='0'?'':_np.val;
+  if(k==='C'){ _np.val='0'; }
+  else if(k==='DEL'){ _np.val=v.slice(0,-1)||'0'; }
+  else if(k==='.'){ if(v.indexOf('.')===-1) _np.val=(v||'0')+'.'; }
+  else { if(v.length>=8) return; _np.val=v+k; }
+  document.getElementById('np-display').textContent=_np.val;
+  if(_np.mode==='count') _npUpdateTotal();
+}
+
+function _npUpdateTotal(){
+  var item=items.find(function(i){return i.id===_np.itemId;});
+  if(!item) return;
+  var s=parseFloat(_np.field==='s'?_np.val:(_np._vals.s||0))||0;
+  var m=parseFloat(_np.field==='m'?_np.val:(_np._vals.m||0))||0;
+  var l=parseFloat(_np.field==='l'?_np.val:(_np._vals.l||0))||0;
+  var w=parseFloat(_np.field==='w'?_np.val:(_np._vals.w||0))||0;
+  var wConverted=item.sw>0?w/item.sw:0;
+  var total=Math.round((calcTotal(item,{s:s,m:m,l:l})+wConverted)*100)/100;
+  document.getElementById('np-total').textContent=total;
+}
+
+function npConfirm(){
+  var val=parseFloat(_np.val)||0;
+  if(_np.mode==='count'){
+    _np._vals[_np.field]=val;
+    // 找下一個未填的欄位
+    var item=items.find(function(i){return i.id===_np.itemId;});
+    var fields=['l','m','s','w'];
+    var validFields=fields.filter(function(f){
+      if(f==='l') return item&&item.ln;
+      if(f==='m') return item&&item.mn;
+      if(f==='s') return true;
+      if(f==='w') return item&&item.wu&&item.sw>0;
+      return false;
+    });
+    var curIdx=validFields.indexOf(_np.field);
+    if(curIdx>=0&&curIdx<validFields.length-1){
+      // 跳到下一欄
+      var nextField=validFields[curIdx+1];
+      _npOpenCountField(item, nextField);
+    } else {
+      // 全部填完，存入 counts 並關閉
+      _npSaveCount();
+      closeNumpad();
+    }
+  } else if(_np.mode==='cfg'){
+    updItem(_np.itemId, _np.field, _np.val);
+    if(_np.inpEl) _np.inpEl.value=_np.val;
+    closeNumpad();
+  } else if(_np.mode==='inline'){
+    if(_np.inpEl){
+      _np.inpEl.value=_np.val;
+      // 手動觸發 onchange
+      var evt=new Event('change',{bubbles:true});
+      _np.inpEl.dispatchEvent(evt);
+    }
+    closeNumpad();
+  }
+}
+
+function _npSaveCount(){
+  var s=parseFloat(_np._vals.s)||0;
+  var m=parseFloat(_np._vals.m)||0;
+  var l=parseFloat(_np._vals.l)||0;
+  var w=parseFloat(_np._vals.w)||0;
+  var item=items.find(function(i){return i.id===_np.itemId;});
+  if(_np.isMonthly){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    counts[key+'_'+_np.itemId]={s:s,m:m,l:l,w:w};
+    renderMonthlyLocPage();
+  } else {
+    counts[_np.itemId]={s:s,m:m,l:l,w:w};
+    renderCountPage();
+  }
+  if(item) showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+}
+
+function _npOpenCountField(item, field){
+  _np.field=field;
+  var labels={l:'大單位',m:'中單位',s:'小單位',w:'重量'};
+  var units={l:item.ln,m:item.mn,s:item.sn,w:item.wu};
+  document.getElementById('np-label').textContent=item.name+' — '+units[field]+'（'+labels[field]+'）';
+  _np.val=String(_np._vals[field]||0);
+  document.getElementById('np-display').textContent=_np.val;
+  _npUpdateTotal();
+}
+
+function openNumpad(){
+  document.getElementById('numpad-ov').classList.add('show');
+}
+function closeNumpad(){
+  document.getElementById('numpad-ov').classList.remove('show');
+  _np.inpEl=null;
+}
+
+// 從盤點頁開啟（日盤/週盤）
+function openNumOv(itemId){
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var existing=counts[itemId]||{l:0,m:0,s:0,w:0};
+  _np.mode='count'; _np.itemId=itemId; _np.isMonthly=false;
+  _np._vals={l:existing.l||0,m:existing.m||0,s:existing.s||0,w:existing.w||0};
+  // 決定第一個要輸入的欄位
+  var firstField=item.ln?'l':(item.mn?'m':'s');
+  document.getElementById('np-total-unit').textContent=item.sn;
+  document.getElementById('np-total-row').style.display='flex';
+  // 換算提示
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
+  if(item.wu&&item.sw>0) hints.push('1'+item.sn+'='+item.sw+item.wu);
+  if(curMode!=='monthly'&&item[curMode]) hints.push('低標:'+item[curMode].min+' 補至:'+item[curMode].target);
+  document.getElementById('np-hint').textContent=hints.join('　');
+  document.getElementById('np-ok-btn').textContent='✓ 確認';
+  _npOpenCountField(item, firstField);
+  openNumpad();
+}
+
+// 從月盤頁開啟
+function openNumOvMonthly(itemId){
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var key=curMonthlyLoc==='現場'?'S':'W';
+  var existing=counts[key+'_'+itemId]||{l:0,m:0,s:0,w:0};
+  _np.mode='count'; _np.itemId=itemId; _np.isMonthly=true;
+  _np._vals={l:existing.l||0,m:existing.m||0,s:existing.s||0,w:existing.w||0};
+  var firstField=item.ln?'l':(item.mn?'m':'s');
+  document.getElementById('np-total-unit').textContent=item.sn;
+  document.getElementById('np-total-row').style.display='flex';
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
+  document.getElementById('np-hint').textContent=hints.join('　');
+  document.getElementById('np-ok-btn').textContent='✓ 確認';
+  _npOpenCountField(item, firstField);
+  openNumpad();
+}
+
+// 從設定頁 inline 輸入框 onfocus 呼叫
+function openNumpadInline(itemId, field, inputEl){
+  inputEl.blur(); // 防止系統鍵盤彈出
+  _np.mode='inline'; _np.itemId=itemId; _np.field=field; _np.inpEl=inputEl;
+  _np.val=inputEl.value||'0';
+  document.getElementById('np-label').textContent=field;
+  document.getElementById('np-display').textContent=_np.val;
+  document.getElementById('np-hint').textContent='';
+  document.getElementById('np-total-row').style.display='none';
+  document.getElementById('np-ok-btn').textContent='✓ 確認';
+  openNumpad();
+}
+
+// 舊的 recalc 保留供相容
 function recalc(){
   var item=items.find(function(i){return i.id===curItemId;});
   if(!item) return;
@@ -779,15 +1009,14 @@ function recalc(){
   var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
   var wConverted=item.sw>0?(w/item.sw):0;
   var total=calcTotal(item,{s:s,m:m,l:l})+wConverted;
-  document.getElementById('num-total').textContent=Math.round(total*100)/100;
+  var el=document.getElementById('num-total');
+  if(el) el.textContent=Math.round(total*100)/100;
 }
-function recalcW(){
-  // 重量輸入時也重新計算
-  recalc();
-}
+function recalcW(){ recalc(); }
 
 function confirmNum(){
-  var isMonthly=curItemId.startsWith('monthly_');
+  // 相容舊流程（已被小鍵盤取代，保留以防萬一）
+  var isMonthly=curItemId&&curItemId.startsWith('monthly_');
   var realId=isMonthly?curItemId.replace('monthly_',''):curItemId;
   var item=items.find(function(i){return i.id===realId;});
   if(!item) return;
@@ -798,12 +1027,10 @@ function confirmNum(){
   if(isMonthly){
     var key=curMonthlyLoc==='現場'?'S':'W';
     counts[key+'_'+realId]={s:s,m:m,l:l,w:w};
-    closeOv('num');
-    renderMonthlyLocPage();
+    closeOv('num'); renderMonthlyLocPage();
   } else {
     counts[curItemId]={s:s,m:m,l:l,w:w};
-    closeOv('num');
-    renderCountPage();
+    closeOv('num'); renderCountPage();
   }
   showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
 }
@@ -933,45 +1160,65 @@ function renderCfgTabs(){
 }
 function switchCfgTab(m){cfgMode=m;renderCfgTabs();renderCfgBody();}
 function renderCfgBody(){
+  // 用全域 items 順序顯示，依分類分組
   var list=cfgMode==='monthly'?items:items.filter(function(i){return i.modes&&i.modes.indexOf(cfgMode==='daily'?'D':'W')>-1;});
   if(!list.length){document.getElementById('cfg-body').innerHTML='<div class="empty">此模式尚無品項</div>';return;}
-  var cats=[...new Set(list.map(function(i){return i.cat;}))];
+  var cats=[...new Set(items.map(function(i){return i.cat;}))]; // 按 items 原始順序取分類
   var html='';
   cats.forEach(function(cat){
     var ci=list.filter(function(i){return i.cat===cat;});
-    html+='<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:12px 0 6px">'+cat+'</div>';
+    if(!ci.length) return;
+    html+='<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;padding:0 2px">'+cat+'</div>';
     ci.forEach(function(item){
-      html+='<div class="cfg-item-row">'
-        +'<div class="cir-head"><span class="cir-name">'+item.name+'</span>'
-          +'<button class="btn btn-d btn-sm" onclick="delItem(\''+item.id+'\')">刪除</button></div>'
-        +'<div class="cir-fields">'
-          +'<div class="cir-field"><div class="cfl">小單位</div><input class="cf-inp" value="'+item.sn+'" onchange="updItem(\''+item.id+'\',\'sn\',this.value)"></div>'
-          +'<div class="cir-field"><div class="cfl">中單位</div><input class="cf-inp" value="'+(item.mn||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'mn\',this.value)"></div>'
-          +'<div class="cir-field"><div class="cfl">大單位</div><input class="cf-inp" value="'+(item.ln||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'ln\',this.value)"></div>'
+      var globalIdx=items.findIndex(function(x){return x.id===item.id;});
+      var isFirst=globalIdx===0;
+      var isLast=globalIdx===items.length-1;
+      html+='<div class="cfg-item-row" id="cfgrow-'+item.id+'">'
+        // 頭部：排序鈕 + 名稱/分類可編輯 + 刪除鈕
+        +'<div class="cir-head" style="align-items:flex-start">'
+          +'<div class="sort-btns">'
+            +'<button class="sort-btn" '+(isFirst?'disabled':'')+' onclick="moveItem(\''+item.id+\',-1)">▲</button>'
+            +'<button class="sort-btn" '+(isLast?'disabled':'')+' onclick="moveItem(\''+item.id+'\',1)">▼</button>'
+          +'</div>'
+          +'<div class="cir-head-inner" style="margin:0 8px">'
+            +'<input class="cir-name-inp" value="'+item.name.replace(/"/g,'&quot;')+'" placeholder="品項名稱" onchange="updItem(\''+item.id+'\',\'name\',this.value)" onblur="renderCfgBody()">'
+            +'<input class="cir-cat-inp" value="'+item.cat.replace(/"/g,'&quot;')+'" placeholder="分類" onchange="updItem(\''+item.id+'\',\'cat\',this.value)" onblur="renderCfgBody()">'
+          +'</div>'
+          +'<button class="btn btn-d btn-sm" onclick="delItem(\''+item.id+'\')">刪除</button>'
         +'</div>'
+        // 單位名稱
+        +'<div class="cir-fields" style="margin-top:8px">'
+          +'<div class="cir-field"><div class="cfl">小單位</div><input class="cf-inp" value="'+item.sn+'" placeholder="如：包" onchange="updItem(\''+item.id+'\',\'sn\',this.value)"></div>'
+          +'<div class="cir-field"><div class="cfl">中單位</div><input class="cf-inp" value="'+(item.mn||'')+'" placeholder="（無）" onchange="updItem(\''+item.id+'\',\'mn\',this.value)"></div>'
+          +'<div class="cir-field"><div class="cfl">大單位</div><input class="cf-inp" value="'+(item.ln||'')+'" placeholder="（無）" onchange="updItem(\''+item.id+'\',\'ln\',this.value)"></div>'
+        +'</div>'
+        // 換算（永遠顯示，可修改）
         +'<div class="cir-conv-block">'
           +'<div class="cir-conv-row">'
             +'<span class="cir-conv-lbl">中→小</span>'
-            +'1 '+(item.mn||'中')+' = <input class="cc-inp" type="number" value="'+(item.ms||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'ms\',this.value)"> '+(item.sn||'小')
+            +'1 <input class="cf-inp" style="width:38px;display:inline-block" value="'+(item.mn||'')+'" placeholder="中" onchange="updItem(\''+item.id+'\',\'mn\',this.value)"> = '
+            +'<input class="cc-inp" type="text" inputmode="decimal" value="'+(item.ms||'')+'" placeholder="?" onfocus="openNumpadInline(\''+item.id+'\',\'ms\',this)" style="width:52px"> '
+            +'<input class="cf-inp" style="width:38px;display:inline-block" value="'+(item.sn||'')+'" placeholder="小" onchange="updItem(\''+item.id+'\',\'sn\',this.value)">'
           +'</div>'
           +'<div class="cir-conv-row">'
             +'<span class="cir-conv-lbl">大→中</span>'
-            +(item.ln
-              ?'1 '+item.ln+' = <input class="cc-inp" type="number" value="'+(item.lm||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'lm\',this.value)"> '+(item.mn||'中')
-              :'<span style="color:var(--ink4);font-size:11px">（無大單位）</span>')
+            +'1 <input class="cf-inp" style="width:38px;display:inline-block" value="'+(item.ln||'')+'" placeholder="大" onchange="updItem(\''+item.id+'\',\'ln\',this.value)"> = '
+            +'<input class="cc-inp" type="text" inputmode="decimal" value="'+(item.lm||'')+'" placeholder="?" onfocus="openNumpadInline(\''+item.id+'\',\'lm\',this)" style="width:52px"> '
+            +'<input class="cf-inp" style="width:38px;display:inline-block" value="'+(item.mn||'')+'" placeholder="中" onchange="updItem(\''+item.id+'\',\'mn\',this.value)">'
           +'</div>'
           +'<div class="cir-conv-row">'
             +'<span class="cir-conv-lbl">特殊</span>'
-            +'<input class="cc-inp" style="width:38px" value="'+(item.wu||'')+'" placeholder="單位" onchange="updItem(\''+item.id+'\',\'wu\',this.value)"> '
-            +' 1 '+(item.sn||'小')+' = <input class="cc-inp" type="number" value="'+(item.sw||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'sw\',this.value)"> '
-            +'<span id="conv-wu-lbl-'+item.id+'">'+(item.wu||'—')+'</span>'
+            +'<input class="cc-inp" style="width:44px" value="'+(item.wu||'')+'" placeholder="單位" onchange="updItem(\''+item.id+'\',\'wu\',this.value)"> '
+            +'　1 '+(item.sn||'小')+' = '
+            +'<input class="cc-inp" type="text" inputmode="decimal" value="'+(item.sw||'')+'" placeholder="?" onfocus="openNumpadInline(\''+item.id+'\',\'sw\',this)" style="width:52px"> '
+            +(item.wu||'—')
           +'</div>'
         +'</div>';
       if(cfgMode!=='monthly'){
         var t=item[cfgMode]||{min:0,target:0};
         html+='<div class="cir-conv" style="margin-top:6px">'
-          +'低標: <input class="cc-inp" type="number" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'min\',this.value)"> '+item.sn
-          +'　補至: <input class="cc-inp" type="number" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'target\',this.value)"> '+item.sn
+          +'低標: <input class="cc-inp" type="text" inputmode="decimal" value="'+(t.min||0)+'" onfocus="openNumpadInline(\''+item.id+'\',\''+cfgMode+':min\',this)"> '+item.sn
+          +'　補至: <input class="cc-inp" type="text" inputmode="decimal" value="'+(t.target||0)+'" onfocus="openNumpadInline(\''+item.id+'\',\''+cfgMode+':target\',this)"> '+item.sn
         +'</div>';
       }
       html+='<div class="mode-toggles">'
@@ -993,11 +1240,34 @@ function renderCfgBody(){
   });
   document.getElementById('cfg-body').innerHTML=html;
 }
+// 移動品項順序
+function moveItem(id, dir){
+  var idx=items.findIndex(function(i){return i.id===id;});
+  if(idx<0) return;
+  var newIdx=idx+dir;
+  if(newIdx<0||newIdx>=items.length) return;
+  var tmp=items[idx]; items[idx]=items[newIdx]; items[newIdx]=tmp;
+  saveItems(); renderCfgBody();
+  // 讓移動後的品項滾動到畫面
+  setTimeout(function(){
+    var el=document.getElementById('cfgrow-'+id);
+    if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  },50);
+}
+
 function updItem(id,field,value){
   var item=items.find(function(i){return i.id===id;});
   if(!item) return;
-  if(['ms','lm','sw'].indexOf(field)>-1) item[field]=parseFloat(value)||0;
-  else item[field]=value;
+  // 支援 'mode:field' 格式（例如 'daily:min'）
+  if(field.indexOf(':')>-1){
+    var parts=field.split(':');
+    if(!item[parts[0]]) item[parts[0]]={min:0,target:0};
+    item[parts[0]][parts[1]]=parseFloat(value)||0;
+  } else if(['ms','lm','sw'].indexOf(field)>-1){
+    item[field]=parseFloat(value)||0;
+  } else {
+    item[field]=value;
+  }
   saveItems();
 }
 function updItemMode(id,mode,field,value){
