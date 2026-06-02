@@ -718,6 +718,7 @@ function delStep(type,id){
   else closeSteps=closeSteps.filter(function(s){return s.id!==id;});
   saveData(); buildStepMgmt(); showToast('已刪除');
   pushStepsToSheets(type==='open'?'open':'close');
+}
 
 // ══════════════════════════════
 // 人員 & 班別

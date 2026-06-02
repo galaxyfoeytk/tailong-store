@@ -475,7 +475,7 @@ function renderCountPage(){
         }
       } else if(filled){cls='filled-ok';}
       var totalCls=!filled?'':cls==='filled-low'?'low':cls==='filled-zero'?'zero':'ok';
-      html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+\')">'
+      html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+'\')">'
         +'<div class="ic-top">'
           +'<span class="ic-name">'+item.name+'</span>'
           +'<span class="ic-total '+totalCls+'">'+(filled?(total+' '+item.sn):'—')+'</span>'
@@ -650,28 +650,8 @@ function openNumOvMonthly(itemId){
   setTimeout(function(){var first=document.querySelector('#num-unit-rows .ur-inp');if(first){first.focus();first.select();}},100);
 }
 
-function confirmNum(){
-  var item;
-  var isMonthly=curItemId.startsWith('monthly_');
-  var realId=isMonthly?curItemId.replace('monthly_',''):curItemId;
-  item=items.find(function(i){return i.id===realId;});
-  if(!item) return;
-  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
-  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
-  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
-  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
-  if(isMonthly){
-    var key=curMonthlyLoc==='現場'?'S':'W';
-    counts[key+'_'+realId]={s:s,m:m,l:l,w:w};
-    closeOv('num');
-    renderMonthlyLocPage();
-  } else {
-    counts[curItemId]={s:s,m:m,l:l,w:w};
-    closeOv('num');
-    renderCountPage();
-  }
-  showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
-}
+// ── 開啟數量輸入 overlay（日盤/週盤）──────────────────────────
+function openNumOv(itemId){
   curItemId=itemId;
   var item=items.find(function(i){return i.id===itemId;});
   if(!item) return;
@@ -740,15 +720,24 @@ function recalcW(){
 }
 
 function confirmNum(){
-  var item=items.find(function(i){return i.id===curItemId;});
+  var isMonthly=curItemId.startsWith('monthly_');
+  var realId=isMonthly?curItemId.replace('monthly_',''):curItemId;
+  var item=items.find(function(i){return i.id===realId;});
   if(!item) return;
   var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
   var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
   var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
   var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
-  counts[curItemId]={s:s,m:m,l:l,w:w};
-  closeOv('num');
-  renderCountPage();
+  if(isMonthly){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    counts[key+'_'+realId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderMonthlyLocPage();
+  } else {
+    counts[curItemId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderCountPage();
+  }
   showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
 }
 
@@ -792,8 +781,8 @@ function finishCount(){
       ci.forEach(function(item){
         var cS=counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
         var cW=counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
-        var totalS=calcTotal(item,cS)+（item.sw>0?(cS.w||0)/item.sw:0);
-        var totalW=calcTotal(item,cW)+（item.sw>0?(cW.w||0)/item.sw:0);
+        var totalS=calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
+        var totalW=calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
         var totalAll=Math.round((totalS+totalW)*100)/100;
         var hasS=getItemLocsForMonthly(item).indexOf('S')>-1;
         var hasW=getItemLocsForMonthly(item).indexOf('W')>-1;
@@ -909,7 +898,7 @@ function renderCfgBody(){
         +'<span style="font-size:11px;color:var(--ink3)">出現在：</span>'
         +['daily','weekly'].map(function(m){
           var has=item.modes&&item.modes.indexOf(m==='daily'?'D':'W')>-1;
-          return '<button class="mt-btn'+(has?' on':'')+'" onclick="toggleMode(\''+item.id+'\',\''+m+'\')">'+（m==='daily'?'日盤':'週盤')+'</button>';
+          return '<button class="mt-btn'+(has?' on':'')+'" onclick="toggleMode(\''+item.id+'\',\''+m+'\')">'+(m==='daily'?'日盤':'週盤')+'</button>';
         }).join('')
       +'</div>'
       +'<div class="mode-toggles" style="margin-top:4px">'
@@ -957,7 +946,6 @@ function toggleLoc(id,loc){
     item.locs+=loc;
   }
   saveItems(); renderCfgBody();
-}
 }
 function delItem(id){
   if(!confirm('確定刪除？')) return;
