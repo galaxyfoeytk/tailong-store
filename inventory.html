@@ -149,6 +149,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .cf-inp{padding:8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;width:100%}
 .cf-inp:focus{border-color:var(--bm)}
 .cir-conv{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink3);flex-wrap:wrap;margin-top:4px}
+.cir-conv-block{background:var(--bg);border-radius:var(--r2);padding:9px 11px;margin-top:6px;border:1px solid var(--bd)}
+.cir-conv-row{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink2);margin-bottom:6px}
+.cir-conv-row:last-child{margin-bottom:0}
+.cir-conv-lbl{font-size:10px;font-weight:700;color:var(--white);background:var(--b);border-radius:5px;padding:2px 6px;flex-shrink:0;letter-spacing:.04em;min-width:36px;text-align:center}
 .cc-inp{width:52px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;text-align:center;outline:none}
 .cc-inp:focus{border-color:var(--bm)}
 .mode-toggles{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
@@ -287,15 +291,28 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
         <div><div class="cfl" style="margin-bottom:3px">中單位</div><input class="cf-inp" id="ni-mn" placeholder="如：箱"></div>
         <div><div class="cfl" style="margin-bottom:3px">大單位</div><input class="cf-inp" id="ni-ln" placeholder="如：棧板"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-        <div><div class="cfl" style="margin-bottom:3px">1中=幾小</div><input class="cf-inp" id="ni-ms" type="number" placeholder="如：12"></div>
-        <div><div class="cfl" style="margin-bottom:3px">1大=幾中</div><input class="cf-inp" id="ni-lm" type="number" placeholder="如：10"></div>
-        <div><div class="cfl" style="margin-bottom:3px">重量單位</div><input class="cf-inp" id="ni-wu" placeholder="如：kg（選填）"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-        <div><div class="cfl" style="margin-bottom:3px">1小=幾重量</div><input class="cf-inp" id="ni-sw" type="number" placeholder="如：0.5"></div>
-        <div style="display:flex;align-items:flex-end;gap:8px;padding-bottom:2px">
-          <div style="font-size:11px;color:var(--ink3)">出現在哪些模式：</div>
+      <div style="background:var(--bg);border-radius:var(--r2);padding:10px 11px;margin-bottom:8px;border:1px solid var(--bd)">
+        <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">換算設定</div>
+        <div class="cir-conv-row" style="margin-bottom:7px">
+          <span class="cir-conv-lbl">中→小</span>
+          <span style="font-size:13px;color:var(--ink2)">1 中 = </span>
+          <input class="cc-inp" id="ni-ms" type="number" placeholder="?">
+          <span style="font-size:13px;color:var(--ink2)"> 小</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1箱=12包，填12）</span>
+        </div>
+        <div class="cir-conv-row" style="margin-bottom:7px">
+          <span class="cir-conv-lbl">大→中</span>
+          <span style="font-size:13px;color:var(--ink2)">1 大 = </span>
+          <input class="cc-inp" id="ni-lm" type="number" placeholder="?">
+          <span style="font-size:13px;color:var(--ink2)"> 中</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1棧=10箱，填10）</span>
+        </div>
+        <div class="cir-conv-row">
+          <span class="cir-conv-lbl">特殊</span>
+          <input class="cc-inp" id="ni-wu" placeholder="單位名" style="width:52px">
+          <span style="font-size:13px;color:var(--ink2);margin:0 4px">　1小 = </span>
+          <input class="cc-inp" id="ni-sw" type="number" placeholder="?">
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1包=100g，填g和100）</span>
         </div>
       </div>
       <div style="display:flex;gap:7px;margin-bottom:10px">
@@ -882,10 +899,23 @@ function renderCfgBody(){
           +'<div class="cir-field"><div class="cfl">中單位</div><input class="cf-inp" value="'+(item.mn||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'mn\',this.value)"></div>'
           +'<div class="cir-field"><div class="cfl">大單位</div><input class="cf-inp" value="'+(item.ln||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'ln\',this.value)"></div>'
         +'</div>'
-        +'<div class="cir-conv">'
-          +'1'+(item.mn||'中')+'= <input class="cc-inp" type="number" value="'+(item.ms||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'ms\',this.value)"> '+(item.sn||'小')
-          +(item.ln?'　1'+(item.ln)+'= <input class="cc-inp" type="number" value="'+(item.lm||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'lm\',this.value)"> '+(item.mn||'中'):'')
-          +(item.wu?'　重量: <input class="cc-inp" value="'+item.wu+'" style="width:40px" onchange="updItem(\''+item.id+'\',\'wu\',this.value)"> 1'+(item.sn||'小')+'= <input class="cc-inp" type="number" value="'+(item.sw||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'sw\',this.value)"> '+item.wu:'')
+        +'<div class="cir-conv-block">'
+          +'<div class="cir-conv-row">'
+            +'<span class="cir-conv-lbl">中→小</span>'
+            +'1 '+(item.mn||'中')+' = <input class="cc-inp" type="number" value="'+(item.ms||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'ms\',this.value)"> '+(item.sn||'小')
+          +'</div>'
+          +'<div class="cir-conv-row">'
+            +'<span class="cir-conv-lbl">大→中</span>'
+            +(item.ln
+              ?'1 '+item.ln+' = <input class="cc-inp" type="number" value="'+(item.lm||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'lm\',this.value)"> '+(item.mn||'中')
+              :'<span style="color:var(--ink4);font-size:11px">（無大單位）</span>')
+          +'</div>'
+          +'<div class="cir-conv-row">'
+            +'<span class="cir-conv-lbl">特殊</span>'
+            +'<input class="cc-inp" style="width:38px" value="'+(item.wu||'')+'" placeholder="單位" onchange="updItem(\''+item.id+'\',\'wu\',this.value)"> '
+            +' 1 '+(item.sn||'小')+' = <input class="cc-inp" type="number" value="'+(item.sw||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'sw\',this.value)"> '
+            +'<span id="conv-wu-lbl-'+item.id+'">'+(item.wu||'—')+'</span>'
+          +'</div>'
         +'</div>';
       if(cfgMode!=='monthly'){
         var t=item[cfgMode]||{min:0,target:0};
