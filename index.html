@@ -208,6 +208,7 @@ tbody tr:hover td{background:#FAFCFF}
         <button class="nav-item" id="nav-elec" onclick="showPage('elec')"><span class="nav-icon">⚡</span>電表記錄</button>
         <button class="nav-item" id="nav-checklist" onclick="showPage('checklist')"><span class="nav-icon">✅</span>開班 Checklist</button>
         <button class="nav-item" id="nav-inventory" onclick="showPage('inventory')"><span class="nav-icon">📋</span>盤補貨系統</button>
+        <button class="nav-item" id="nav-monthly" onclick="showPage('monthly')"><span class="nav-icon">📊</span>月盤點</button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-lbl">系統管理</div>
@@ -247,6 +248,9 @@ tbody tr:hover td{background:#FAFCFF}
       </div>
       <div class="page" id="page-inventory" style="padding:0;margin:-14px">
         <iframe class="system-frame" id="frame-inventory" src="" title="盤補貨系統"></iframe>
+      </div>
+      <div class="page" id="page-monthly" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-monthly" src="" title="月盤點系統"></iframe>
       </div>
 
       <!-- 帳號管理 -->
@@ -330,11 +334,11 @@ var ROLE_NAMES = {
 // 各功能最低可存取的角色（數字越大=限制越少）
 // 代表「角色代碼 <= 此值才可存取」
 var PAGE_PERM = {
-  home:8, temp:6, jelly:5, stock:4, elec:6, checklist:5, inventory:6, accounts:1
+  home:8, temp:6, jelly:5, stock:4, elec:6, checklist:5, inventory:6, monthly:4, accounts:1
 };
 // 各功能是否可寫入（角色代碼 <= 此值才可新增/修改）
 var WRITE_PERM = {
-  temp:6, jelly:5, stock:4, elec:6, checklist:5, inventory:6
+  temp:6, jelly:5, stock:4, elec:6, checklist:5, inventory:6, monthly:4
 };
 
 var currentUser = null;
@@ -418,7 +422,7 @@ function canWrite(page){
 }
 
 function buildNav(){
-  ['home','temp','jelly','stock','elec','checklist','inventory','accounts'].forEach(function(p){
+  ['home','temp','jelly','stock','elec','checklist','inventory','monthly','accounts'].forEach(function(p){
     var el=document.getElementById('nav-'+p);
     if(!el) return;
     if(!canAccess(p)) el.classList.add('locked');
@@ -434,6 +438,7 @@ function buildDash(){
     {id:'elec',  icon:'⚡',name:'電表記錄',  desc:'每日用電 · 月統計'},
     {id:'checklist',icon:'✅',name:'開班Checklist',desc:'開班流程確認 · 歷史記錄'},
     {id:'inventory',icon:'📋',name:'盤補貨系統',desc:'每日盤補貨 · 每週盤叫貨'},
+    {id:'monthly',  icon:'📊',name:'月盤點',    desc:'詳細數量盤 · 大中小單位換算'},
     {id:'accounts',icon:'👤',name:'帳號管理',desc:'帳號與權限設定'},
   ];
   document.getElementById('dash-grid').innerHTML=modules.map(function(m){
@@ -463,7 +468,7 @@ function showPage(p){
   curPage=p;
   closeSidebar();
   // 第一次進入時才載入 iframe
-  var frames=['temp','jelly','stock','elec','checklist','inventory'];
+  var frames=['temp','jelly','stock','elec','checklist','inventory','monthly'];
   if(frames.indexOf(p)>-1 && !framesLoaded[p]){
     document.getElementById('frame-'+p).src=p+'.html';
     framesLoaded[p]=true;

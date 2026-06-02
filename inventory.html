@@ -2,230 +2,254 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="盤補貨">
-<title>每日盤補貨</title>
+<title>盤點系統</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 :root{
   --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
   --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
-  --amber:#8A5500;--amberl:#FFF8E6;
+  --amber:#C07000;--amberl:#FFF3D0;
   --red:#C0302A;--redl:#FDECEA;
   --purple:#5B2D8E;--purplel:#F3E8FF;
   --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
   --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
-  --r:14px;--r2:10px;
+  --r:12px;--r2:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 
 /* 頂部 */
-.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.top-title{color:#fff;font-size:16px;font-weight:900}
-.top-sub{color:rgba(255,255,255,.65);font-size:11px;margin-top:2px}
-.home-btn{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit}
-
-/* 頁面 */
+.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-title{color:#fff;font-size:15px;font-weight:900}
+.top-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.tib{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:16px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.tib:active{opacity:.7}
 .pages{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:14px 14px 32px}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:12px 12px 40px}
 .page.on{display:block}
 
-/* 主選單 */
-.mode-cards{display:flex;flex-direction:column;gap:14px;margin-top:8px}
-.mode-card{background:var(--white);border-radius:16px;padding:22px;display:flex;align-items:center;gap:16px;cursor:pointer;border:2px solid var(--bd);transition:border-color .15s,box-shadow .15s}
+/* 模式卡片 */
+.mode-cards{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.mode-card{background:var(--white);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;border:2px solid var(--bd);transition:transform .1s}
 .mode-card:active{transform:scale(.98)}
-.mode-card.daily{border-color:#4A7CB5}
-.mode-card.weekly{border-color:#5B2D8E}
-.mode-icon{font-size:36px;flex-shrink:0;width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center}
-.mc-daily{background:#E8F0FA}
-.mc-weekly{background:#F3E8FF}
-.mode-info .mode-name{font-size:18px;font-weight:900;margin-bottom:4px}
-.mode-info .mode-desc{font-size:13px;color:var(--ink3)}
-.daily-clr{color:#1A3A5C}
-.weekly-clr{color:#5B2D8E}
+.mc-daily{border-color:var(--bm)}
+.mc-weekly{border-color:var(--purple)}
+.mc-monthly{border-color:var(--gm)}
+.mc-icon{font-size:30px;width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-icon-daily{background:var(--bl)}
+.mc-icon-weekly{background:var(--purplel)}
+.mc-icon-monthly{background:var(--gl)}
+.mc-name{font-size:16px;font-weight:900}
+.mc-desc{font-size:12px;color:var(--ink3);margin-top:3px}
+.mc-daily .mc-name{color:var(--b)}
+.mc-weekly .mc-name{color:var(--purple)}
+.mc-monthly .mc-name{color:var(--g)}
 
-/* 開始設定頁 */
-.setup-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:16px;margin-bottom:12px}
-.setup-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
-.person-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.p-btn{padding:12px 6px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center;transition:all .12s}
-.p-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
-.p-btn:active{opacity:.7}
-.start-btn{width:100%;padding:15px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:4px}
-.start-daily{background:linear-gradient(135deg,#1A3A5C,#4A7CB5)}
+/* 設定頁 */
+.setup-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.slbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.pb{padding:10px 4px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center}
+.pb.on{background:var(--b);color:#fff;border-color:var(--b)}
+.pb:active{opacity:.7}
+.date-inp{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;outline:none;color:var(--ink)}
+.date-inp:focus{border-color:var(--bm)}
+.start-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff}
+.start-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
 .start-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.start-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
 
-/* 區塊選擇 */
-.section-info{background:var(--white);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;border:1px solid var(--bd)}
-.section-meta{font-size:13px;color:var(--ink3);display:flex;gap:16px;flex-wrap:wrap}
-.section-meta span{font-weight:600;color:var(--ink)}
-.zone-list{display:flex;flex-direction:column;gap:10px}
-.zone-card{background:var(--white);border-radius:var(--r);padding:18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:2px solid var(--bd);transition:all .12s}
-.zone-card:active{transform:scale(.98)}
-.zone-card.done{border-color:var(--gm);background:var(--gl)}
-.zone-card.daily-zone{border-left:4px solid var(--bm)}
-.zone-card.weekly-zone{border-left:4px solid var(--purple)}
-.zone-left{display:flex;align-items:center;gap:14px}
-.zone-icon{font-size:28px}
-.zone-name{font-size:16px;font-weight:700}
-.zone-count{font-size:12px;color:var(--ink3);margin-top:3px}
-.zone-status{font-size:13px;font-weight:700;color:var(--ink4)}
-.zone-card.done .zone-status{color:var(--gm)}
-.zone-arrow{font-size:20px;color:var(--ink4)}
-.zone-card.done .zone-arrow{color:var(--gm)}
+/* 進度 */
+.prog-wrap{background:var(--white);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;border:1px solid var(--bd)}
+.prog-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.prog-info{font-size:13px;font-weight:700}
+.prog-pct{font-size:18px;font-weight:900;color:var(--b)}
+.prog-bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s;background:linear-gradient(90deg,var(--bm),var(--gm))}
 
-/* 品項填寫 */
-.section-header{background:var(--white);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--bd);display:flex;align-items:center;gap:12px}
-.sh-icon{font-size:28px}
-.sh-name{font-size:17px;font-weight:900}
-.sh-sub{font-size:12px;color:var(--ink3);margin-top:2px}
-.item-list{display:flex;flex-direction:column;gap:8px}
-.item-card{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .12s}
-.item-card.filled{border-color:var(--gm);background:var(--gl)}
-.item-card.need-restock{border-color:var(--amber);background:var(--amberl)}
-.item-card.ok{border-color:var(--gm);background:var(--gl)}
-.item-info{flex:1}
-.item-name{font-size:14px;font-weight:600}
-.item-threshold{font-size:11px;color:var(--ink3);margin-top:2px}
-.item-result{text-align:right;flex-shrink:0}
-.item-qty{font-size:16px;font-weight:900}
-.item-restock{font-size:11px;margin-top:2px;font-weight:700}
-.item-restock.need{color:var(--amber)}
-.item-restock.ok{color:var(--gm)}
-.confirm-zone-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:14px;background:linear-gradient(135deg,var(--g),var(--gm))}
+/* 品項卡 */
+.cat-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;display:flex;align-items:center;gap:6px}
+.cat-cnt{background:var(--bl);color:var(--b);padding:2px 7px;border-radius:7px;font-size:10px}
+.item-card{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:11px 13px;margin-bottom:6px;cursor:pointer;transition:border-color .12s,background .12s}
+.item-card.filled-ok{border-color:var(--gm);background:var(--gl)}
+.item-card.filled-low{border-color:var(--red);background:var(--redl)}
+.item-card.filled-zero{border-color:var(--amber);background:var(--amberl)}
+.ic-top{display:flex;align-items:center;justify-content:space-between}
+.ic-name{font-size:14px;font-weight:600}
+.ic-total{font-size:16px;font-weight:900;color:var(--ink3)}
+.ic-total.ok{color:var(--g)}
+.ic-total.low{color:var(--red)}
+.ic-total.zero{color:var(--amber)}
+.ic-sub{font-size:11px;color:var(--ink3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.ic-threshold{color:var(--red);font-weight:600}
+.ic-units-row{font-size:11px;color:var(--ink2);margin-top:3px}
+
+/* 完成按鈕 */
+.finish-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:12px}
+.fb-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
+.fb-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.fb-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
 
 /* 結果頁 */
-.result-banner{border-radius:var(--r);padding:20px;text-align:center;margin-bottom:14px;color:#fff}
-.rb-daily{background:linear-gradient(135deg,#1A3A5C,#4A7CB5)}
+.result-banner{border-radius:var(--r);padding:16px;text-align:center;color:#fff;margin-bottom:12px}
+.rb-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
 .rb-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
-.rb-icon{font-size:40px;margin-bottom:8px}
-.rb-title{font-size:20px;font-weight:900;margin-bottom:4px}
-.rb-meta{font-size:13px;opacity:.85}
+.rb-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
+.rb-icon{font-size:36px;margin-bottom:6px}
+.rb-title{font-size:18px;font-weight:900;margin-bottom:4px}
+.rb-sub{font-size:12px;opacity:.8}
 .result-section{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
-.rs-head{padding:12px 14px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
-.rs-head.supply{background:#FFF8E6;color:var(--amber)}
+.rs-head{padding:10px 13px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.rs-head.action{background:var(--amberl);color:var(--amber)}
+.rs-head.red{background:var(--redl);color:var(--red)}
 .rs-head.ok{background:var(--gl);color:var(--g)}
-.rs-item{padding:10px 14px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.ri-name{font-size:14px;font-weight:600}
-.ri-detail{font-size:12px;color:var(--ink3);margin-top:2px}
-.ri-qty{font-size:16px;font-weight:900}
-.ri-qty.supply{color:var(--amber)}
-.ri-qty.order{color:var(--purple)}
-.new-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--white);color:var(--b);border:2px solid var(--b);margin-top:4px}
+.rs-head.info{background:var(--bl);color:var(--b)}
+.rs-row{padding:10px 13px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.rs-name{font-size:14px;font-weight:600}
+.rs-detail{font-size:11px;color:var(--ink3);margin-top:2px}
+.rs-qty{font-size:15px;font-weight:900}
+.rs-qty.action{color:var(--amber)}
+.rs-qty.red{color:var(--red)}
+.rs-qty.ok{color:var(--g)}
+.rs-qty.info{color:var(--b)}
+.new-btn{width:100%;padding:14px;background:var(--white);color:var(--b);border:2px solid var(--b);border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
 
 /* 數量輸入 overlay */
-.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:300;align-items:flex-end;justify-content:center}
 .ov.show{display:flex}
-.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;padding:16px 16px 32px}
-.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 14px}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:540px;padding:14px 14px 32px;max-height:92dvh;overflow-y:auto}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
 .sh-title{font-size:16px;font-weight:900;margin-bottom:4px}
-.sh-threshold{font-size:12px;color:var(--ink3);margin-bottom:16px;padding:8px 12px;background:var(--bg);border-radius:var(--r2)}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.num-display{font-size:36px;font-weight:900;text-align:center;padding:14px;background:var(--bg);border-radius:var(--r2);margin-bottom:12px;color:var(--ink);letter-spacing:2px;min-height:72px;display:flex;align-items:center;justify-content:center}
-.nk{padding:16px;font-size:20px;font-weight:700;border:none;background:var(--white);border-radius:var(--r2);cursor:pointer;font-family:inherit;border:1.5px solid var(--bd)}
-.nk:active{background:var(--bg)}
-.nk.del{background:var(--redl);color:var(--red);border-color:#F5A0A0}
-.nk.confirm{background:var(--g);color:#fff;border-color:var(--g);font-size:15px}
-.nk.zero{}
-.unit-hint{text-align:center;font-size:12px;color:var(--ink3);margin-bottom:8px}
+.sh-hint{font-size:12px;color:var(--ink3);background:var(--bg);border-radius:var(--r2);padding:8px 11px;margin-bottom:14px;line-height:1.6}
+.unit-row{display:grid;grid-template-columns:70px 1fr 50px;gap:8px;align-items:center;margin-bottom:8px}
+.ur-lbl{font-size:12px;font-weight:700;color:var(--ink3);text-align:right}
+.ur-inp{padding:13px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:20px;font-weight:700;text-align:center;font-family:inherit;color:var(--ink);outline:none;width:100%}
+.ur-inp:focus{border-color:var(--bm)}
+.ur-unit{font-size:13px;font-weight:600;color:var(--ink2)}
+.total-row{background:var(--gl);border-radius:var(--r2);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tr-lbl{font-size:12px;font-weight:700;color:var(--g)}
+.tr-val{font-size:22px;font-weight:900;color:var(--g)}
+.sh-ok{width:100%;padding:14px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
 
-/* 歷史記錄 overlay */
-.hist-item{padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:flex-start}
-.hi-date{font-size:13px;font-weight:700}
-.hi-meta{font-size:11px;color:var(--ink3);margin-top:2px}
-.hi-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px}
-.hi-daily{background:var(--bl);color:var(--b)}
-.hi-weekly{background:var(--purplel);color:var(--purple)}
-
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;font-weight:500;white-space:nowrap}
-.empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
-.progress-bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-top:8px}
-.progress-fill{height:100%;border-radius:3px;transition:width .3s;background:var(--gm)}
+/* 設定 overlay */
+.cfg-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.cfg-tab{padding:7px 12px;border-radius:16px;border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cfg-tab.on-daily{background:var(--b);color:#fff;border-color:var(--b)}
+.cfg-tab.on-weekly{background:var(--purple);color:#fff;border-color:var(--purple)}
+.cfg-tab.on-monthly{background:var(--g);color:#fff;border-color:var(--g)}
+.cfg-item-row{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 12px;margin-bottom:6px}
+.cir-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cir-name{font-size:14px;font-weight:700}
+.cir-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.cir-field{display:flex;flex-direction:column;gap:3px}
+.cfl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.04em}
+.cf-inp{padding:8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;width:100%}
+.cf-inp:focus{border-color:var(--bm)}
+.cir-conv{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink3);flex-wrap:wrap;margin-top:4px}
+.cc-inp{width:52px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;text-align:center;outline:none}
+.cc-inp:focus{border-color:var(--bm)}
+.mode-toggles{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.mt-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--bd);background:var(--white);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink3)}
+.mt-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
+.add-inp{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;margin-bottom:8px}
+.add-inp:focus{border-color:var(--bm)}
+.btn{padding:9px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px}
+.btn-p{background:var(--b);color:#fff}
+.btn-d{background:var(--red);color:#fff}
+.btn-o{background:var(--white);color:var(--ink2);border:1.5px solid var(--bd)}
+.btn-sm{padding:5px 9px;font-size:11px}
+.btn-full{width:100%;justify-content:center;padding:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+.empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
 </style>
 </head>
 <body>
-
 <div class="topbar">
   <div>
-    <div class="top-title">📋 盤補貨系統</div>
+    <div class="top-title">📋 盤點系統</div>
     <div class="top-sub">瀧飲山潮 · 學士店</div>
   </div>
-  <div style="display:flex;gap:8px">
-    <button class="home-btn" onclick="showHist()">📂 記錄</button>
-    <button class="home-btn" onclick="showSettings()">⚙️ 設定</button>
-    <button class="home-btn" onclick="location.href='index.html'">🏠</button>
+  <div style="display:flex;gap:6px">
+    <button class="tib" onclick="showHist()">📂 記錄</button>
+    <button class="tib" onclick="openCfg()">⚙️ 設定</button>
+    <button class="tib" onclick="goHome2()">🏠</button>
+  </div>
+</div>
+<div class="pages">
+
+<!-- 主選單 -->
+<div class="page on" id="page-home">
+  <div style="padding:6px 0 12px;font-size:14px;font-weight:700;color:var(--ink2)">選擇盤點類型</div>
+  <div class="mode-cards">
+    <div class="mode-card mc-daily" onclick="showSetup('daily')">
+      <div class="mc-icon mc-icon-daily">📅</div>
+      <div>
+        <div class="mc-name">每日盤補貨</div>
+        <div class="mc-desc">快速盤點 · 計算需補貨量 · 亮紅提醒不足品項</div>
+      </div>
+    </div>
+    <div class="mode-card mc-weekly" onclick="showSetup('weekly')">
+      <div class="mc-icon mc-icon-weekly">📆</div>
+      <div>
+        <div class="mc-name">每週盤叫貨</div>
+        <div class="mc-desc">週補盤點 · 計算需叫貨量 · 大中小單位換算</div>
+      </div>
+    </div>
+    <div class="mode-card mc-monthly" onclick="showSetup('monthly')">
+      <div class="mc-icon mc-icon-monthly">📊</div>
+      <div>
+        <div class="mc-name">月盤點</div>
+        <div class="mc-desc">全品項詳細盤 · 大中小+重量換算 · 最小單位總計</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div class="pages">
-
-  <!-- 主選單 -->
-  <div class="page on" id="page-home">
-    <div style="padding:8px 0 16px;font-size:15px;font-weight:700;color:var(--ink2)">請選擇盤點類型</div>
-    <div class="mode-cards">
-      <div class="mode-card daily" onclick="showSetup('daily')">
-        <div class="mode-icon mc-daily">📅</div>
-        <div class="mode-info">
-          <div class="mode-name daily-clr">每日盤補貨</div>
-          <div class="mode-desc">三區塊盤點 · 計算需補貨量<br>耗材 · 食材 · 冷凍</div>
-        </div>
-      </div>
-      <div class="mode-card weekly" onclick="showSetup('weekly')">
-        <div class="mode-icon mc-weekly">📆</div>
-        <div class="mode-info">
-          <div class="mode-name weekly-clr">每週盤叫貨</div>
-          <div class="mode-desc">完整盤點 · 計算需叫貨量<br>耗材 · 食材 · 冷凍 · 茶葉原料</div>
-        </div>
-      </div>
-    </div>
+<!-- 設定頁 -->
+<div class="page" id="page-setup">
+  <div class="setup-card" id="setup-badge" style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+    <span style="font-size:22px" id="setup-icon"></span>
+    <div style="flex:1"><div style="font-size:15px;font-weight:900" id="setup-label"></div>
+    <div style="font-size:12px;color:var(--ink3)" id="setup-item-count"></div></div>
+    <button onclick="showPage('home')" style="padding:5px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--white);color:var(--ink3);font-size:12px;cursor:pointer;font-family:inherit">← 返回</button>
   </div>
-
-  <!-- 開始設定 -->
-  <div class="page" id="page-setup">
-    <div class="setup-card">
-      <div class="setup-title">盤點人員</div>
-      <div class="person-grid" id="person-grid"></div>
-    </div>
-    <div class="setup-card">
-      <div class="setup-title">日期</div>
-      <input type="date" id="setup-date" style="width:100%;padding:12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;outline:none">
-    </div>
-    <button class="start-btn" id="start-btn" onclick="startInventory()">開始盤點</button>
+  <div class="setup-card">
+    <div class="slbl">盤點人員</div>
+    <div class="pgrid" id="person-grid"></div>
   </div>
+  <div class="setup-card">
+    <div class="slbl">日期</div>
+    <input type="date" id="setup-date" class="date-inp">
+  </div>
+  <button class="start-btn" id="start-btn" onclick="startCount()" style="margin-top:4px"></button>
+</div>
 
-  <!-- 區塊選擇 -->
-  <div class="page" id="page-zones">
-    <div class="section-info">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px" id="zone-mode-title"></div>
-      <div class="section-meta">
-        <div>日期：<span id="zm-date"></span></div>
-        <div>人員：<span id="zm-person"></span></div>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="zone-progress" style="width:0%"></div></div>
+<!-- 盤點頁 -->
+<div class="page" id="page-count">
+  <div class="prog-wrap">
+    <div class="prog-meta">
+      <div class="prog-info" id="prog-info"></div>
+      <div class="prog-pct" id="prog-pct">0%</div>
     </div>
-    <div class="zone-list" id="zone-list"></div>
-    <button class="confirm-zone-btn" id="finish-all-btn" onclick="finishAll()" style="display:none">✓ 完成盤點，查看結果</button>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
   </div>
+  <div id="count-body"></div>
+  <button class="finish-btn" id="finish-btn" onclick="finishCount()" disabled style="opacity:.4"></button>
+</div>
 
-  <!-- 品項填寫 -->
-  <div class="page" id="page-items">
-    <div class="section-header" id="item-section-header"></div>
-    <div class="item-list" id="item-list"></div>
-    <button class="confirm-zone-btn" id="confirm-zone-btn" onclick="confirmZone()">✓ 確認此區塊完成</button>
+<!-- 結果頁 -->
+<div class="page" id="page-result">
+  <div class="result-banner" id="result-banner">
+    <div class="rb-icon" id="rb-icon"></div>
+    <div class="rb-title" id="rb-title"></div>
+    <div class="rb-sub" id="rb-sub"></div>
   </div>
-
-  <!-- 結果頁 -->
-  <div class="page" id="page-result">
-    <div class="result-banner" id="result-banner">
-      <div class="rb-icon" id="rb-icon"></div>
-      <div class="rb-title" id="rb-title"></div>
-      <div class="rb-meta" id="rb-meta"></div>
-    </div>
-    <div id="result-content"></div>
-    <button class="new-btn" onclick="goHome()">← 返回主選單</button>
-  </div>
+  <div id="result-body"></div>
+  <button class="new-btn" onclick="showPage('home')">← 返回主選單</button>
+</div>
 
 </div><!-- /pages -->
 
@@ -234,706 +258,765 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
   <div class="sh">
     <div class="sh-handle"></div>
     <div class="sh-title" id="num-title"></div>
-    <div class="sh-threshold" id="num-threshold"></div>
-    <div class="num-display" id="num-display">—</div>
-    <div class="unit-hint" id="num-unit"></div>
-    <div class="numpad">
-      <button class="nk" onclick="nkPress('7')">7</button>
-      <button class="nk" onclick="nkPress('8')">8</button>
-      <button class="nk" onclick="nkPress('9')">9</button>
-      <button class="nk" onclick="nkPress('4')">4</button>
-      <button class="nk" onclick="nkPress('5')">5</button>
-      <button class="nk" onclick="nkPress('6')">6</button>
-      <button class="nk" onclick="nkPress('1')">1</button>
-      <button class="nk" onclick="nkPress('2')">2</button>
-      <button class="nk" onclick="nkPress('3')">3</button>
-      <button class="nk" onclick="nkPress('0')">0</button>
-      <button class="nk" onclick="nkPress('.')">．</button>
-      <button class="nk del" onclick="nkDel()">⌫</button>
+    <div class="sh-hint" id="num-hint"></div>
+    <div id="num-unit-rows"></div>
+    <div class="total-row">
+      <div class="tr-lbl">最小單位總計</div>
+      <div class="tr-val"><span id="num-total">0</span> <span id="num-total-unit" style="font-size:13px;font-weight:400;color:var(--g)"></span></div>
     </div>
-    <button class="nk confirm" style="width:100%;padding:16px" onclick="nkConfirm()">✓ 確認數量</button>
+    <button class="sh-ok" onclick="confirmNum()">✓ 確認數量</button>
+  </div>
+</div>
+
+<!-- 品項設定 overlay -->
+<div class="ov" id="ov-cfg">
+  <div class="sh" style="max-height:90dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:900">品項設定</div>
+      <button onclick="closeOv('cfg')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <div class="cfg-tabs" id="cfg-tabs"></div>
+    <div id="cfg-body"></div>
+    <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">新增品項</div>
+      <input class="add-inp" id="ni-name" placeholder="品項名稱 *">
+      <input class="add-inp" id="ni-cat" placeholder="分類（如：耗材、食材）">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><div class="cfl" style="margin-bottom:3px">小單位 *</div><input class="cf-inp" id="ni-sn" placeholder="如：包"></div>
+        <div><div class="cfl" style="margin-bottom:3px">中單位</div><input class="cf-inp" id="ni-mn" placeholder="如：箱"></div>
+        <div><div class="cfl" style="margin-bottom:3px">大單位</div><input class="cf-inp" id="ni-ln" placeholder="如：棧板"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><div class="cfl" style="margin-bottom:3px">1中=幾小</div><input class="cf-inp" id="ni-ms" type="number" placeholder="如：12"></div>
+        <div><div class="cfl" style="margin-bottom:3px">1大=幾中</div><input class="cf-inp" id="ni-lm" type="number" placeholder="如：10"></div>
+        <div><div class="cfl" style="margin-bottom:3px">重量單位</div><input class="cf-inp" id="ni-wu" placeholder="如：kg（選填）"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div><div class="cfl" style="margin-bottom:3px">1小=幾重量</div><input class="cf-inp" id="ni-sw" type="number" placeholder="如：0.5"></div>
+        <div style="display:flex;align-items:flex-end;gap:8px;padding-bottom:2px">
+          <div style="font-size:11px;color:var(--ink3)">出現在哪些模式：</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-daily" checked> 日盤</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-weekly" checked> 週盤</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-monthly" checked> 月盤（月盤=全部）</label>
+      </div>
+      <button class="btn btn-p btn-full" onclick="addNewItem()">＋ 新增品項</button>
+    </div>
   </div>
 </div>
 
 <!-- 歷史記錄 overlay -->
 <div class="ov" id="ov-hist">
-  <div class="sh" style="max-height:85dvh;overflow-y:auto">
+  <div class="sh" style="max-height:88dvh;overflow-y:auto">
     <div class="sh-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:900">盤點記錄</div>
+      <div style="font-size:15px;font-weight:900">盤點記錄</div>
       <button onclick="closeOv('hist')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
     </div>
-    <div id="hist-list"></div>
-  </div>
-</div>
-
-<!-- 設定 overlay -->
-<div class="ov" id="ov-settings">
-  <div class="sh" style="max-height:92dvh;overflow-y:auto">
-    <div class="sh-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:900">⚙️ 盤點設定</div>
-      <button onclick="closeOv('settings')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
-    </div>
-
-    <!-- 權限提示 -->
-    <div id="set-perm-warn" style="display:none;background:var(--redl);border-radius:var(--r2);padding:10px 12px;font-size:13px;color:var(--red);margin-bottom:12px;font-weight:600">
-      🔒 僅店長以上權限可修改設定
-    </div>
-
-    <!-- 日盤/週盤 tab -->
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button id="set-tab-daily" onclick="switchSetTab('daily')"
-        style="flex:1;padding:9px;border-radius:var(--r2);border:2px solid var(--bm);background:var(--b);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">日盤</button>
-      <button id="set-tab-weekly" onclick="switchSetTab('weekly')"
-        style="flex:1;padding:9px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">週盤</button>
-    </div>
-
-    <!-- 區塊管理 -->
-    <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">區塊管理</div>
-    <div id="set-zone-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-
-    <!-- 新增區塊（店長以上） -->
-    <div id="add-zone-area" style="display:flex;gap:7px;margin-bottom:14px">
-      <input id="new-zone-icon" placeholder="圖示(如🧴)" style="width:64px;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;outline:none;text-align:center">
-      <input id="new-zone-name" placeholder="區塊名稱（如：備料區）" style="flex:1;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
-      <button onclick="addNewZone()" style="padding:9px 12px;background:var(--b);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">＋ 新增</button>
-    </div>
-
-    <div style="border-top:1px solid var(--bd);margin-bottom:14px"></div>
-
-    <!-- 品項列表 -->
-    <div id="set-items-area"></div>
-
-    <!-- 新增品項（店長以上） -->
-    <div id="add-item-area" style="background:var(--bg);border-radius:var(--r2);padding:12px;margin-top:10px">
-      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">新增品項到此區塊</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">品項名稱</div>
-          <input id="new-item-name" placeholder="如：大吸管" style="width:100%;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none"></div>
-        <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">單位</div>
-          <input id="new-item-unit" placeholder="如：包、條、罐" style="width:100%;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none"></div>
-        <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">低標數量</div>
-          <input id="new-item-min" type="number" placeholder="如：2" style="width:100%;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none"></div>
-        <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">補至目標</div>
-          <input id="new-item-target" type="number" placeholder="如：5" style="width:100%;padding:9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none"></div>
-      </div>
-      <button onclick="addNewItem()" style="width:100%;padding:11px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">＋ 新增品項</button>
-    </div>
+    <div id="hist-body"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-
 <script>
-// ══════════════════════════════════════
-// Apps Script API
-// ══════════════════════════════════════
-var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var API_URL='https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
 
-function api(params, cb){
-  if(!API_URL){ if(cb) cb(null,'未設定API'); return; }
-  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
-  fetch(API_URL+'?'+qs)
-    .then(function(r){return r.json();})
-    .then(function(d){if(cb)cb(d,null);})
-    .catch(function(e){if(cb)cb(null,e.toString());});
-}
-
-// ══════════════════════════════════════
-// 品項資料（日盤）— 4區塊
-// ══════════════════════════════════════
-var ZONES_DAILY = [
-  {
-    id:'counter', name:'櫃檯', icon:'🧾',
-    items:[
-      {id:'straw_big',    name:'大吸管',      unit:'包',  min:'半包',  target:'1包',    minVal:0.5, targetVal:1},
-      {id:'straw_small',  name:'小吸管',      unit:'包',  min:'1/3包', target:'1包',    minVal:0.33,targetVal:1},
-      {id:'bag_outside',  name:'外袋(1/2/4/6)',unit:'捆', min:'0捆',   target:'2捆',    minVal:0,   targetVal:2},
-      {id:'cup_holder',   name:'杯架(2/4/6)',  unit:'組',  min:'鐵盒高',target:'吸管高', minVal:1,   targetVal:2},
-      {id:'cup_lid',      name:'就口杯蓋',     unit:'條',  min:'0條',   target:'1條',    minVal:0,   targetVal:1},
-      {id:'cup_sleeve',   name:'熟杯套',       unit:'包',  min:'2包',   target:'5包',    minVal:2,   targetVal:5},
-      {id:'menu',         name:'菜單',         unit:'公分',min:'-',     target:'3公分',  minVal:0,   targetVal:3},
-      {id:'cup_paper',    name:'飲料紙杯',     unit:'條',  min:'10條',  target:'叫貨',   minVal:10,  targetVal:99},
-      {id:'tasting_cup',  name:'試喝杯',       unit:'條',  min:'1條',   target:'1箱',    minVal:1,   targetVal:10},
-      {id:'label_roll',   name:'貼紙卷',       unit:'條',  min:'1條',   target:'3條',    minVal:1,   targetVal:3},
-      {id:'receipt_roll', name:'發票捲',       unit:'顆',  min:'1顆',   target:'6顆',    minVal:1,   targetVal:6},
-    ]
-  },
-  {
-    id:'consumable', name:'耗材', icon:'🧴',
-    items:[
-      {id:'topping_box',  name:'分裝糖盒',    unit:'盒',  min:'-',     target:'補滿',   minVal:0,   targetVal:1},
-      {id:'gelatin',      name:'分裝先凍粉',  unit:'袋',  min:'-',     target:'補滿',   minVal:0,   targetVal:1},
-      {id:'milk_powder',  name:'分裝奶蓋粉',  unit:'盒',  min:'2盒',   target:'4盒',    minVal:2,   targetVal:4},
-      {id:'black_tea',    name:'紅茶包',       unit:'袋',  min:'半袋',  target:'補1包',  minVal:0.5, targetVal:1},
-      {id:'oolong_tea',   name:'烏龍茶包',     unit:'袋',  min:'半袋',  target:'補1包',  minVal:0.5, targetVal:1},
-      {id:'green_tea',    name:'青茶包',       unit:'袋',  min:'各半袋',target:'補1包',  minVal:0.5, targetVal:1},
-    ]
-  },
-  {
-    id:'refrigerated', name:'冷藏', icon:'❄️',
-    items:[
-      {id:'oat_milk',    name:'冰燕麥奶',    unit:'罐',  min:'3罐',   target:'6罐',    minVal:3,   targetVal:6},
-      {id:'orig_juice',  name:'冰仙原汁',    unit:'罐',  min:'0罐',   target:'1罐',    minVal:0,   targetVal:1},
-      {id:'milk_cap',    name:'奶蓋',        unit:'罐',  min:'0.5罐', target:'1罐',    minVal:0.5, targetVal:1},
-      {id:'ice_maker',   name:'製冰機用料',  unit:'罐',  min:'0罐',   target:'1罐',    minVal:0,   targetVal:1},
-    ]
-  },
-  {
-    id:'ingredient', name:'食材', icon:'🥛',
-    items:[
-      {id:'red_tea_f',   name:'紅茶（冷凍）',unit:'壺',  min:'-',     target:'補滿',   minVal:0,   targetVal:5},
-      {id:'check_f',     name:'清查',        unit:'包',  min:'1包',   target:'5包',    minVal:1,   targetVal:5},
-      {id:'oolong_f',    name:'烏龍茶（冷）',unit:'包',  min:'1包',   target:'2包',    minVal:1,   targetVal:2},
-      {id:'ice_block',   name:'冰塊',        unit:'條',  min:'0條',   target:'1條',    minVal:0,   targetVal:1},
-      {id:'semi_box',    name:'半盒類',      unit:'盒',  min:'半盒',  target:'補滿',   minVal:0.5, targetVal:1},
-    ]
-  }
+// ── 預設品項資料 ─────────────────────────────────────────────
+// modes: 'D'=日盤, 'W'=週盤 (月盤=全部)
+// sn=小, mn=中, ln=大, ms=1中=幾小, lm=1大=幾中
+// wu=重量單位, sw=1小=幾重量
+// daily: {min, target} 低標/補至目標
+// weekly: {min, target}
+var DEFAULT_ITEMS=[
+  // 耗材
+  {id:'invoice',    name:'發票',      cat:'耗材', modes:'DW', sn:'本',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:2,target:6},   weekly:{min:5,target:20}},
+  {id:'sticker',    name:'貼紙',      cat:'耗材', modes:'DW', sn:'捲',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'lid_flat',   name:'就口杯蓋',  cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'lid_dome',   name:'一般杯蓋',  cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'cup_sleeve', name:'熱杯套',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:20,lm:0, wu:'',   sw:0, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'straw_big',  name:'大吸管',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'straw_sm',   name:'小吸管',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:0.33,target:1},weekly:{min:1,target:3}},
+  {id:'cup_norm',   name:'一般杯',    cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:25,lm:0, wu:'',   sw:0, daily:{min:10,target:99}, weekly:{min:3,target:8}},
+  {id:'cup_taste',  name:'試飲杯',    cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:20,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'holder_2',   name:'2杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'holder_4',   name:'4杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'holder_6',   name:'6杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'bag_1',      name:'1杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_2',      name:'2杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_4',      name:'4杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_6',      name:'6杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'seal_film',  name:'封口膜',    cat:'耗材', modes:'DW', sn:'捲',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  // 食材
+  {id:'pwd_nut',    name:'堅果奶蓋粉',cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'pwd_spec',   name:'特製奶蓋粉',cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'pwd_tea',    name:'麵茶粉',    cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'sugar',      name:'糖',        cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'tea_red',    name:'紅茶',      cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_oolong', name:'烏龍茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_grn_b',  name:'大青茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_grn_s',  name:'小青茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:20,lm:0, wu:'g',  sw:10,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'sea_salt',   name:'海鹽',      cat:'食材', modes:'DW', sn:'罐',  mn:'',   ln:'',   ms:0, lm:0, wu:'g',  sw:200,daily:{min:1,target:3},  weekly:{min:2,target:5}},
+  {id:'tapioca',    name:'樹薯粉',    cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'enzyme',     name:'酵素',      cat:'食材', modes:'DW', sn:'瓶',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'fructose',   name:'果糖',      cat:'食材', modes:'DW', sn:'瓶',  mn:'箱', ln:'',   ms:12,lm:0, wu:'',   sw:0, daily:{min:1,target:2},   weekly:{min:2,target:4}},
+  // 飲品原料
+  {id:'milk_fresh', name:'鮮奶',      cat:'飲品原料', modes:'DW', sn:'瓶', mn:'箱',ln:'',ms:12,lm:0, wu:'ml', sw:946,daily:{min:3,target:6},  weekly:{min:5,target:12}},
+  {id:'milk_oat',   name:'燕麥奶',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'ml', sw:946,daily:{min:3,target:6},  weekly:{min:5,target:12}},
+  {id:'cream',      name:'鮮奶油',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:12,lm:0, wu:'ml', sw:500,daily:{min:1,target:3},  weekly:{min:2,target:6}},
+  {id:'jelly_juice',name:'仙草原汁',  cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'',   sw:0,  daily:{min:0,target:1},  weekly:{min:1,target:3}},
+  {id:'winter_mel', name:'冬瓜汁',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'',   sw:0,  daily:{min:0,target:1},  weekly:{min:1,target:3}},
+  // 特殊原料（僅週盤+月盤）
+  {id:'herb',       name:'青草',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'pandan',     name:'斑斕',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'lemon_gr',   name:'檸檬草',    cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'glutin',     name:'糯香',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'taro_cube',  name:'芋心角',    cat:'特殊原料', modes:'W',  sn:'包', mn:'箱',ln:'', ms:6, lm:0, wu:'kg', sw:1,  daily:{min:0,target:0},  weekly:{min:2,target:4}},
+  // 茶葉原料（僅週盤+月盤）
+  {id:'jelly_dry',  name:'仙草乾',    cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:5, lm:0, wu:'kg', sw:1,  daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'tea_ruby',   name:'紅玉',      cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:10,lm:0, wu:'g',  sw:50, daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'tea_camel',  name:'茶花烏龍',  cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:10,lm:0, wu:'g',  sw:50, daily:{min:0,target:0},  weekly:{min:1,target:3}},
 ];
 
-// 週盤額外品項（含日盤全部 + 額外）
-var ZONES_WEEKLY = ZONES_DAILY.map(function(z){
-  return JSON.parse(JSON.stringify(z));
-});
-// 加入週盤額外區塊
-ZONES_WEEKLY.push({
-  id:'tea_material', name:'茶葉原料', icon:'🍃',
-  items:[
-    {id:'black_tea_bag',  name:'紅茶包（大袋）', unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
-    {id:'oolong_bag',     name:'烏龍茶（大袋）', unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
-    {id:'green_tea_bag',  name:'青茶（大袋）',   unit:'袋', min:'1袋', target:'3袋', minVal:1, targetVal:3},
-    {id:'xiancao_dry',    name:'仙草乾',         unit:'包', min:'2包', target:'5包', minVal:2, targetVal:5},
-    {id:'sugar',          name:'糖',             unit:'包', min:'1包', target:'3包', minVal:1, targetVal:3},
-    {id:'oat_bulk',       name:'燕麥奶（大箱）', unit:'箱', min:'1箱', target:'2箱', minVal:1, targetVal:2},
-    {id:'milk_cap_bulk',  name:'奶蓋粉（大袋）', unit:'袋', min:'1袋', target:'2袋', minVal:1, targetVal:2},
-  ]
-});
+var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var items=[],counts={},selPerson='',curMode='daily',curItemId='',records=[],cfgMode='daily';
 
-var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
-
-// ══════════════════════════════════════
-// 狀態
-// ══════════════════════════════════════
-var mode = 'daily'; // 'daily' | 'weekly'
-var selPerson = '';
-var curZoneId = '';
-var currentZones = [];
-var zoneData = {}; // {zoneId: {itemId: qty}}
-var zoneDone = {}; // {zoneId: true}
-var npStr = '';
-var npItemId = '';
-var npZoneId = '';
-var records = [];
-
-function loadRecords(){
-  try{ records=JSON.parse(localStorage.getItem('inv_records')||'[]'); }catch(e){ records=[]; }
-}
-function saveRecords(){
-  try{ localStorage.setItem('inv_records',JSON.stringify(records.slice(0,100))); }catch(e){}
-}
-
-// ══════════════════════════════════════
-// 流程
-// ══════════════════════════════════════
-window.onload = function(){
-  loadRecords();
-  loadCustomItems();
-  document.getElementById('setup-date').value = todayStr();
+// ── 初始化 ────────────────────────────────────────────────────
+window.onload=function(){
+  loadAll();
+  document.getElementById('setup-date').value=todayStr();
   buildPersonGrid();
 };
+function loadAll(){
+  try{var r=localStorage.getItem('inv3_items');items=r?JSON.parse(r):JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
+  catch(e){items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
+  try{var r=localStorage.getItem('inv3_records');records=r?JSON.parse(r):[];}catch(e){records=[];}
+}
+function saveItems(){localStorage.setItem('inv3_items',JSON.stringify(items));}
+function saveRecords(){localStorage.setItem('inv3_records',JSON.stringify(records.slice(0,50)));}
+function getItemsForMode(mode){
+  if(mode==='monthly') return items;
+  return items.filter(function(i){ return i.modes&&i.modes.indexOf(mode==='daily'?'D':'W')>-1; });
+}
 
-function showSetup(m){
-  mode = m;
-  currentZones = m==='daily' ? ZONES_DAILY : ZONES_WEEKLY;
-  zoneData = {}; zoneDone = {};
-  currentZones.forEach(function(z){ zoneData[z.id]={}; });
-  document.getElementById('start-btn').className = 'start-btn ' + (m==='daily'?'start-daily':'start-weekly');
-  document.getElementById('start-btn').textContent = m==='daily'?'▶ 開始日盤':'▶ 開始週盤';
+// ── 人員 ──────────────────────────────────────────────────────
+function buildPersonGrid(){
+  document.getElementById('person-grid').innerHTML=PERSONS.map(function(p){
+    return '<button class="pb'+(p===selPerson?' on':'')+'" onclick="pickP(\''+p+'\')">' +p+'</button>';
+  }).join('');
+}
+function pickP(p){selPerson=p;buildPersonGrid();}
+
+// ── 開始流程 ──────────────────────────────────────────────────
+function showSetup(mode){
+  curMode=mode;
+  var cfg={
+    daily:  {icon:'📅',label:'每日盤補貨',cls:'start-daily'},
+    weekly: {icon:'📆',label:'每週盤叫貨',cls:'start-weekly'},
+    monthly:{icon:'📊',label:'月盤點',    cls:'start-monthly'},
+  };
+  var c=cfg[mode];
+  document.getElementById('setup-icon').textContent=c.icon;
+  document.getElementById('setup-label').textContent=c.label;
+  var cnt=getItemsForMode(mode).length;
+  document.getElementById('setup-item-count').textContent=cnt+' 個品項';
+  document.getElementById('start-btn').className='start-btn '+c.cls;
+  document.getElementById('start-btn').textContent='▶ 開始'+c.label;
   showPage('setup');
 }
 
-function buildPersonGrid(){
-  document.getElementById('person-grid').innerHTML = PERSONS.map(function(p){
-    return '<button class="p-btn'+(p===selPerson?' on':'')+'" onclick="pickPerson(\''+p+'\')" >'+p+'</button>';
-  }).join('');
-}
-function pickPerson(p){ selPerson=p; buildPersonGrid(); }
-
-function startInventory(){
-  if(!selPerson){ showToast('請選擇盤點人員'); return; }
-  var date = document.getElementById('setup-date').value;
-  if(!date){ showToast('請選擇日期'); return; }
-  showPage('zones');
-  buildZoneList();
-}
-
-function buildZoneList(){
-  var modeLabel = mode==='daily'?'每日盤補貨':'每週盤叫貨';
-  document.getElementById('zone-mode-title').textContent = modeLabel;
-  document.getElementById('zm-date').textContent = document.getElementById('setup-date').value;
-  document.getElementById('zm-person').textContent = selPerson;
-
-  var done = Object.keys(zoneDone).length;
-  var total = currentZones.length;
-  document.getElementById('zone-progress').style.width = (done/total*100)+'%';
-
-  document.getElementById('zone-list').innerHTML = currentZones.map(function(z){
-    var isDone = zoneDone[z.id];
-    var filled = Object.keys(zoneData[z.id]||{}).length;
-    return '<div class="zone-card '+(mode==='daily'?'daily-zone':'weekly-zone')+(isDone?' done':'')+'" onclick="openZone(\''+z.id+'\')">'
-      +'<div class="zone-left">'
-        +'<div class="zone-icon">'+z.icon+'</div>'
-        +'<div><div class="zone-name">'+z.name+'</div>'
-          +'<div class="zone-count">'+z.items.length+'個品項'+(filled>0?' · 已填'+filled+'項':'')+'</div>'
-        +'</div>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;gap:10px">'
-        +'<span class="zone-status">'+(isDone?'✓ 完成':'未完成')+'</span>'
-        +'<span class="zone-arrow">›</span>'
-      +'</div>'
-    +'</div>';
-  }).join('');
-
-  // 全部完成才顯示完成按鈕
-  var allDone = currentZones.every(function(z){ return zoneDone[z.id]; });
-  document.getElementById('finish-all-btn').style.display = allDone?'block':'none';
-}
-
-function openZone(zoneId){
-  curZoneId = zoneId;
-  var zone = currentZones.find(function(z){ return z.id===zoneId; });
-  if(!zone) return;
-  document.getElementById('item-section-header').innerHTML =
-    '<div class="sh-icon">'+zone.icon+'</div>'
-    +'<div><div class="sh-name">'+zone.name+'</div>'
-    +'<div class="sh-sub">點選品項輸入現有數量</div></div>';
-  buildItemList(zone);
-  showPage('items');
-}
-
-function buildItemList(zone){
-  var data = zoneData[zone.id]||{};
-  document.getElementById('item-list').innerHTML = zone.items.map(function(item){
-    var qty = data[item.id];
-    var filled = qty !== undefined && qty !== null;
-    var qtyNum = filled ? parseFloat(qty) : null;
-    var needRestock = filled && (qtyNum < item.minVal || (qtyNum === 0 && item.targetVal > 0));
-    var cls = !filled ? '' : (needRestock ? 'need-restock' : 'ok');
-    var restock = '';
-    if(filled){
-      var diff = item.targetVal - qtyNum;
-      if(diff > 0 && needRestock) restock = '<div class="item-restock need">需'+(mode==='daily'?'補':'叫')+' '+diff+' '+item.unit+'</div>';
-      else restock = '<div class="item-restock ok">✓ 足夠</div>';
-    }
-    return '<div class="item-card '+cls+'" onclick="openNumpad(\''+zone.id+'\',\''+item.id+'\')">'
-      +'<div class="item-info">'
-        +'<div class="item-name">'+item.name+'</div>'
-        +'<div class="item-threshold">低於 '+item.min+' 需補 → 補至 '+item.target+'</div>'
-      +'</div>'
-      +'<div class="item-result">'
-        +'<div class="item-qty">'+(filled?qty+'<span style="font-size:12px;color:var(--ink3)">'+item.unit+'</span>':'—')+'</div>'
-        +restock
-      +'</div>'
-    +'</div>';
-  }).join('');
-}
-
-function confirmZone(){
-  var zone = currentZones.find(function(z){ return z.id===curZoneId; });
-  var data = zoneData[curZoneId]||{};
-  var unfilled = zone.items.filter(function(item){ return data[item.id]===undefined; });
-  if(unfilled.length>0){
-    if(!confirm('還有 '+unfilled.length+' 項未填寫，確定完成此區塊嗎？')){ return; }
+function startCount(){
+  if(!selPerson){showToast('請選擇人員');return;}
+  if(!document.getElementById('setup-date').value){showToast('請選擇日期');return;}
+  counts={};
+  if(curMode==='monthly'){
+    curMonthlyLoc='現場';
+    renderMonthlyLocPage();
+  } else {
+    renderCountPage();
   }
-  zoneDone[curZoneId] = true;
-  showPage('zones');
-  buildZoneList();
-  showToast('✓ '+zone.name+'區塊已確認');
+  showPage('count');
 }
 
-function finishAll(){
-  var date = document.getElementById('setup-date').value;
-  var rec = {
-    id: Date.now(),
-    mode: mode,
-    date: date,
-    person: selPerson,
-    createdAt: nowStr(),
-    zones: JSON.parse(JSON.stringify(zoneData))
-  };
+// ── 盤點頁 ─────────────────────────────────────────────────────
+function renderCountPage(){
+  var modeItems=getItemsForMode(curMode);
+  var done=Object.keys(counts).length;
+  var pct=modeItems.length?Math.round(done/modeItems.length*100):0;
+  var modeLabels={daily:'每日盤補貨',weekly:'每週盤叫貨',monthly:'月盤點'};
+  document.getElementById('prog-info').textContent=modeLabels[curMode]+' · '+selPerson;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  var fb=document.getElementById('finish-btn');
+  fb.disabled=done<modeItems.length;
+  fb.style.opacity=done>=modeItems.length?1:0.4;
+  fb.textContent=curMode==='daily'?'✓ 完成，查看需補貨':curMode==='weekly'?'✓ 完成，查看需叫貨':'✓ 完成月盤點';
+  fb.className='finish-btn fb-'+(curMode==='daily'?'daily':curMode==='weekly'?'weekly':'monthly');
+
+  var cats=[...new Set(modeItems.map(function(i){return i.cat;}))];
+  var html='';
+  cats.forEach(function(cat){
+    var ci=modeItems.filter(function(i){return i.cat===cat;});
+    html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+    ci.forEach(function(item){
+      var c=counts[item.id];
+      var filled=c!==undefined;
+      var total=filled?calcTotal(item,c):null;
+      var status='';
+      var cls='';
+      if(filled&&curMode!=='monthly'){
+        var cfg=item[curMode];
+        if(cfg){
+          if(total<cfg.min){cls='filled-low';status='⚠ 不足 低標:'+cfg.min+item.sn+' 不足';}
+          else if(total===0){cls='filled-zero';}
+          else{cls='filled-ok';}
+        }
+      } else if(filled){cls='filled-ok';}
+      var totalCls=!filled?'':cls==='filled-low'?'low':cls==='filled-zero'?'zero':'ok';
+      html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+\')">'
+        +'<div class="ic-top">'
+          +'<span class="ic-name">'+item.name+'</span>'
+          +'<span class="ic-total '+totalCls+'">'+(filled?(total+' '+item.sn):'—')+'</span>'
+        +'</div>';
+      if(filled&&c){
+        var parts=[];
+        if(item.ln&&c.l) parts.push(c.l+item.ln);
+        if(item.mn&&c.m) parts.push(c.m+item.mn);
+        if(c.s!==undefined) parts.push(c.s+item.sn);
+        if(item.wu&&c.w) parts.push(c.w+item.wu);
+        if(parts.length>1) html+='<div class="ic-units-row">'+parts.join(' + ')+'</div>';
+      }
+      if(curMode!=='monthly'&&item[curMode]){
+        var t=item[curMode];
+        html+='<div class="ic-sub"><span class="ic-threshold">低標:'+t.min+item.sn+'</span><span>補至:'+t.target+item.sn+'</span>';
+        if(status) html+='<span style="color:var(--red);font-weight:700">'+status+'</span>';
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+  });
+  document.getElementById('count-body').innerHTML=html;
+}
+
+function calcTotal(item,c){
+  var total=(parseFloat(c.s)||0);
+  if(item.mn&&item.ms>0) total+=(parseFloat(c.m)||0)*item.ms;
+  if(item.ln&&item.lm>0&&item.ms>0) total+=(parseFloat(c.l)||0)*item.lm*item.ms;
+  else if(item.ln&&item.lm>0) total+=(parseFloat(c.l)||0)*item.lm;
+  return Math.round(total*100)/100;
+}
+
+// ── 月盤地點 ─────────────────────────────────────────────────
+// 每個品項可設定要在哪些地點盤點：'S'=現場, 'W'=倉庫
+// 月盤按地點分開填寫，最後合計
+
+var MONTHLY_LOCS=['現場','倉庫'];
+
+function getItemLocsForMonthly(item){
+  // 預設：有 locs 欄位就用，否則預設兩個都要
+  return item.locs||'SW';
+}
+
+function startCountMonthly(){
+  // 月盤：先選地點
+  counts={};
+  curMonthlyLoc='現場';
+  renderMonthlyLocPage();
+  showPage('count');
+}
+
+var curMonthlyLoc='現場';
+
+function renderMonthlyLocPage(){
+  var date=document.getElementById('setup-date').value;
+  var locsLeft=MONTHLY_LOCS.filter(function(loc){
+    var key=loc==='現場'?'S':'W';
+    // 有任一品項需要此地點
+    return items.some(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+  });
+
+  document.getElementById('prog-info').textContent='月盤點 '+curMonthlyLoc+' · '+selPerson;
+
+  var locItems=items.filter(function(i){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    return getItemLocsForMonthly(i).indexOf(key)>-1;
+  });
+
+  var locKey=curMonthlyLoc==='現場'?'S':'W';
+  var doneInLoc=locItems.filter(function(i){
+    return counts[locKey+'_'+i.id]!==undefined;
+  }).length;
+  var pct=locItems.length?Math.round(doneInLoc/locItems.length*100):100;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+
+  // 頂部地點切換
+  var fb=document.getElementById('finish-btn');
+  var allLocsDone=MONTHLY_LOCS.every(function(loc){
+    var key=loc==='現場'?'S':'W';
+    var li=items.filter(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+    return li.every(function(i){return counts[key+'_'+i.id]!==undefined;});
+  });
+  fb.disabled=!allLocsDone;
+  fb.style.opacity=allLocsDone?1:0.4;
+  fb.textContent='✓ 完成月盤點，查看結果';
+  fb.className='finish-btn fb-monthly';
+
+  var html='<div style="display:flex;gap:8px;margin-bottom:14px">';
+  MONTHLY_LOCS.forEach(function(loc){
+    var key=loc==='現場'?'S':'W';
+    var li=items.filter(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+    var done=li.filter(function(i){return counts[key+'_'+i.id]!==undefined;}).length;
+    var on=loc===curMonthlyLoc;
+    html+='<button onclick="switchMonthlyLoc(\''+loc+'\')" style="flex:1;padding:10px;border-radius:var(--r2);border:2px solid '+(on?'var(--g)':'var(--bd)')+';background:'+(on?'var(--g)':'var(--white)')+';color:'+(on?'#fff':'var(--ink2)')+';font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'
+      +(loc==='現場'?'🏪':'📦')+' '+loc+'<br><span style="font-size:11px;opacity:.8">'+done+'/'+li.length+'</span></button>';
+  });
+  html+='</div>';
+
+  var cats=[...new Set(locItems.map(function(i){return i.cat;}))];
+  cats.forEach(function(cat){
+    var ci=locItems.filter(function(i){return i.cat===cat;});
+    html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+    ci.forEach(function(item){
+      var key=curMonthlyLoc==='現場'?'S':'W';
+      var cntKey=key+'_'+item.id;
+      var c=counts[cntKey];
+      var filled=c!==undefined;
+      var total=filled?calcTotal(item,c):null;
+      var cls=filled?'filled-ok':'';
+      var parts=[];
+      if(filled){
+        if(item.ln&&c.l) parts.push(c.l+item.ln);
+        if(item.mn&&c.m) parts.push(c.m+item.mn);
+        if(c.s!==undefined) parts.push(c.s+item.sn);
+        if(item.wu&&c.w) parts.push(c.w+item.wu);
+      }
+      html+='<div class="item-card '+cls+'" onclick="openNumOvMonthly(\''+item.id+'\')" style="cursor:pointer">'
+        +'<div class="ic-top">'
+          +'<span class="ic-name">'+item.name+'</span>'
+          +'<span class="ic-total'+(filled?' ok':'')+'">'+( filled?(total+' '+item.sn):'—')+'</span>'
+        +'</div>'
+        +(filled&&parts.length>1?'<div class="ic-units-row">'+parts.join(' + ')+'</div>':'')
+      +'</div>';
+    });
+  });
+  document.getElementById('count-body').innerHTML=html;
+}
+
+function switchMonthlyLoc(loc){
+  curMonthlyLoc=loc;
+  renderMonthlyLocPage();
+}
+
+function openNumOvMonthly(itemId){
+  curItemId='monthly_'+itemId;
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var key=curMonthlyLoc==='現場'?'S':'W';
+  var cntKey=key+'_'+itemId;
+  var c=counts[cntKey]||{l:0,m:0,s:0,w:0};
+  document.getElementById('num-title').textContent=item.name+' （'+curMonthlyLoc+'）';
+  document.getElementById('num-total-unit').textContent=item.sn;
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+' = '+item.ms+' '+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+' = '+item.lm+' '+item.mn);
+  if(item.wu&&item.sw>0) hints.push('1'+item.sn+' = '+item.sw+' '+item.wu);
+  document.getElementById('num-hint').textContent=hints.join('　')||'輸入數量';
+  var html='';
+  if(item.ln){
+    html+='<div class="unit-row"><span class="ur-lbl">'+item.ln+'（大）</span>'
+      +'<input class="ur-inp" id="inp-l" type="number" min="0" step="0.1" value="'+(c.l||0)+'" oninput="recalc()" inputmode="decimal">'
+      +'<span class="ur-unit">'+item.ln+'</span></div>';
+  }
+  if(item.mn){
+    html+='<div class="unit-row"><span class="ur-lbl">'+item.mn+'（中）</span>'
+      +'<input class="ur-inp" id="inp-m" type="number" min="0" step="0.1" value="'+(c.m||0)+'" oninput="recalc()" inputmode="decimal">'
+      +'<span class="ur-unit">'+item.mn+'</span></div>';
+  }
+  html+='<div class="unit-row"><span class="ur-lbl">'+item.sn+'（小）</span>'
+    +'<input class="ur-inp" id="inp-s" type="number" min="0" step="0.1" value="'+(c.s||0)+'" oninput="recalc()" inputmode="decimal">'
+    +'<span class="ur-unit">'+item.sn+'</span></div>';
+  if(item.wu&&item.sw>0){
+    html+='<div class="unit-row"><span class="ur-lbl">'+item.wu+'（重）</span>'
+      +'<input class="ur-inp" id="inp-w" type="number" min="0" step="0.1" value="'+(c.w||0)+'" oninput="recalcW()" inputmode="decimal" style="color:var(--purple)">'
+      +'<span class="ur-unit">'+item.wu+'</span></div>'
+      +'<div style="font-size:11px;color:var(--purple);text-align:center;margin-bottom:8px">重量換算加入總量（1'+item.sn+' = '+item.sw+' '+item.wu+'）</div>';
+  }
+  document.getElementById('num-unit-rows').innerHTML=html;
+  recalc();
+  openOv('num');
+  setTimeout(function(){var first=document.querySelector('#num-unit-rows .ur-inp');if(first){first.focus();first.select();}},100);
+}
+
+function confirmNum(){
+  var item;
+  var isMonthly=curItemId.startsWith('monthly_');
+  var realId=isMonthly?curItemId.replace('monthly_',''):curItemId;
+  item=items.find(function(i){return i.id===realId;});
+  if(!item) return;
+  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
+  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
+  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
+  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
+  if(isMonthly){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    counts[key+'_'+realId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderMonthlyLocPage();
+  } else {
+    counts[curItemId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderCountPage();
+  }
+  showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+}
+  curItemId=itemId;
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var c=counts[itemId]||{l:0,m:0,s:0,w:0};
+  document.getElementById('num-title').textContent=item.name;
+  document.getElementById('num-total-unit').textContent=item.sn;
+
+  // 提示說明
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+' = '+item.ms+' '+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+' = '+item.lm+' '+item.mn);
+  if(item.wu&&item.sw>0) hints.push('1'+item.sn+' = '+item.sw+' '+item.wu);
+  if(curMode!=='monthly'&&item[curMode]){
+    var t=item[curMode];
+    hints.push('低標：'+t.min+' '+item.sn+'　補至：'+t.target+' '+item.sn);
+  }
+  document.getElementById('num-hint').textContent=hints.join('　');
+
+  var html='';
+  if(item.ln){
+    html+='<div class="unit-row">'
+      +'<span class="ur-lbl">'+item.ln+'(大)</span>'
+      +'<input class="ur-inp" id="inp-l" type="number" min="0" step="0.1" value="'+(c.l||0)+'" oninput="recalc()" inputmode="decimal">'
+      +'<span class="ur-unit">'+item.ln+'</span></div>';
+  }
+  if(item.mn){
+    html+='<div class="unit-row">'
+      +'<span class="ur-lbl">'+item.mn+'(中)</span>'
+      +'<input class="ur-inp" id="inp-m" type="number" min="0" step="0.1" value="'+(c.m||0)+'" oninput="recalc()" inputmode="decimal">'
+      +'<span class="ur-unit">'+item.mn+'</span></div>';
+  }
+  html+='<div class="unit-row">'
+    +'<span class="ur-lbl">'+item.sn+'(小)</span>'
+    +'<input class="ur-inp" id="inp-s" type="number" min="0" step="0.1" value="'+(c.s||0)+'" oninput="recalc()" inputmode="decimal">'
+    +'<span class="ur-unit">'+item.sn+'</span></div>';
+  if(item.wu&&item.sw>0){
+    html+='<div class="unit-row" style="opacity:.7">'
+      +'<span class="ur-lbl">'+item.wu+'(重)</span>'
+      +'<input class="ur-inp" id="inp-w" type="number" min="0" step="0.1" value="'+(c.w||0)+'" oninput="recalcW()" inputmode="decimal" style="font-size:16px;color:var(--purple)">'
+      +'<span class="ur-unit">'+item.wu+'</span></div>';
+    html+='<div style="font-size:11px;color:var(--purple);text-align:center;margin-bottom:8px">重量會換算加入總量（'+item.sw+' '+item.wu+'/'+item.sn+'）</div>';
+  }
+  document.getElementById('num-unit-rows').innerHTML=html;
+  recalc();
+  openOv('num');
+  setTimeout(function(){
+    var first=document.querySelector('#num-unit-rows .ur-inp');
+    if(first){first.focus();first.select();}
+  },100);
+}
+
+function recalc(){
+  var item=items.find(function(i){return i.id===curItemId;});
+  if(!item) return;
+  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
+  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
+  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
+  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
+  var wConverted=item.sw>0?(w/item.sw):0;
+  var total=calcTotal(item,{s:s,m:m,l:l})+wConverted;
+  document.getElementById('num-total').textContent=Math.round(total*100)/100;
+}
+function recalcW(){
+  // 重量輸入時也重新計算
+  recalc();
+}
+
+function confirmNum(){
+  var item=items.find(function(i){return i.id===curItemId;});
+  if(!item) return;
+  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
+  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
+  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
+  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
+  counts[curItemId]={s:s,m:m,l:l,w:w};
+  closeOv('num');
+  renderCountPage();
+  showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+}
+
+// ── 完成盤點 ──────────────────────────────────────────────────
+function finishCount(){
+  var date=document.getElementById('setup-date').value;
+  var modeItems=getItemsForMode(curMode);
+  var modeLabels={daily:'今日補貨清單',weekly:'本週叫貨清單',monthly:'月盤點結果'};
+  var modeIcons={daily:'📋',weekly:'📦',monthly:'📊'};
+  document.getElementById('rb-icon').textContent=modeIcons[curMode];
+  document.getElementById('rb-title').textContent=modeLabels[curMode];
+  document.getElementById('rb-sub').textContent=date+' · '+selPerson;
+  document.getElementById('result-banner').className='result-banner rb-'+curMode;
+
+  var actionItems=[],okItems=[];
+  modeItems.forEach(function(item){
+    var c=counts[item.id]||{s:0,m:0,l:0,w:0};
+    var total=calcTotal(item,c);
+    var wConverted=item.sw>0?((c.w||0)/item.sw):0;
+    var realTotal=total+wConverted;
+    if(curMode==='monthly'){
+      okItems.push({item:item,c:c,total:realTotal});
+    } else {
+      var cfg=item[curMode];
+      var needAmt=cfg?(cfg.target-realTotal):0;
+      if(needAmt>0){
+        actionItems.push({item:item,c:c,total:realTotal,need:Math.ceil(needAmt)});
+      } else {
+        okItems.push({item:item,c:c,total:realTotal});
+      }
+    }
+  });
+
+  var html='';
+  if(curMode==='monthly'){
+    // 月盤：合計現場+倉庫，按分類顯示
+    var cats=[...new Set(items.map(function(i){return i.cat;}))];
+    cats.forEach(function(cat){
+      var ci=items.filter(function(i){return i.cat===cat;});
+      html+='<div class="result-section"><div class="rs-head info">'+cat+'</div>';
+      ci.forEach(function(item){
+        var cS=counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+        var cW=counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+        var totalS=calcTotal(item,cS)+（item.sw>0?(cS.w||0)/item.sw:0);
+        var totalW=calcTotal(item,cW)+（item.sw>0?(cW.w||0)/item.sw:0);
+        var totalAll=Math.round((totalS+totalW)*100)/100;
+        var hasS=getItemLocsForMonthly(item).indexOf('S')>-1;
+        var hasW=getItemLocsForMonthly(item).indexOf('W')>-1;
+        var detail='';
+        if(hasS) detail+='現場:'+Math.round(totalS*100)/100+item.sn;
+        if(hasS&&hasW) detail+=' + ';
+        if(hasW) detail+='倉庫:'+Math.round(totalW*100)/100+item.sn;
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+item.name+'</div>'
+            +(detail?'<div class="rs-detail">'+detail+'</div>':'')
+          +'</div>'
+          +'<div class="rs-qty info">'+totalAll+' '+item.sn+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    });
+  } else {
+    // 日盤/週盤：顯示需補/叫清單
+    var actionWord=curMode==='daily'?'需補貨':'需叫貨';
+    if(actionItems.length){
+      html+='<div class="result-section"><div class="rs-head red">⚠ '+actionWord+' — '+actionItems.length+' 項</div>';
+      actionItems.forEach(function(x){
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+x.item.name+'</div>'
+            +'<div class="rs-detail">現有 '+Math.round(x.total*100)/100+x.item.sn+' · 需達 '+x.item[curMode].target+x.item.sn+'</div></div>'
+          +'<div class="rs-qty red">+'+x.need+' '+x.item.sn+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需'+actionWord+'</div></div>';
+    }
+    if(okItems.length){
+      html+='<div class="result-section"><div class="rs-head ok">✓ 庫存足夠 — '+okItems.length+' 項</div>';
+      okItems.forEach(function(x){
+        html+='<div class="rs-row"><div class="rs-name">'+x.item.name+'</div>'
+          +'<div class="rs-qty ok">'+Math.round(x.total*100)/100+' '+x.item.sn+'</div></div>';
+      });
+      html+='</div>';
+    }
+  }
+  document.getElementById('result-body').innerHTML=html;
+
+  // 儲存記錄
+  var rec={id:Date.now(),mode:curMode,date:date,person:selPerson,counts:JSON.parse(JSON.stringify(counts))};
   records.unshift(rec);
   saveRecords();
-  // 推送到 Sheets
-  pushToSheets(rec);
-  showResult(rec);
-}
-
-function pushToSheets(rec){
-  // 整理所有需補/叫貨項目
-  var supplyItems = [];
-  currentZones.forEach(function(zone){
-    var data = rec.zones[zone.id]||{};
-    zone.items.forEach(function(item){
-      var qty = data[item.id];
-      if(qty===undefined) return;
-      var diff = item.targetVal - parseFloat(qty);
-      supplyItems.push({
-        zone:zone.name, item:item.name, unit:item.unit,
-        current:qty, target:item.targetVal, need:diff>0?diff:0
-      });
-    });
-  });
-  api({
-    action: 'invSave',
-    mode: rec.mode,
-    date: rec.date,
-    person: rec.person,
-    createdAt: rec.createdAt,
-    data: JSON.stringify(supplyItems)
-  }, function(d,e){
-    if(d&&d.ok) showToast('✓ 已同步至 Google Sheets');
-  });
-}
-
-function showResult(rec){
-  var isDaily = rec.mode==='daily';
-  document.getElementById('result-banner').className = 'result-banner ' + (isDaily?'rb-daily':'rb-weekly');
-  document.getElementById('rb-icon').textContent = isDaily?'📋':'📦';
-  document.getElementById('rb-title').textContent = isDaily?'今日補貨清單':'本週叫貨清單';
-  document.getElementById('rb-meta').textContent = rec.date+' · '+rec.person;
-
-  var supplyItems = [], okItems = [];
-  currentZones.forEach(function(zone){
-    var data = rec.zones[zone.id]||{};
-    zone.items.forEach(function(item){
-      var qty = data[item.id];
-      if(qty===undefined||qty===null) return; // 未填跳過
-      var qtyNum = parseFloat(qty);
-      var diff = item.targetVal - qtyNum;
-      // qty < minVal 或 qty === 0 且 targetVal > 0 都需要補
-      var needSupply = diff > 0 && (qtyNum < item.minVal || (qtyNum === 0 && item.targetVal > 0));
-      if(needSupply) supplyItems.push({zone:zone.name,zone_icon:zone.icon,item:item.name,unit:item.unit,current:qty,need:diff});
-      else okItems.push({zone:zone.name,item:item.name,unit:item.unit,current:qty});
-    });
-  });
-
-  var html = '';
-  if(supplyItems.length){
-    var actionWord = isDaily?'需補貨':'需叫貨';
-    html += '<div class="result-section">'
-      +'<div class="rs-head supply">⚠ '+actionWord+' — '+supplyItems.length+' 項</div>'
-      +supplyItems.map(function(r){
-        return '<div class="rs-item">'
-          +'<div><div class="ri-name">'+r.zone_icon+' '+r.item+'</div>'
-            +'<div class="ri-detail">現有：'+r.current+r.unit+' · 需達：'+r.need+r.unit+'以上</div></div>'
-          +'<div class="ri-qty '+(isDaily?'supply':'order')+'">+'+r.need+' '+r.unit+'</div>'
-        +'</div>';
-      }).join('')
-    +'</div>';
-  } else {
-    html += '<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需補貨</div></div>';
-  }
-
-  if(okItems.length){
-    html += '<div class="result-section">'
-      +'<div class="rs-head ok">✓ 庫存足夠 — '+okItems.length+' 項</div>'
-      +okItems.map(function(r){
-        return '<div class="rs-item">'
-          +'<div class="ri-name">'+r.item+'</div>'
-          +'<div class="ri-qty" style="color:var(--gm)">'+r.current+' '+r.unit+'</div>'
-        +'</div>';
-      }).join('')
-    +'</div>';
-  }
-
-  document.getElementById('result-content').innerHTML = html;
+  pushToSheets(rec,modeItems,actionItems);
   showPage('result');
 }
 
-// ══════════════════════════════════════
-// 數字鍵盤
-// ══════════════════════════════════════
-function openNumpad(zoneId, itemId){
-  curZoneId = zoneId;
-  npZoneId = zoneId;
-  npItemId = itemId;
-  var zone = currentZones.find(function(z){ return z.id===zoneId; });
-  var item = zone.items.find(function(i){ return i.id===itemId; });
-  npStr = zoneData[zoneId][itemId]!==undefined ? String(zoneData[zoneId][itemId]) : '';
-  document.getElementById('num-title').textContent = item.name;
-  document.getElementById('num-threshold').textContent =
-    '📌 低於 '+item.min+' 需'+(mode==='daily'?'補':'叫')+'　→　補至 '+item.target;
-  document.getElementById('num-unit').textContent = '單位：'+item.unit;
-  updateNpDisplay();
-  openOv('num');
-}
-function nkPress(v){
-  if(npStr.length>=6) return;
-  if(v==='.'&&npStr.includes('.')) return;
-  if(npStr==='0'&&v!=='.') npStr=v;
-  else npStr+=v;
-  updateNpDisplay();
-}
-function nkDel(){ npStr=npStr.slice(0,-1); updateNpDisplay(); }
-function updateNpDisplay(){
-  document.getElementById('num-display').textContent = npStr||'—';
-}
-function nkConfirm(){
-  if(npStr===''){ showToast('請輸入數量'); return; }
-  var qty = parseFloat(npStr);
-  if(isNaN(qty)||qty<0){ showToast('請輸入有效數字（0以上）'); return; }
-  zoneData[npZoneId][npItemId] = qty;
-  closeOv('num');
-  var zone = currentZones.find(function(z){ return z.id===npZoneId; });
-  buildItemList(zone);
+function pushToSheets(rec,modeItems,actionItems){
+  var data=modeItems.map(function(item){
+    var c=rec.counts[item.id]||{s:0,m:0,l:0,w:0};
+    var total=calcTotal(item,c);
+    var wConverted=item.sw>0?((c.w||0)/item.sw):0;
+    var realTotal=total+wConverted;
+    var cfg=item[rec.mode];
+    var need=cfg?Math.max(0,cfg.target-realTotal):0;
+    return {cat:item.cat,item:item.name,unit:item.sn,
+      qty_l:c.l||0,qty_m:c.m||0,qty_s:c.s||0,qty_w:c.w||0,
+      total:Math.round(realTotal*100)/100,need:Math.ceil(need)};
+  });
+  api({action:'invSave',mode:rec.mode,date:rec.date,person:rec.person,data:JSON.stringify(data)},
+    function(d){if(d&&d.ok) showToast('✓ 已同步 Google Sheets');});
 }
 
-// ══════════════════════════════════════
-// 歷史記錄
-// ══════════════════════════════════════
-function showHist(){
-  loadRecords();
-  var el = document.getElementById('hist-list');
-  if(!records.length){ el.innerHTML='<div class="empty">尚無盤點記錄</div>'; openOv('hist'); return; }
-  el.innerHTML = records.slice(0,30).map(function(r){
-    var label = r.mode==='daily'?'日盤':'週盤';
-    var cls = r.mode==='daily'?'hi-daily':'hi-weekly';
-    // 計算需補項數
-    var needCount = 0;
-    currentZones.forEach(function(zone){
-      var data = (r.zones&&r.zones[zone.id])||{};
-      zone.items.forEach(function(item){
-        var qty=data[item.id];
-        if(qty!==undefined && item.targetVal-parseFloat(qty)>0) needCount++;
-      });
+// ── 設定 overlay ──────────────────────────────────────────────
+function openCfg(){
+  cfgMode='daily';
+  renderCfgTabs();
+  renderCfgBody();
+  openOv('cfg');
+}
+function renderCfgTabs(){
+  var tabs=[{id:'daily',lbl:'📅 日盤'},{id:'weekly',lbl:'📆 週盤'},{id:'monthly',lbl:'📊 月盤（全部）'}];
+  document.getElementById('cfg-tabs').innerHTML=tabs.map(function(t){
+    var on=t.id===cfgMode;
+    return '<button class="cfg-tab'+(on?' on-'+cfgMode:'')+'" onclick="switchCfgTab(\''+t.id+'\')">'+t.lbl+'</button>';
+  }).join('');
+}
+function switchCfgTab(m){cfgMode=m;renderCfgTabs();renderCfgBody();}
+function renderCfgBody(){
+  var list=cfgMode==='monthly'?items:items.filter(function(i){return i.modes&&i.modes.indexOf(cfgMode==='daily'?'D':'W')>-1;});
+  if(!list.length){document.getElementById('cfg-body').innerHTML='<div class="empty">此模式尚無品項</div>';return;}
+  var cats=[...new Set(list.map(function(i){return i.cat;}))];
+  var html='';
+  cats.forEach(function(cat){
+    var ci=list.filter(function(i){return i.cat===cat;});
+    html+='<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:12px 0 6px">'+cat+'</div>';
+    ci.forEach(function(item){
+      html+='<div class="cfg-item-row">'
+        +'<div class="cir-head"><span class="cir-name">'+item.name+'</span>'
+          +'<button class="btn btn-d btn-sm" onclick="delItem(\''+item.id+'\')">刪除</button></div>'
+        +'<div class="cir-fields">'
+          +'<div class="cir-field"><div class="cfl">小單位</div><input class="cf-inp" value="'+item.sn+'" onchange="updItem(\''+item.id+'\',\'sn\',this.value)"></div>'
+          +'<div class="cir-field"><div class="cfl">中單位</div><input class="cf-inp" value="'+(item.mn||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'mn\',this.value)"></div>'
+          +'<div class="cir-field"><div class="cfl">大單位</div><input class="cf-inp" value="'+(item.ln||'')+'" placeholder="無" onchange="updItem(\''+item.id+'\',\'ln\',this.value)"></div>'
+        +'</div>'
+        +'<div class="cir-conv">'
+          +'1'+(item.mn||'中')+'= <input class="cc-inp" type="number" value="'+(item.ms||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'ms\',this.value)"> '+(item.sn||'小')
+          +(item.ln?'　1'+(item.ln)+'= <input class="cc-inp" type="number" value="'+(item.lm||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'lm\',this.value)"> '+(item.mn||'中'):'')
+          +(item.wu?'　重量: <input class="cc-inp" value="'+item.wu+'" style="width:40px" onchange="updItem(\''+item.id+'\',\'wu\',this.value)"> 1'+(item.sn||'小')+'= <input class="cc-inp" type="number" value="'+(item.sw||'')+'" placeholder="?" onchange="updItem(\''+item.id+'\',\'sw\',this.value)"> '+item.wu:'')
+        +'</div>';
+      if(cfgMode!=='monthly'){
+        var t=item[cfgMode]||{min:0,target:0};
+        html+='<div class="cir-conv" style="margin-top:6px">'
+          +'低標: <input class="cc-inp" type="number" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'min\',this.value)"> '+item.sn
+          +'　補至: <input class="cc-inp" type="number" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'target\',this.value)"> '+item.sn
+        +'</div>';
+      }
+      html+='<div class="mode-toggles">'
+        +'<span style="font-size:11px;color:var(--ink3)">出現在：</span>'
+        +['daily','weekly'].map(function(m){
+          var has=item.modes&&item.modes.indexOf(m==='daily'?'D':'W')>-1;
+          return '<button class="mt-btn'+(has?' on':'')+'" onclick="toggleMode(\''+item.id+'\',\''+m+'\')">'+（m==='daily'?'日盤':'週盤')+'</button>';
+        }).join('')
+      +'</div>'
+      +'<div class="mode-toggles" style="margin-top:4px">'
+        +'<span style="font-size:11px;color:var(--ink3)">月盤地點：</span>'
+        +[{k:'S',l:'🏪 現場'},{k:'W',l:'📦 倉庫'}].map(function(x){
+          var has=(item.locs||'SW').indexOf(x.k)>-1;
+          return '<button class="mt-btn'+(has?' on':'')+'" style="'+(has?'background:var(--g);color:#fff;border-color:var(--g)':'')+'" onclick="toggleLoc(\''+item.id+'\',\''+x.k+'\')">'+x.l+'</button>';
+        }).join('')
+      +'</div>'
+      +'</div>';
     });
-    return '<div class="hist-item">'
-      +'<div><div class="hi-date">'+r.date+'</div>'
-        +'<div class="hi-meta">'+r.person+' · '+r.createdAt.slice(11,16)+'　需補/叫：'+needCount+'項</div></div>'
-      +'<span class="hi-badge '+cls+'">'+label+'</span>'
+  });
+  document.getElementById('cfg-body').innerHTML=html;
+}
+function updItem(id,field,value){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item) return;
+  if(['ms','lm','sw'].indexOf(field)>-1) item[field]=parseFloat(value)||0;
+  else item[field]=value;
+  saveItems();
+}
+function updItemMode(id,mode,field,value){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item) return;
+  if(!item[mode]) item[mode]={min:0,target:0};
+  item[mode][field]=parseFloat(value)||0;
+  saveItems();
+}
+function toggleMode(id,mode){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item) return;
+  var key=mode==='daily'?'D':'W';
+  if(item.modes&&item.modes.indexOf(key)>-1) item.modes=item.modes.replace(key,'');
+  else item.modes=(item.modes||'')+key;
+  saveItems(); renderCfgBody();
+}
+function toggleLoc(id,loc){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item) return;
+  if(!item.locs) item.locs='SW';
+  if(item.locs.indexOf(loc)>-1){
+    if(item.locs.length>1) item.locs=item.locs.replace(loc,'');
+    else{showToast('至少需要一個地點');return;}
+  } else {
+    item.locs+=loc;
+  }
+  saveItems(); renderCfgBody();
+}
+}
+function delItem(id){
+  if(!confirm('確定刪除？')) return;
+  items=items.filter(function(i){return i.id!==id;});
+  saveItems(); renderCfgBody(); showToast('已刪除');
+}
+function addNewItem(){
+  var name=document.getElementById('ni-name').value.trim();
+  if(!name){showToast('請輸入品項名稱');return;}
+  var cat=document.getElementById('ni-cat').value.trim()||'其他';
+  var sn=document.getElementById('ni-sn').value.trim()||'個';
+  var mn=document.getElementById('ni-mn').value.trim();
+  var ln=document.getElementById('ni-ln').value.trim();
+  var ms=parseFloat(document.getElementById('ni-ms').value)||0;
+  var lm=parseFloat(document.getElementById('ni-lm').value)||0;
+  var wu=document.getElementById('ni-wu').value.trim();
+  var sw=parseFloat(document.getElementById('ni-sw').value)||0;
+  var modes='';
+  if(document.getElementById('ni-daily').checked) modes+='D';
+  if(document.getElementById('ni-weekly').checked) modes+='W';
+  items.push({id:'c_'+Date.now(),name:name,cat:cat,modes:modes,
+    sn:sn,mn:mn,ln:ln,ms:ms,lm:lm,wu:wu,sw:sw,
+    daily:{min:0,target:0},weekly:{min:0,target:0}});
+  saveItems();
+  ['ni-name','ni-cat','ni-sn','ni-mn','ni-ln','ni-ms','ni-lm','ni-wu','ni-sw'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  renderCfgBody(); showToast('✓ 已新增：'+name);
+}
+
+// ── 歷史記錄 ──────────────────────────────────────────────────
+function showHist(){
+  var modeLabels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+  var el=document.getElementById('hist-body');
+  if(!records.length){el.innerHTML='<div class="empty">尚無記錄</div>';openOv('hist');return;}
+  el.innerHTML=records.slice(0,30).map(function(r){
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center">'
+      +'<div><div style="font-size:14px;font-weight:700">'+r.date+'</div>'
+        +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+r.person+'</div></div>'
+      +'<span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:var(--bl);color:var(--b)">'+(modeLabels[r.mode]||r.mode)+'</span>'
     +'</div>';
   }).join('');
   openOv('hist');
 }
 
-// ══════════════════════════════════════
-// 品項 & 區塊設定管理
-// ══════════════════════════════════════
-var setMode = 'daily';
-var setZoneId = '';
-
-// 從 localStorage 讀取登入者（由 index.html 的 sessionStorage 傳入）
-function getLocalUser(){
-  try{
-    var u=sessionStorage.getItem('tw_user');
-    return u?JSON.parse(u):null;
-  }catch(e){ return null; }
-}
-function canEditSettings(){
-  var u=getLocalUser();
-  // 店長(3)以上可修改，未登入也允許（直接開 inventory.html 時）
-  if(!u) return true;
-  return parseInt(u.role)<=3;
+// ── API ───────────────────────────────────────────────────────
+function api(params,cb){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs).then(function(r){return r.json();}).then(function(d){if(cb)cb(d,null);}).catch(function(e){if(cb)cb(null,e);});
 }
 
-function loadCustomItems(){
-  try{
-    var d=localStorage.getItem('inv_custom');
-    if(d){
-      var obj=JSON.parse(d);
-      if(obj.daily) obj.daily.forEach(function(savedZone){
-        var z=ZONES_DAILY.find(function(x){return x.id===savedZone.id;});
-        if(z){ z.name=savedZone.name; z.icon=savedZone.icon; z.items=savedZone.items; }
-      });
-      if(obj.weekly) obj.weekly.forEach(function(savedZone){
-        var z=ZONES_WEEKLY.find(function(x){return x.id===savedZone.id;});
-        if(z){ z.name=savedZone.name; z.icon=savedZone.icon; z.items=savedZone.items; }
-      });
-      // 還原自訂新增的區塊
-      if(obj.daily_extra){
-        obj.daily_extra.forEach(function(z){
-          if(!ZONES_DAILY.find(function(x){return x.id===z.id;})) ZONES_DAILY.push(z);
-        });
-      }
-      if(obj.weekly_extra){
-        obj.weekly_extra.forEach(function(z){
-          if(!ZONES_WEEKLY.find(function(x){return x.id===z.id;})) ZONES_WEEKLY.push(z);
-        });
-      }
-    }
-  }catch(e){}
-}
-
-function saveCustomItems(){
-  var obj={
-    daily: ZONES_DAILY.map(function(z){return {id:z.id,name:z.name,icon:z.icon,items:z.items};}),
-    weekly: ZONES_WEEKLY.map(function(z){return {id:z.id,name:z.name,icon:z.icon,items:z.items};}),
-  };
-  localStorage.setItem('inv_custom',JSON.stringify(obj));
-}
-
-function showSettings(){
-  var canEdit=canEditSettings();
-  document.getElementById('set-perm-warn').style.display=canEdit?'none':'block';
-  document.getElementById('add-zone-area').style.display=canEdit?'flex':'none';
-  document.getElementById('add-item-area').style.display=canEdit?'block':'none';
-  setMode='daily';
-  setZoneId=ZONES_DAILY[0]?ZONES_DAILY[0].id:'';
-  renderSetTabs();
-  renderSetZoneTabs();
-  renderSetItems();
-  openOv('settings');
-}
-function openSettings(){ showSettings(); }
-
-function switchSetTab(m){
-  setMode=m;
-  var zones=m==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  setZoneId=zones[0]?zones[0].id:'';
-  renderSetTabs();
-  renderSetZoneTabs();
-  renderSetItems();
-}
-function renderSetTabs(){
-  var m=setMode;
-  var sd=document.getElementById('set-tab-daily');
-  var sw=document.getElementById('set-tab-weekly');
-  sd.style.background=m==='daily'?'var(--b)':'var(--white)';
-  sd.style.color=m==='daily'?'#fff':'var(--ink2)';
-  sd.style.borderColor=m==='daily'?'var(--bm)':'var(--bd)';
-  sw.style.background=m==='weekly'?'var(--purple)':'var(--white)';
-  sw.style.color=m==='weekly'?'#fff':'var(--ink2)';
-  sw.style.borderColor=m==='weekly'?'var(--purple)':'var(--bd)';
-}
-
-function renderSetZoneTabs(){
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  var canEdit=canEditSettings();
-  document.getElementById('set-zone-tabs').innerHTML=zones.map(function(z){
-    var on=z.id===setZoneId;
-    return '<div style="display:flex;align-items:center;gap:4px">'
-      +'<button onclick="pickSetZone(\''+z.id+'\')" style="padding:7px 12px;border-radius:20px;border:1.5px solid '+(on?'var(--g)':'var(--bd)')+';background:'+(on?'var(--g)':'var(--white)')+';color:'+(on?'#fff':'var(--ink2)')+';font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">'+z.icon+' '+z.name+'</button>'
-      +(canEdit?'<button onclick="delZone(\''+z.id+'\')" style="padding:3px 6px;border-radius:6px;border:none;background:var(--redl);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit">✕</button>':'')
-    +'</div>';
-  }).join('');
-}
-function pickSetZone(id){ setZoneId=id; renderSetZoneTabs(); renderSetItems(); }
-
-function addNewZone(){
-  var icon=document.getElementById('new-zone-icon').value.trim()||'📦';
-  var name=document.getElementById('new-zone-name').value.trim();
-  if(!name){ showToast('請填寫區塊名稱'); return; }
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  var id='zone_'+Date.now();
-  zones.push({id:id, name:name, icon:icon, items:[]});
-  setZoneId=id;
-  document.getElementById('new-zone-icon').value='';
-  document.getElementById('new-zone-name').value='';
-  saveCustomItems();
-  renderSetZoneTabs();
-  renderSetItems();
-  showToast('✓ 已新增區塊：'+name);
-}
-
-function delZone(id){
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  // 預設區塊不能刪
-  var defaultIds=['counter','consumable','refrigerated','ingredient','tea_material'];
-  if(defaultIds.indexOf(id)>-1){ showToast('預設區塊無法刪除'); return; }
-  if(!confirm('確定刪除此區塊及其所有品項？')) return;
-  var idx=zones.findIndex(function(z){return z.id===id;});
-  if(idx>-1) zones.splice(idx,1);
-  setZoneId=zones[0]?zones[0].id:'';
-  saveCustomItems();
-  renderSetZoneTabs();
-  renderSetItems();
-  showToast('已刪除區塊');
-}
-
-function renderSetItems(){
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  var zone=zones.find(function(z){return z.id===setZoneId;});
-  var canEdit=canEditSettings();
-  if(!zone){
-    document.getElementById('set-items-area').innerHTML='<div class="empty">請先選擇或新增區塊</div>';
-    return;
-  }
-  if(!zone.items.length){
-    document.getElementById('set-items-area').innerHTML='<div style="font-size:13px;color:var(--ink3);padding:12px 0">此區塊尚無品項，請在下方新增</div>';
-    return;
-  }
-  document.getElementById('set-items-area').innerHTML=
-    '<div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">'+zone.icon+' '+zone.name+' — '+zone.items.length+' 項</div>'
-    +zone.items.map(function(item,idx){
-      return '<div style="background:var(--white);border:1.5px solid var(--bd);border-radius:var(--r2);padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">'
-        +'<div style="flex:1">'
-          +'<div style="font-size:14px;font-weight:600">'+item.name+'</div>'
-          +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">低標：'+item.min+'　→　補至：'+item.target+'　（'+item.unit+'）</div>'
-        +'</div>'
-        +(canEdit?'<button onclick="delSetItem(\''+zone.id+'\','+idx+')" style="margin-left:10px;padding:5px 10px;border:1px solid #F5A0A0;border-radius:6px;background:var(--redl);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0">刪除</button>':'')
-      +'</div>';
-    }).join('');
-}
-
-function delSetItem(zoneId, idx){
-  if(!confirm('確定刪除？')) return;
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  var zone=zones.find(function(z){return z.id===zoneId;});
-  if(!zone) return;
-  zone.items.splice(idx,1);
-  saveCustomItems();
-  renderSetItems();
-  showToast('已刪除');
-}
-
-function addNewItem(){
-  var name=document.getElementById('new-item-name').value.trim();
-  var unit=document.getElementById('new-item-unit').value.trim();
-  var minV=document.getElementById('new-item-min').value;
-  var targetV=document.getElementById('new-item-target').value;
-  if(!name||!unit){ showToast('請填寫品項名稱和單位'); return; }
-  if(minV===''||targetV===''){ showToast('請填寫低標和目標數量'); return; }
-  var zones=setMode==='daily'?ZONES_DAILY:ZONES_WEEKLY;
-  var zone=zones.find(function(z){return z.id===setZoneId;});
-  if(!zone){ showToast('請先選擇區塊'); return; }
-  var newItem={
-    id:'c_'+Date.now(),
-    name:name, unit:unit,
-    min:minV+unit, target:targetV+unit,
-    minVal:parseFloat(minV)||0,
-    targetVal:parseFloat(targetV)||0
-  };
-  zone.items.push(newItem);
-  saveCustomItems();
-  document.getElementById('new-item-name').value='';
-  document.getElementById('new-item-unit').value='';
-  document.getElementById('new-item-min').value='';
-  document.getElementById('new-item-target').value='';
-  renderSetItems();
-  showToast('✓ 已新增：'+name);
-}
-
-// ══════════════════════════════════════
-// 頁面 & 工具
-// ══════════════════════════════════════
-function showPage(p){
-  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('on'); });
-  document.getElementById('page-'+p).classList.add('on');
-}
-function goHome(){
-  zoneData={}; zoneDone={}; selPerson='';
-  buildPersonGrid();
-  showPage('home');
-}
-function openOv(id){ document.getElementById('ov-'+id).classList.add('show'); }
-function closeOv(id){ document.getElementById('ov-'+id).classList.remove('show'); }
-document.addEventListener('click',function(e){
-  document.querySelectorAll('.ov.show').forEach(function(ov){ if(e.target===ov) ov.classList.remove('show'); });
-});
-function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
-function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
-function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+// ── 工具 ─────────────────────────────────────────────────────
+function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}
+function openOv(id){document.getElementById('ov-'+id).classList.add('show');}
+function closeOv(id){document.getElementById('ov-'+id).classList.remove('show');}
+document.addEventListener('click',function(e){document.querySelectorAll('.ov.show').forEach(function(ov){if(e.target===ov)ov.classList.remove('show');});});
+function todayStr(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function goHome2(){if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}}
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);}
 </script>
 </body>
 </html>
