@@ -539,9 +539,37 @@ var _saveTimer = null;  // 防抖計時器，避免每次輸入都打 API
 var _syncLocked = false; // 存檔進行中，暫緩同步覆蓋
 
 // ── API 工具 ──────────────────────────────────────────
+// GET：小資料（讀取、短參數）
+// POST：大資料（cfgSet items 等）
+function api(params, cb){
+  var qs = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  // 超過 1500 字元自動改 POST，避免 URL 長度限制
+  if(qs.length > 1500){
+    apiPost(params, cb);
+  } else {
+    fetch(API_URL+'?'+qs)
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(cb) cb(d, null); })
+      .catch(function(e){ if(cb) cb(null, e); });
+  }
+}
+function apiPost(params, cb){
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(cb) cb(d, null); })
+    .catch(function(e){ if(cb) cb(null, e); });
+}
+
 function cfgSet(key, value, cb){
+  // cfgSet 固定走 POST（value 可能很大）
   var strVal = (typeof value === 'string') ? value : JSON.stringify(value);
-  api({action:'cfgSet', key:key, value:strVal}, cb || null);
+  apiPost({action:'cfgSet', key:key, value:strVal}, cb || null);
 }
 function cfgGet(key, cb){
   api({action:'cfgGet', key:key}, function(d){
@@ -1518,10 +1546,6 @@ function showHist(){
 }
 
 // ── API ───────────────────────────────────────────────────────
-function api(params,cb){
-  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
-  fetch(API_URL+'?'+qs).then(function(r){return r.json();}).then(function(d){if(cb)cb(d,null);}).catch(function(e){if(cb)cb(null,e);});
-}
 
 // ── 工具 ─────────────────────────────────────────────────────
 function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}
