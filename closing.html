@@ -512,9 +512,10 @@ function submitForm(){
     jelloDirect:  getNum('f-jello-direct'),
   };
 
-  apiPost(params, function(d){
+  api(params, function(d, err){
     btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
-    if(!d||!d.ok){ showToast('❌ 儲存失敗：'+(d&&d.error?d.error:'請確認網路')); return; }
+    if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
+    if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
     showToast('✓ 收班記錄已儲存！');
     // 清空數值欄位
     ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct'].forEach(function(id){
