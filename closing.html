@@ -419,12 +419,13 @@ function recalcAll(){
   var eco      = getNum('f-eco');
   var totalCups = seal + cream + eco;
 
-  // 2. 均杯單價 = 總營業額 / 總杯數
-  var revenue  = getNum('f-revenue');
-  var avgPrice = totalCups > 0 ? (revenue / totalCups).toFixed(1) : '—';
-
-  // 3. 取寄杯數 = 原味取 + 芋香取 + 檸夏取 + 輕春取 + 清涼取
+  // 3. 取寄杯數（先算，因為均杯單價需要用到）
   var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool;
+
+  // 2. 均杯單價 = 總營業額 / (總杯數 - 取寄杯數)
+  var revenue   = getNum('f-revenue');
+  var dineInCups = totalCups - takeCups;
+  var avgPrice  = dineInCups > 0 ? (revenue / dineInCups).toFixed(1) : '—';
 
   // 4. 原味總數 = 原味買 + 原味取
   var origTotal = buy.original + take.original;
@@ -620,7 +621,7 @@ function histDetail(r){
     '</div>'+
     // 計算結果
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">'+
-      kv('均杯單價',totalCups>0?Math.round((r.revenue||0)/totalCups):'—','元')+
+      kv('均杯單價',(totalCups-calcTakeCups(r))>0?Math.round((r.revenue||0)/(totalCups-calcTakeCups(r))):'—','元')+
       kv('仙草凍佔比',ratioStr(jellyTotal,totalCups),'')+
       kv('原味佔比',ratioStr(origTotal,totalCups),'')+
       kv('風味佔比',ratioStr(flavTotal,totalCups),'')+
@@ -661,6 +662,10 @@ function cust(val, label, bg, color){
 // 總杯數 = 封口機+奶蓋+環保杯
 function calcTotalCups(r){
   return (r.sealMachine||0) + (r.creamTop||0) + (r.ecoCup||0);
+}
+// 取寄杯數
+function calcTakeCups(r){
+  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0);
 }
 // 原味總數
 function calcOrigTotal(r){
@@ -777,9 +782,12 @@ function renderDemoChart(data){
 function api(params, cb){
   var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
   fetch(API_URL+'?'+qs)
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(cb) cb(d,null); })
-    .catch(function(e){ if(cb) cb(null,e); });
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      try{ cb(JSON.parse(txt), null); }
+      catch(e){ cb(null, 'API回應非JSON：'+txt.slice(0,100)); }
+    })
+    .catch(function(e){ cb(null, '連線失敗：'+e.toString()); });
 }
 function apiPost(params, cb){
   var body = Object.keys(params).map(function(k){
