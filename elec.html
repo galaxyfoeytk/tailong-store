@@ -268,8 +268,13 @@ function ensureData(){
 function calcUsage(){
   var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   return sorted.map(function(r,i){
-    var usage=i>0?r.reading-sorted[i-1].reading:null;
-    return Object.assign({},r,{usage:usage});
+    var usage=null;
+    var reset=false;
+    if(i>0){
+      usage=r.reading-sorted[i-1].reading;
+      if(usage<0){ reset=true; usage=null; } // 電表歸零/換新，用電量不計算
+    }
+    return Object.assign({},r,{usage:usage,reset:reset});
   });
 }
 function getMonths(){
@@ -319,7 +324,10 @@ function renderList(){
   var rev=data.slice().reverse();
   el.innerHTML=rev.map(function(r){
     var usageHtml='';
-    if(r.usage!==null){
+    if(r.reset){
+      usageHtml='<div class="rc-usage" style="font-size:13px;color:var(--amber);font-weight:700;line-height:1.3">🔄 電表<br>重置</div>'
+        +'<div class="rc-unit" style="color:var(--amber)">歸零</div>';
+    } else if(r.usage!==null){
       var cls=r.usage>180?'color:var(--red);font-weight:900':r.usage<80?'color:var(--gm);font-weight:900':'';
       usageHtml='<div class="rc-usage" style="'+cls+'">'+r.usage+'</div>'
         +'<div class="rc-unit">度</div>';
@@ -361,10 +369,12 @@ function doSave(){
   if(!date){showToast('請選擇日期');return;}
   if(!reading||isNaN(reading)){showToast('請填寫電表讀數');return;}
   var rv=parseInt(reading);
-  // 防呆：讀數不能小於前一筆
+  // 防呆：讀數小於前一筆時詢問（電表換新/歸零時允許輸入）
   var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   var prev=sorted.filter(function(r){return r.date<date;}).pop();
-  if(prev&&rv<prev.reading){showToast('⚠ 電表讀數（'+rv+'）小於前一筆（'+prev.reading+'），請確認');return;}
+  if(prev&&rv<prev.reading){
+    if(!confirm('⚠ 新讀數（'+rv+'）小於前一筆（'+prev.reading+'）\n\n若電表已換新或歸零，請按「確定」繼續。\n若是輸入錯誤，請按「取消」重新填寫。')){return;}
+  }
   // 同日已有記錄
   var dup=records.find(function(r){return r.date===date;});
   if(dup){if(!confirm('此日期已有記錄（'+dup.reading+'度），確定覆蓋？'))return; records=records.filter(function(r){return r.date!==date;});}
