@@ -350,16 +350,18 @@ window.onload = function(){
 
 function buildProductsBlock(){
   var html = PRODUCTS.map(function(p){
+    var buyLabel  = p.name+' 買入';
+    var takeLabel = p.name+' 取出';
     return '<div class="product-block">'+
       '<div class="product-name"><span style="width:10px;height:10px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+p.name+'</div>'+
       '<div class="buy-take">'+
         '<div>'+
           '<div class="bt-label">🛍 買入</div>'+
-          '<input class="bt-input" type="text" id="f-buy-'+p.key+'" readonly value="0" onfocus="npOpen(this,p.name+\' 買入\')">'+
+          '<input class="bt-input" type="text" id="f-buy-'+p.key+'" readonly value="0" onfocus="npOpen(this,\''+buyLabel+'\')">'+
         '</div>'+
         '<div>'+
           '<div class="bt-label">📦 取出</div>'+
-          '<input class="bt-input" type="text" id="f-take-'+p.key+'" readonly value="0" onfocus="npOpen(this,p.name+\' 取出\')">'+
+          '<input class="bt-input" type="text" id="f-take-'+p.key+'" readonly value="0" onfocus="npOpen(this,\''+takeLabel+'\')">'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -371,13 +373,14 @@ function buildProductsBlock(){
 // ── 數字小鍵盤 ──────────────────────────────────────────────
 var _np = { val:'0', el:null, label:'' };
 function npOpen(el, label){
-  el.blur();
   _np.el = el; _np.label = label;
-  _np.val = el.value || '0';
+  _np.val = (el.value && el.value !== '0') ? el.value : '0';
   document.getElementById('np-lbl').textContent = label;
   document.getElementById('np-disp').textContent = _np.val;
   document.getElementById('np-bd').classList.add('show');
   document.getElementById('np-wrap').classList.add('show');
+  // blur 防止系統鍵盤（延後執行避免干擾 focus 事件）
+  setTimeout(function(){ el.blur(); }, 10);
 }
 function npClose(){
   document.getElementById('np-bd').classList.remove('show');
