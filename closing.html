@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>收班記錄</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#C07000;--amberl:#FFF3D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100dvh}
+input,select,textarea,button{font-family:inherit}
+
+/* topbar */
+.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-title{color:#fff;font-size:15px;font-weight:900}
+.topbar-sub{color:rgba(255,255,255,.6);font-size:11px}
+.tib{padding:6px 12px;border-radius:var(--r2);border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tib:active{background:rgba(255,255,255,.22)}
+
+/* 頁簽 */
+.tab-bar{background:var(--white);border-bottom:2px solid var(--bd);display:flex;position:sticky;top:52px;z-index:90}
+.tab{flex:1;padding:11px 6px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;text-align:center}
+.tab.on{color:var(--b);border-bottom-color:var(--b);font-weight:700}
+
+/* 內容區 */
+.content{padding:12px 14px 80px;max-width:680px;margin:0 auto}
+
+/* 區塊卡片 */
+.section{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.section-head{padding:10px 14px;background:linear-gradient(90deg,var(--bl),transparent);border-bottom:1px solid var(--bd);font-size:11px;font-weight:700;color:var(--b);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.section-body{padding:12px 14px}
+
+/* 表單元素 */
+.field-grid{display:grid;gap:10px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.field input,.field select{padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;color:var(--ink);background:var(--white);outline:none;width:100%}
+.field input:focus,.field select:focus{border-color:var(--bm)}
+.field input[type=number]{text-align:right}
+.field.highlight label{color:var(--g)}
+.field.highlight input{border-color:var(--gm);font-weight:700;font-size:16px}
+
+/* 產品組 */
+.product-block{background:var(--bg);border-radius:var(--r2);padding:10px;margin-bottom:8px;border:1px solid var(--bd)}
+.product-name{font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.buy-take{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bt-label{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;text-align:center}
+.bt-input{padding:8px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-weight:700;text-align:center;font-family:inherit;color:var(--ink);background:var(--white);outline:none;width:100%}
+.bt-input:focus{border-color:var(--b)}
+
+/* 計算結果卡 */
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
+.calc-row:last-child{border-bottom:none}
+.calc-label{font-size:12px;color:var(--ink3)}
+.calc-value{font-size:16px;font-weight:900;color:var(--ink)}
+.calc-value.big{font-size:20px;color:var(--b)}
+.calc-value.green{color:var(--g)}
+.calc-value.amber{color:var(--amber)}
+.pct{font-size:12px;font-weight:500;color:var(--ink3)}
+
+/* 提交按鈕 */
+.submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:active{opacity:.85}
+
+/* 歷史記錄 */
+.hist-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.hist-head{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hist-date{font-size:15px;font-weight:900;color:var(--ink)}
+.hist-person{font-size:12px;color:var(--ink3);margin-top:2px}
+.hist-revenue{font-size:16px;font-weight:900;color:var(--b)}
+.hist-detail{border-top:1px solid var(--bd);background:var(--bg);padding:12px 14px}
+
+/* 圖表頁 */
+.chart-wrap{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.chart-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+canvas{width:100%!important}
+
+/* 篩選列 */
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filter-bar input[type=date],.filter-bar select{padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;color:var(--ink);background:var(--white)}
+.filter-bar input[type=date]:focus,.filter-bar select:focus{border-color:var(--bm)}
+
+/* 統計卡 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:var(--white);border-radius:var(--r2);border:1px solid var(--bd);padding:12px;text-align:center}
+.stat-card .sv{font-size:22px;font-weight:900;color:var(--b)}
+.stat-card .sl{font-size:11px;color:var(--ink3);margin-top:3px}
+
+.empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;font-weight:500}
+.badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-title">🏪 收班記錄</div>
+      <div class="topbar-sub" id="today-label"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="tib" onclick="goHome()">🏠</button>
+  </div>
+</div>
+
+<!-- 頁簽 -->
+<div class="tab-bar">
+  <button class="tab on" id="tab-form" onclick="switchTab('form')">📝 填寫</button>
+  <button class="tab" id="tab-hist" onclick="switchTab('hist')">📂 記錄</button>
+  <button class="tab" id="tab-chart" onclick="switchTab('chart')">📊 圖表</button>
+</div>
+
+<!-- 填寫頁 -->
+<div id="panel-form">
+<div class="content">
+  <!-- 基本資訊 -->
+  <div class="section">
+    <div class="section-head">📋 基本資訊</div>
+    <div class="section-body">
+      <div class="field-grid grid-2">
+        <div class="field"><label>日期</label><input type="date" id="f-date"></div>
+        <div class="field"><label>收班人員</label>
+          <select id="f-person"><option value="">— 選擇 —</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 營業數據 -->
+  <div class="section">
+    <div class="section-head">💰 營業數據</div>
+    <div class="section-body">
+      <div class="field-grid grid-2" style="margin-bottom:10px">
+        <div class="field highlight"><label>💵 總營業額</label><input type="number" id="f-revenue" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field highlight"><label>🧾 單號（張數）</label><input type="number" id="f-receipt" min="0" placeholder="0" oninput="recalcAll()"></div>
+      </div>
+      <div class="field-grid grid-3">
+        <div class="field"><label>🥤 封口機杯數</label><input type="number" id="f-seal" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>🧋 奶蓋</label><input type="number" id="f-cream" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>♻️ 環保杯</label><input type="number" id="f-eco" min="0" placeholder="0" oninput="recalcAll()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 試飲 -->
+  <div class="section">
+    <div class="section-head">🥛 試飲數據</div>
+    <div class="section-body">
+      <div class="field-grid grid-3">
+        <div class="field"><label>試飲主力</label>
+          <select id="f-demo-focus">
+            <option value="">— 選 —</option>
+            <option>原味風凍</option><option>芋香風凍</option><option>寧夏風凍</option>
+            <option>青春風凍</option><option>清涼風凍</option><option>其他</option>
+          </select>
+        </div>
+        <div class="field"><label>試飲杯總數</label><input type="number" id="f-demo-cups" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>試飲轉換數量</label><input type="number" id="f-demo-convert" min="0" placeholder="0" oninput="recalcAll()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 產品銷售 -->
+  <div class="section">
+    <div class="section-head">🌿 產品銷售（買入/取出）</div>
+    <div class="section-body">
+      <div id="products-block">
+        <!-- 動態產生 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 客群 -->
+  <div class="section">
+    <div class="section-head">👥 客群分析</div>
+    <div class="section-body">
+      <div class="field-grid grid-4">
+        <div class="field"><label>第一次來</label><input type="number" id="f-new" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>有來過</label><input type="number" id="f-return" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>再喝風凍</label><input type="number" id="f-jello-return" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>直接買</label><input type="number" id="f-jello-direct" min="0" placeholder="0" oninput="recalcAll()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自動計算結果 -->
+  <div class="section">
+    <div class="section-head">📊 自動計算</div>
+    <div class="section-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div>
+          <div class="calc-row"><span class="calc-label">總杯數</span><span class="calc-value big" id="c-total-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
+          <div class="calc-row"><span class="calc-label">取寄杯總數</span><span class="calc-value" id="c-take-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">原味總數</span><span class="calc-value" id="c-orig">0</span></div>
+          <div class="calc-row"><span class="calc-label">風味總數</span><span class="calc-value" id="c-flav">0</span></div>
+        </div>
+        <div style="padding-left:16px;border-left:1px solid var(--bd)">
+          <div class="calc-row"><span class="calc-label">原味佔比</span><span class="calc-value green" id="c-orig-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">風味佔比</span><span class="calc-value amber" id="c-flav-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
+          <div class="calc-row"><span class="calc-label">首次來店比例</span><span class="calc-value" id="c-first-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">回購比例</span><span class="calc-value" id="c-return-pct">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
+  <div style="height:20px"></div>
+</div>
+</div>
+
+<!-- 記錄頁 -->
+<div id="panel-hist" style="display:none">
+<div class="content">
+  <div class="filter-bar">
+    <input type="date" id="h-start">
+    <input type="date" id="h-end">
+    <button class="tib" style="background:var(--b);border-color:var(--b)" onclick="loadHist()">查詢</button>
+    <button class="tib" onclick="loadThisMonth()">本月</button>
+  </div>
+  <div id="hist-list"><div class="empty">請選擇日期範圍查詢</div></div>
+</div>
+</div>
+
+<!-- 圖表頁 -->
+<div id="panel-chart" style="display:none">
+<div class="content">
+  <div class="filter-bar">
+    <input type="date" id="c-start">
+    <input type="date" id="c-end">
+    <button class="tib" style="background:var(--b);border-color:var(--b)" onclick="loadChart()">查詢</button>
+    <button class="tib" onclick="loadChartMonth()">本月</button>
+  </div>
+  <!-- 統計摘要 -->
+  <div class="stat-grid" id="stat-grid" style="display:none"></div>
+  <!-- 圖表 -->
+  <div class="chart-wrap">
+    <div class="chart-title">📈 每日營業額 & 總杯數</div>
+    <canvas id="chart-revenue" height="180"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">🌿 原味 vs 風味 趨勢</div>
+    <canvas id="chart-flavor" height="160"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">👥 客群比例（首次 / 回購）</div>
+    <canvas id="chart-customer" height="160"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">🥛 試飲轉換率</div>
+    <canvas id="chart-demo" height="140"></canvas>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var PRODUCTS = [
+  {key:'original', name:'原味風凍', color:'#4A7CB5'},
+  {key:'aromatic', name:'芋香風凍', color:'#7B5EA7'},
+  {key:'ningxia',  name:'寧夏風凍', color:'#C07000'},
+  {key:'youth',    name:'青春風凍', color:'#1A6B3C'},
+  {key:'cool',     name:'清涼風凍', color:'#2A8FA8'},
+];
+var _charts = {};
+
+// ── 初始化 ─────────────────────────────────────────
+window.onload = function(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var today = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('f-date').value = today;
+  document.getElementById('today-label').textContent = today;
+
+  // 人員下拉
+  var sel = document.getElementById('f-person');
+  PERSONS.forEach(function(p){ sel.innerHTML += '<option>'+p+'</option>'; });
+  // 從後端拉最新人員
+  api({action:'getEmps'}, function(d){
+    if(!d||!d.ok||!d.data||!d.data.length) return;
+    sel.innerHTML = '<option value="">— 選擇 —</option>';
+    d.data.forEach(function(p){ sel.innerHTML += '<option>'+p+'</option>'; });
+  });
+
+  // 產品區塊
+  buildProductsBlock();
+  recalcAll();
+};
+
+function buildProductsBlock(){
+  var html = PRODUCTS.map(function(p){
+    return '<div class="product-block">'+
+      '<div class="product-name"><span style="width:10px;height:10px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+p.name+'</div>'+
+      '<div class="buy-take">'+
+        '<div>'+
+          '<div class="bt-label">🛍 買入</div>'+
+          '<input class="bt-input" type="number" id="f-buy-'+p.key+'" min="0" value="0" oninput="recalcAll()">'+
+        '</div>'+
+        '<div>'+
+          '<div class="bt-label">📦 取出</div>'+
+          '<input class="bt-input" type="number" id="f-take-'+p.key+'" min="0" value="0" oninput="recalcAll()">'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('products-block').innerHTML = html;
+}
+
+// ── 計算 ─────────────────────────────────────────
+function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
+function pct(n,d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
+
+function recalcAll(){
+  var buy = {}, take = {};
+  PRODUCTS.forEach(function(p){
+    buy[p.key]  = getNum('f-buy-'+p.key);
+    take[p.key] = getNum('f-take-'+p.key);
+  });
+  var totalCups = PRODUCTS.reduce(function(s,p){ return s+buy[p.key]+take[p.key]; }, 0);
+  var takeCups  = PRODUCTS.reduce(function(s,p){ return s+take[p.key]; }, 0);
+  var origTotal = buy.original + take.original;
+  var flavTotal = totalCups - origTotal;
+  var revenue   = getNum('f-revenue');
+  var avgPrice  = totalCups>0 ? (revenue/totalCups).toFixed(1) : '—';
+  var demoCups  = getNum('f-demo-cups');
+  var demoConv  = getNum('f-demo-convert');
+  var newCust   = getNum('f-new');
+  var retCust   = getNum('f-return');
+  var custTotal = newCust + retCust;
+
+  document.getElementById('c-total-cups').textContent = totalCups;
+  document.getElementById('c-avg-price').textContent  = avgPrice === '—' ? '—' : avgPrice + ' 元';
+  document.getElementById('c-take-cups').textContent  = takeCups;
+  document.getElementById('c-orig').textContent       = origTotal;
+  document.getElementById('c-flav').textContent       = flavTotal;
+  document.getElementById('c-orig-pct').textContent   = pct(origTotal, totalCups);
+  document.getElementById('c-flav-pct').textContent   = pct(flavTotal, totalCups);
+  document.getElementById('c-demo-rate').textContent  = pct(demoConv, demoCups);
+  document.getElementById('c-first-pct').textContent  = pct(newCust, custTotal);
+  document.getElementById('c-return-pct').textContent = pct(retCust, custTotal);
+}
+
+// ── 提交 ─────────────────────────────────────────
+function submitForm(){
+  var date   = document.getElementById('f-date').value;
+  var person = document.getElementById('f-person').value;
+  var revenue = getNum('f-revenue');
+  if(!date)   { showToast('請填入日期'); return; }
+  if(!person) { showToast('請選擇人員'); return; }
+  if(!revenue){ showToast('請填入總營業額'); return; }
+
+  var data = {
+    revenue: revenue,
+    receiptCount: getNum('f-receipt'),
+    sealMachine:  getNum('f-seal'),
+    creamTop:     getNum('f-cream'),
+    ecoCup:       getNum('f-eco'),
+    demoFocus:    document.getElementById('f-demo-focus').value,
+    demoCups:     getNum('f-demo-cups'),
+    demoConvert:  getNum('f-demo-convert'),
+    buyOriginal:  getNum('f-buy-original'),
+    takeOriginal: getNum('f-take-original'),
+    buyAromatic:  getNum('f-buy-aromatic'),
+    takeAromatic: getNum('f-take-aromatic'),
+    buyNingxia:   getNum('f-buy-ningxia'),
+    takeNingxia:  getNum('f-take-ningxia'),
+    buyYouth:     getNum('f-buy-youth'),
+    takeYouth:    getNum('f-take-youth'),
+    buyCool:      getNum('f-buy-cool'),
+    takeCool:     getNum('f-take-cool'),
+    newCustomer:  getNum('f-new'),
+    returnCustomer: getNum('f-return'),
+    jelloReturn:  getNum('f-jello-return'),
+    jelloDirect:  getNum('f-jello-direct'),
+  };
+
+  var btn = document.querySelector('.submit-btn');
+  btn.textContent = '⏳ 送出中...'; btn.disabled = true;
+  apiPost({action:'closingSave', date:date, person:person, data:JSON.stringify(data)}, function(d){
+    btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
+    if(!d||!d.ok){ showToast('❌ 儲存失敗'); return; }
+    showToast('✓ 收班記錄已儲存！');
+    // 清空數值欄位
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct'].forEach(function(id){
+      document.getElementById(id).value = '';
+    });
+    PRODUCTS.forEach(function(p){
+      document.getElementById('f-buy-'+p.key).value = 0;
+      document.getElementById('f-take-'+p.key).value = 0;
+    });
+    recalcAll();
+  });
+}
+
+// ── 頁簽 ─────────────────────────────────────────
+function switchTab(tab){
+  ['form','hist','chart'].forEach(function(t){
+    document.getElementById('panel-'+t).style.display = t===tab?'':'none';
+    document.getElementById('tab-'+t).classList.toggle('on', t===tab);
+  });
+  if(tab==='hist') loadThisMonth();
+  if(tab==='chart') loadChartMonth();
+}
+
+// ── 歷史記錄 ─────────────────────────────────────
+function loadThisMonth(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var start = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-01';
+  var end   = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('h-start').value = start;
+  document.getElementById('h-end').value   = end;
+  loadHist();
+}
+
+function loadHist(){
+  var start = document.getElementById('h-start').value;
+  var end   = document.getElementById('h-end').value;
+  var list  = document.getElementById('hist-list');
+  list.innerHTML = '<div class="empty">⏳ 載入中...</div>';
+  api({action:'closingGetAll', startDate:start, endDate:end}, function(d){
+    if(!d||!d.ok){ list.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    if(!d.data.length){ list.innerHTML='<div class="empty">此區間無記錄</div>'; return; }
+    list.innerHTML = d.data.map(function(r,i){ return histCard(r,i); }).join('');
+  });
+}
+
+function histCard(r, i){
+  var totalCups = sumBuyTake(r);
+  return '<div class="hist-card">'+
+    '<div class="hist-head" onclick="toggleHist('+i+')">'+
+      '<div>'+
+        '<div class="hist-date">'+r.date+'</div>'+
+        '<div class="hist-person">'+r.person+'</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div class="hist-revenue">$ '+(r.revenue||0).toLocaleString()+'</div>'+
+        '<div style="font-size:12px;color:var(--ink3)">'+totalCups+' 杯　均 '+(totalCups>0?Math.round(r.revenue/totalCups):'—')+'元</div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="hd-'+i+'" style="display:none">'+histDetail(r)+'</div>'+
+  '</div>';
+}
+
+function toggleHist(i){
+  var el = document.getElementById('hd-'+i);
+  el.style.display = el.style.display==='none'?'block':'none';
+}
+
+function histDetail(r){
+  var rows = [
+    ['封口機','🤝 封口機', r.sealMachine||0],
+    ['奶蓋','🧋', r.creamTop||0],
+    ['環保杯','♻️', r.ecoCup||0],
+  ];
+  var prodHtml = PRODUCTS.map(function(p){
+    var bk = 'buy'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    var tk = 'take'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    var bv = r[bk]||0, tv = r[tk]||0;
+    if(bv+tv===0) return '';
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px">'+
+      '<span>'+p.name+'</span>'+
+      '<span style="color:var(--ink3)">買 '+bv+' ／ 取 '+tv+' = <b style="color:var(--ink)">'+(bv+tv)+'</b></span>'+
+    '</div>';
+  }).join('');
+
+  return '<div class="hist-detail">'+
+    // 銷售
+    '<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">銷售明細</div>'+
+    prodHtml+
+    // 試飲
+    (r.demoCups>0?'<div style="margin-top:8px;padding:8px;background:var(--bl);border-radius:var(--r2);font-size:13px">🥛 試飲：'+r.demoFocus+' '+r.demoCups+'杯 → 轉換 '+r.demoConvert+' 人（'+(r.demoCups>0?(r.demoConvert/r.demoCups*100).toFixed(0)+'%':'—')+'）</div>':'')+
+    // 客群
+    '<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">'+
+      '<div style="padding:7px;background:var(--bg);border-radius:var(--r2)"><div style="font-size:16px;font-weight:900">'+(r.newCustomer||0)+'</div><div style="font-size:10px;color:var(--ink3)">第一次來</div></div>'+
+      '<div style="padding:7px;background:var(--bg);border-radius:var(--r2)"><div style="font-size:16px;font-weight:900">'+(r.returnCustomer||0)+'</div><div style="font-size:10px;color:var(--ink3)">有來過</div></div>'+
+      '<div style="padding:7px;background:var(--gl);border-radius:var(--r2)"><div style="font-size:16px;font-weight:900;color:var(--g)">'+(r.jelloReturn||0)+'</div><div style="font-size:10px;color:var(--g)">再喝風凍</div></div>'+
+      '<div style="padding:7px;background:var(--gl);border-radius:var(--r2)"><div style="font-size:16px;font-weight:900;color:var(--g)">'+(r.jelloDirect||0)+'</div><div style="font-size:10px;color:var(--g)">直接買</div></div>'+
+    '</div>'+
+    // 刪除
+    '<div style="text-align:right;margin-top:8px">'+
+      '<button onclick="delRecord(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--red);font-size:12px;cursor:pointer">🗑 刪除</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function sumBuyTake(r){
+  return PRODUCTS.reduce(function(s,p){
+    var bk = 'buy'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    var tk = 'take'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    return s+(r[bk]||0)+(r[tk]||0);
+  }, 0);
+}
+
+function delRecord(id){
+  if(!confirm('確定刪除此筆記錄？')) return;
+  api({action:'closingDelete', id:id}, function(d){
+    if(d&&d.ok){ showToast('已刪除'); loadHist(); }
+    else showToast('刪除失敗');
+  });
+}
+
+// ── 圖表 ─────────────────────────────────────────
+function loadChartMonth(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var start = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-01';
+  var end   = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('c-start').value = start;
+  document.getElementById('c-end').value   = end;
+  loadChart();
+}
+
+function loadChart(){
+  var start = document.getElementById('c-start').value;
+  var end   = document.getElementById('c-end').value;
+  api({action:'closingGetAll', startDate:start, endDate:end}, function(d){
+    if(!d||!d.ok||!d.data.length){ showToast('無資料'); return; }
+    var data = d.data.slice().reverse(); // 按日期升序
+    renderSummary(data);
+    renderRevenueChart(data);
+    renderFlavorChart(data);
+    renderCustomerChart(data);
+    renderDemoChart(data);
+    document.getElementById('stat-grid').style.display = 'grid';
+  });
+}
+
+function renderSummary(data){
+  var totalRev = data.reduce(function(s,r){ return s+(r.revenue||0); }, 0);
+  var avgRev   = Math.round(totalRev/data.length);
+  var totalCups= data.reduce(function(s,r){ return s+sumBuyTake(r); }, 0);
+  var avgCups  = Math.round(totalCups/data.length);
+  document.getElementById('stat-grid').innerHTML =
+    stat(totalRev.toLocaleString()+'元','總營業額')+
+    stat(avgRev.toLocaleString()+'元','日均營業額')+
+    stat(totalCups+'杯','總杯數')+
+    stat(avgCups+'杯','日均杯數');
+}
+function stat(v,l){ return '<div class="stat-card"><div class="sv">'+v+'</div><div class="sl">'+l+'</div></div>'; }
+
+function getOrCreate(id, type, labels, datasets, options){
+  var canvas = document.getElementById(id);
+  if(_charts[id]){ _charts[id].destroy(); }
+  _charts[id] = new Chart(canvas, { type:type, data:{labels:labels,datasets:datasets}, options:options||{} });
+}
+
+function renderRevenueChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var revs   = data.map(function(r){ return r.revenue||0; });
+  var cups   = data.map(function(r){ return sumBuyTake(r); });
+  getOrCreate('chart-revenue','bar',labels,[
+    { label:'營業額', data:revs, backgroundColor:'rgba(42,90,140,.75)', yAxisID:'y' },
+    { label:'杯數', data:cups, type:'line', borderColor:'#C07000', backgroundColor:'#FFF3D0', pointBackgroundColor:'#C07000', yAxisID:'y1', tension:.35 }
+  ],{
+    responsive:true, interaction:{mode:'index',intersect:false},
+    scales:{
+      y:{ beginAtZero:true, position:'left', ticks:{callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v;}} },
+      y1:{ beginAtZero:true, position:'right', grid:{drawOnChartArea:false} }
+    },
+    plugins:{ legend:{position:'bottom'} }
+  });
+}
+
+function renderFlavorChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var orig   = data.map(function(r){ return (r.buyOriginal||0)+(r.takeOriginal||0); });
+  var flav   = data.map(function(r){
+    return PRODUCTS.filter(function(p){ return p.key!=='original'; }).reduce(function(s,p){
+      var bk='buy'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+      var tk='take'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+      return s+(r[bk]||0)+(r[tk]||0);
+    },0);
+  });
+  getOrCreate('chart-flavor','bar',labels,[
+    { label:'原味', data:orig, backgroundColor:'rgba(74,124,181,.8)', stack:'s' },
+    { label:'風味', data:flav, backgroundColor:'rgba(192,112,0,.75)', stack:'s' }
+  ],{ responsive:true, scales:{ x:{stacked:true}, y:{stacked:true,beginAtZero:true} }, plugins:{legend:{position:'bottom'}} });
+}
+
+function renderCustomerChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var newC   = data.map(function(r){ return r.newCustomer||0; });
+  var retC   = data.map(function(r){ return r.returnCustomer||0; });
+  getOrCreate('chart-customer','bar',labels,[
+    { label:'第一次來', data:newC, backgroundColor:'rgba(74,124,181,.8)', stack:'s' },
+    { label:'有來過',   data:retC, backgroundColor:'rgba(26,107,60,.7)', stack:'s' }
+  ],{ responsive:true, scales:{ x:{stacked:true}, y:{stacked:true,beginAtZero:true} }, plugins:{legend:{position:'bottom'}} });
+}
+
+function renderDemoChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var rate   = data.map(function(r){
+    return r.demoCups>0 ? Math.round(r.demoConvert/r.demoCups*100) : 0;
+  });
+  getOrCreate('chart-demo','line',labels,[
+    { label:'試飲轉換率%', data:rate, borderColor:'#5B2D8E', backgroundColor:'rgba(91,45,142,.1)', fill:true, tension:.35, pointBackgroundColor:'#5B2D8E' }
+  ],{ responsive:true, scales:{ y:{beginAtZero:true, max:100, ticks:{callback:function(v){ return v+'%'; }}} }, plugins:{legend:{position:'bottom'}} });
+}
+
+// ── API ─────────────────────────────────────────
+function api(params, cb){
+  var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(cb) cb(d,null); })
+    .catch(function(e){ if(cb) cb(null,e); });
+}
+function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(cb) cb(d,null); })
+    .catch(function(e){ if(cb) cb(null,e); });
+}
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+function goHome(){ if(window.top&&window.top.showPage){ window.top.showPage('home'); } else { window.top.location.href='index.html'; } }
+</script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</body>
+</html>
