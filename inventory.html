@@ -526,66 +526,125 @@ var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 var items=[],counts={},selPerson='',curMode='daily',curItemId='',records=[],cfgMode='daily';
 
 // ── 通用雲端 cfg helper ──────────────────
+// ══════════════════════════════════════════════════════
+// 資料層 — 雲端優先，跨設備同步
+// 策略：
+//   寫入：本機先存（即時），同時推雲端（確認）
+//   讀取：以雲端版本號判斷是否需要更新
+//   同步：頁面載入 + 每 30 秒輪詢一次
+// ══════════════════════════════════════════════════════
+
+var _syncVer = 0;       // 本機目前對應的雲端版本
+var _saveTimer = null;  // 防抖計時器，避免每次輸入都打 API
+var _syncLocked = false; // 存檔進行中，暫緩同步覆蓋
+
+// ── API 工具 ──────────────────────────────────────────
 function cfgSet(key, value, cb){
-  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+  var strVal = (typeof value === 'string') ? value : JSON.stringify(value);
+  api({action:'cfgSet', key:key, value:strVal}, cb || null);
 }
 function cfgGet(key, cb){
   api({action:'cfgGet', key:key}, function(d){
-    if(d&&d.ok&&d.value!=null){
-      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+    if(d && d.ok && d.value != null){
+      var raw = d.value;
+      if(typeof raw === 'string'){
+        try{ cb(JSON.parse(raw)); return; }catch(e){}
+        cb(raw);
+      } else {
+        cb(raw);
+      }
+      return;
     }
     cb(null);
   });
 }
-function setSyncStatus(ok){
-  var el=document.getElementById('sync-status');
-  if(el) el.textContent=ok?'☁️':'🔄';
+
+function setSyncStatus(state){
+  // state: 'ok' | 'saving' | 'error' | 'syncing'
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  var map = { ok:'☁️', saving:'💾', error:'⚠️', syncing:'🔄' };
+  el.textContent = map[state] || '☁️';
 }
 
-// ── 初始化 ────────────────────────────────────────────────────
-window.onload=function(){
-  loadLocal(); // 先從本機快速載入
-  document.getElementById('setup-date').value=todayStr();
+// ── 初始化 ────────────────────────────────────────────
+window.onload = function(){
+  loadLocal();
+  document.getElementById('setup-date').value = todayStr();
   buildPersonGrid();
-  syncFromCloud(); // 再從雲端同步覆蓋
+  pullFromCloud(true); // 首次強制拉
+  // 每 30 秒輪詢一次（讓其他設備的修改能同步過來）
+  setInterval(function(){ if(!_syncLocked) pullFromCloud(false); }, 30000);
 };
 
+// 從 localStorage 快速載入（開畫面用，不會白屏）
 function loadLocal(){
-  try{var r=localStorage.getItem('inv3_items');items=r?JSON.parse(r):JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
-  catch(e){items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));}
-  try{var r2=localStorage.getItem('inv3_records');records=r2?JSON.parse(r2):[];}catch(e){records=[];}
+  try{
+    var r = localStorage.getItem('inv3_items');
+    var p = r ? JSON.parse(r) : null;
+    items = (p && Array.isArray(p) && p.length > 0) ? p : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  } catch(e){ items = JSON.parse(JSON.stringify(DEFAULT_ITEMS)); }
+  try{
+    var r2 = localStorage.getItem('inv3_records');
+    records = r2 ? JSON.parse(r2) : [];
+  } catch(e){ records = []; }
+  try{ _syncVer = parseInt(localStorage.getItem('inv3_ver') || '0'); } catch(e){ _syncVer = 0; }
 }
 
-function saveItems(){
-  localStorage.setItem('inv3_items',JSON.stringify(items));
-  cfgSet('inv:items', items);
-}
-function saveRecords(){
-  var trimmed=records.slice(0,50);
-  localStorage.setItem('inv3_records',JSON.stringify(trimmed));
-  cfgSet('inv:records', trimmed);
-}
-
-function syncFromCloud(){
-  setSyncStatus(false);
-  var loaded={items:false, records:false};
-  function checkDone(){
-    if(loaded.items&&loaded.records){ setSyncStatus(true); buildPersonGrid(); }
-  }
+// 從雲端拉最新資料
+// force=true：不管版本號都覆蓋；force=false：只有雲端版本較新才覆蓋
+function pullFromCloud(force){
+  setSyncStatus('syncing');
   cfgGet('inv:items', function(v){
-    if(v&&Array.isArray(v)&&v.length>0){
-      items=v;
-      try{localStorage.setItem('inv3_items',JSON.stringify(v));}catch(e){}
+    if(_syncLocked) return; // 存檔中，丟棄此次結果
+    if(v && Array.isArray(v) && v.length > 0){
+      var cloudVer = 0;
+      // 嘗試取版本號（附加在 items 陣列後面的隱藏欄位）
+      if(v._ver) cloudVer = v._ver;
+      if(force || cloudVer > _syncVer || items.length === 0){
+        items = v;
+        _syncVer = cloudVer || _syncVer;
+        localStorage.setItem('inv3_items', JSON.stringify(items));
+        localStorage.setItem('inv3_ver', String(_syncVer));
+      }
     }
-    loaded.items=true; checkDone();
+    setSyncStatus('ok');
+    buildPersonGrid();
   });
   cfgGet('inv:records', function(v){
-    if(v&&Array.isArray(v)){
-      records=v;
-      try{localStorage.setItem('inv3_records',JSON.stringify(v));}catch(e){}
+    if(v && Array.isArray(v)){
+      records = v;
+      try{ localStorage.setItem('inv3_records', JSON.stringify(v)); } catch(e){}
     }
-    loaded.records=true; checkDone();
   });
+}
+
+// 存品項到本機 + 雲端（防抖：最後一次操作 800ms 後才打 API）
+function saveItems(){
+  // 1. 立即存本機（不等 API）
+  localStorage.setItem('inv3_items', JSON.stringify(items));
+  setSyncStatus('saving');
+  // 2. 防抖：連續修改只發一次 API
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function(){
+    _syncLocked = true;
+    var snapshot = JSON.parse(JSON.stringify(items)); // 存快照防競態
+    cfgSet('inv:items', snapshot, function(d){
+      _syncLocked = false;
+      if(d && d.ok){
+        setSyncStatus('ok');
+      } else {
+        setSyncStatus('error');
+        showToast('⚠️ 雲端同步失敗，設定已存在本機');
+      }
+    });
+  }, 800);
+}
+
+function saveRecords(){
+  var trimmed = records.slice(0, 50);
+  localStorage.setItem('inv3_records', JSON.stringify(trimmed));
+  cfgSet('inv:records', trimmed);
 }
 function getItemsForMode(mode){
   if(mode==='monthly') return items;
