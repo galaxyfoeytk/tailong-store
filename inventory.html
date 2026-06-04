@@ -205,6 +205,13 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .numpad-ok:active{opacity:.85}
 .numpad-backdrop{display:none;position:fixed;inset:0;z-index:599}
 .numpad-backdrop.show{display:block}
+/* 單位切換 tabs */
+.np-unit-tab{flex:1;padding:8px 4px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink3);text-align:center;transition:all .1s;line-height:1.3}
+.np-unit-tab.active{background:var(--b);color:#fff;border-color:var(--b)}
+.np-unit-tab .np-tab-val{font-size:16px;font-weight:900;display:block;color:var(--ink)}
+.np-unit-tab.active .np-tab-val{color:#fff}
+.np-unit-tab .np-tab-lbl{font-size:10px;color:var(--ink3);display:block;margin-top:1px}
+.np-unit-tab.active .np-tab-lbl{color:rgba(255,255,255,.75)}
 /* ── 批量編輯 ── */
 .bulk-ov{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;flex-direction:column}
 .bulk-ov.show{display:flex}
@@ -436,18 +443,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 <div class="numpad-backdrop" id="np-backdrop" onclick="npClose()"></div>
 <div class="numpad-wrap" id="numpad-wrap">
   <div class="numpad-handle"></div>
-  <div class="numpad-header">
-    <div class="numpad-info">
-      <div class="numpad-label" id="np-label">數量</div>
-      <div class="numpad-display" id="np-display">0</div>
-    </div>
+  <!-- 品項名稱 + 換算提示 -->
+  <div style="margin-bottom:8px">
+    <div class="numpad-label" id="np-label">數量</div>
+    <div class="numpad-hint" id="np-hint"></div>
   </div>
-  <div class="numpad-hint" id="np-hint"></div>
-  <div class="numpad-total" id="np-total-row" style="display:none">
+  <!-- 單位切換列：點哪格就切到那個單位 -->
+  <div id="np-unit-tabs" style="display:none;gap:6px;margin-bottom:10px"></div>
+  <!-- 目前輸入的值 -->
+  <div class="numpad-display" id="np-display">0</div>
+  <!-- 小單位合計 -->
+  <div class="numpad-total" id="np-total-row" style="display:none;margin-top:8px">
     <span class="nt-lbl">小單位合計</span>
     <span class="nt-val"><span id="np-total">0</span> <span id="np-total-unit" style="font-size:13px;font-weight:500"></span></span>
   </div>
-  <div class="numpad-grid">
+  <div class="numpad-grid" style="margin-top:10px">
     <button class="nk" onclick="npKey('7')">7</button>
     <button class="nk" onclick="npKey('8')">8</button>
     <button class="nk" onclick="npKey('9')">9</button>
@@ -1575,13 +1585,49 @@ function npOpen(opts){
     document.getElementById('np-total-unit').textContent = _np.unit||'';
     npUpdateTotal();
   }
-  document.getElementById('np-ok-btn').textContent = _np.okLabel||'✓ 確認';
+  // 渲染單位 tab 列
+  var tabEl = document.getElementById('np-unit-tabs');
+  if(_np.mode==='count' && _np.fields && _np.fields.length > 1){
+    tabEl.style.display = 'flex';
+    npRenderUnitTabs();
+  } else {
+    tabEl.style.display = 'none';
+  }
+  document.getElementById('np-ok-btn').textContent = '✓ 確認';
   document.getElementById('np-backdrop').classList.add('show');
   document.getElementById('numpad-wrap').classList.add('show');
+}
+function npRenderUnitTabs(){
+  var item = items.find(function(i){return i.id===_np.itemId;});
+  if(!item) return;
+  var unitNames = {
+    l: item.ln+'（大）',
+    m: item.mn+'（中）',
+    s: item.sn+'（小）',
+    w: (item.wu||'重')+'（重量）'
+  };
+  var html = _np.fields.map(function(f){
+    var isActive = f === _np.field;
+    var val = _np.vals[f] || 0;
+    return '<button class="np-unit-tab'+(isActive?' active':'')+'" onclick="npSwitchField(\''+f+'\')">'+
+      '<span class="np-tab-val">'+(val||0)+'</span>'+
+      '<span class="np-tab-lbl">'+(unitNames[f]||f)+'</span>'+
+    '</button>';
+  }).join('');
+  document.getElementById('np-unit-tabs').innerHTML = html;
+}
+function npSwitchField(f){
+  _np.vals[_np.field] = parseFloat(_np.val)||0;
+  _np.field = f;
+  _np.val = String(_np.vals[f]||0);
+  document.getElementById('np-display').textContent = _np.val;
+  npRenderUnitTabs();
+  npUpdateTotal();
 }
 function npClose(){
   document.getElementById('np-backdrop').classList.remove('show');
   document.getElementById('numpad-wrap').classList.remove('show');
+  _np.inpEl=null;
 }
 function npKey(k){
   var v = _np.val==='0' ? '' : _np.val;
@@ -1590,60 +1636,38 @@ function npKey(k){
   else if(k==='.')  { if(v.indexOf('.')===-1) _np.val=(v||'0')+'.'; }
   else              { if(v.length>=7) return; _np.val = v+k; }
   document.getElementById('np-display').textContent = _np.val;
-  if(_np.mode==='count') npUpdateTotal();
+  if(_np.mode==='count'){
+    _np.vals[_np.field] = parseFloat(_np.val)||0;
+    npRenderUnitTabs();
+    npUpdateTotal();
+  }
 }
 function npUpdateTotal(){
   var item = items.find(function(i){return i.id===_np.itemId;});
   if(!item) return;
   var v = _np.vals;
-  var cur = parseFloat(_np.val)||0;
-  var s=_np.field==='s'?cur:(parseFloat(v.s)||0);
-  var m=_np.field==='m'?cur:(parseFloat(v.m)||0);
-  var l=_np.field==='l'?cur:(parseFloat(v.l)||0);
-  var w=_np.field==='w'?cur:(parseFloat(v.w)||0);
+  var s=parseFloat(v.s)||0, m=parseFloat(v.m)||0, l=parseFloat(v.l)||0, w=parseFloat(v.w)||0;
   var total=calcTotal(item,{s:s,m:m,l:l})+(item.sw>0?w/item.sw:0);
   document.getElementById('np-total').textContent=Math.round(total*100)/100;
 }
 function npConfirm(){
-  var val = parseFloat(_np.val)||0;
   if(_np.mode==='count'){
-    _np.vals[_np.field] = val;
+    _np.vals[_np.field] = parseFloat(_np.val)||0;
+    var s=_np.vals.s||0, m=_np.vals.m||0, l=_np.vals.l||0, w=_np.vals.w||0;
     var item = items.find(function(i){return i.id===_np.itemId;});
-    // 找下一個有效欄位
-    var allFields = ['l','m','s','w'];
-    var validFields = allFields.filter(function(f){
-      if(f==='l') return item&&item.ln;
-      if(f==='m') return item&&item.mn;
-      if(f==='s') return true;
-      if(f==='w') return item&&item.wu&&item.sw>0;
-    });
-    var curIdx = validFields.indexOf(_np.field);
-    if(curIdx>=0 && curIdx<validFields.length-1){
-      // 跳下一欄
-      var nextF = validFields[curIdx+1];
-      var labels={l:item.ln+'（大）',m:item.mn+'（中）',s:item.sn+'（小）',w:item.wu+'（重量）'};
-      _np.field = nextF;
-      _np.val = String(_np.vals[nextF]||0);
-      document.getElementById('np-display').textContent = _np.val;
-      document.getElementById('np-label').textContent = item.name+' — '+labels[nextF];
-      npUpdateTotal();
+    if(_np.isMonthly){
+      var key=curMonthlyLoc==='現場'?'S':'W';
+      counts[key+'_'+_np.itemId]={s:s,m:m,l:l,w:w};
+      npClose();
+      renderMonthlyLocPage();
     } else {
-      // 全填完，存入 counts
-      var s=_np.vals.s||0, m=_np.vals.m||0, l=_np.vals.l||0, w=_np.vals.w||0;
-      if(_np.isMonthly){
-        var key=curMonthlyLoc==='現場'?'S':'W';
-        counts[key+'_'+_np.itemId]={s:s,m:m,l:l,w:w};
-        npClose();
-        renderMonthlyLocPage();
-      } else {
-        counts[_np.itemId]={s:s,m:m,l:l,w:w};
-        npClose();
-        renderCountPage();
-      }
-      if(item) showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+      counts[_np.itemId]={s:s,m:m,l:l,w:w};
+      npClose();
+      renderCountPage();
     }
+    if(item) showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
   } else if(_np.cb){
-    _np.cb(val);
+    _np.cb(parseFloat(_np.val)||0);
     npClose();
   }
 }
@@ -1658,14 +1682,18 @@ function openNumOv(itemId){
   if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
   if(item.wu&&item.sw>0) hints.push('1'+item.sn+'='+item.sw+item.wu);
   if(curMode!=='monthly'&&item[curMode]) hints.push('低標:'+item[curMode].min+' 補至:'+item[curMode].target);
-  var firstF=item.ln?'l':(item.mn?'m':'s');
-  var labels={l:(item.ln||'大')+'（大）',m:(item.mn||'中')+'（中）',s:item.sn+'（小）',w:(item.wu||'重')+'（重量）'};
+  var fields=[];
+  if(item.ln) fields.push('l');
+  if(item.mn) fields.push('m');
+  fields.push('s');
+  if(item.wu&&item.sw>0) fields.push('w');
   npOpen({
     mode:'count', itemId:itemId, isMonthly:false,
-    field:firstF, val:String(c[firstF]||0),
+    field:'s', val:String(c.s||0),
+    fields:fields,
     vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
-    label:item.name+' — '+labels[firstF],
-    hint:hints.join('　'), unit:item.sn, okLabel:'→ 下一欄'
+    label:item.name,
+    hint:hints.join('　'), unit:item.sn
   });
 }
 // 攔截 openNumOvMonthly
@@ -1678,14 +1706,18 @@ function openNumOvMonthly(itemId){
   if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
   if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
   if(item.wu&&item.sw>0) hints.push('1'+item.sn+'='+item.sw+item.wu);
-  var firstF=item.ln?'l':(item.mn?'m':'s');
-  var labels={l:(item.ln||'大')+'（大）',m:(item.mn||'中')+'（中）',s:item.sn+'（小）',w:(item.wu||'重')+'（重量）'};
+  var fields=[];
+  if(item.ln) fields.push('l');
+  if(item.mn) fields.push('m');
+  fields.push('s');
+  if(item.wu&&item.sw>0) fields.push('w');
   npOpen({
     mode:'count', itemId:itemId, isMonthly:true,
-    field:firstF, val:String(c[firstF]||0),
+    field:'s', val:String(c.s||0),
+    fields:fields,
     vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
-    label:item.name+' （'+curMonthlyLoc+'） — '+labels[firstF],
-    hint:hints.join('　'), unit:item.sn, okLabel:'→ 下一欄'
+    label:item.name+' （'+curMonthlyLoc+'）',
+    hint:hints.join('　'), unit:item.sn
   });
 }
 
