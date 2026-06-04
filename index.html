@@ -588,7 +588,16 @@ var framesLoaded = {};
 // ── API ──────────────────────────────
 function api(params, cb){
   var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  // 超過 800 字元自動改 POST
+  if(qs.length > 800){ apiPost(params, cb); return; }
   fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+function apiPost(params, cb){
+  var body=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body})
     .then(function(r){return r.json();})
     .then(function(d){if(cb)cb(d,null);})
     .catch(function(e){if(cb)cb(null,e.toString());});
