@@ -104,6 +104,21 @@ canvas{width:100%!important}
 .empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;font-weight:500}
 .badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700}
+/* 數字小鍵盤 */
+.np-backdrop{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)}
+.np-backdrop.show{display:block}
+.np-wrap{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;z-index:501;padding:12px 14px 32px;max-width:540px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.15);transform:translateY(100%);transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.np-wrap.show{transform:translateY(0)}
+.np-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.np-label-row{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.np-display{font-size:38px;font-weight:900;color:var(--ink);letter-spacing:-.5px;min-height:48px;margin-bottom:10px}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.npk{padding:15px;border-radius:var(--r2);border:none;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.npk:active{background:var(--bd);transform:scale(.94)}
+.npk-del{background:var(--amberl);color:var(--amber)}
+.npk-clear{background:var(--redl);color:var(--red);font-size:13px;font-weight:800}
+.np-ok{width:100%;padding:14px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
+.np-ok:active{opacity:.85}
 </style>
 </head>
 <body>
@@ -147,13 +162,13 @@ canvas{width:100%!important}
     <div class="section-head">💰 營業數據</div>
     <div class="section-body">
       <div class="field-grid grid-2" style="margin-bottom:10px">
-        <div class="field highlight"><label>💵 總營業額</label><input type="number" id="f-revenue" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field highlight"><label>🧾 單號（張數）</label><input type="number" id="f-receipt" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field highlight"><label>💵 總營業額</label><input id="f-revenue" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'💵 總營業額')"></div>
+        <div class="field highlight"><label>🧾 單號（張數）</label><input id="f-receipt" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧾 單號')"></div>
       </div>
       <div class="field-grid grid-3">
-        <div class="field"><label>🥤 封口機杯數</label><input type="number" id="f-seal" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>🧋 奶蓋</label><input type="number" id="f-cream" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>♻️ 環保杯</label><input type="number" id="f-eco" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>🥤 封口機杯數</label><input id="f-seal" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🥤 封口機杯數')"></div>
+        <div class="field"><label>🧋 奶蓋</label><input id="f-cream" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧋 奶蓋')"></div>
+        <div class="field"><label>♻️ 環保杯</label><input id="f-eco" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'♻️ 環保杯')"></div>
       </div>
     </div>
   </div>
@@ -170,8 +185,8 @@ canvas{width:100%!important}
             <option>輕春風凍</option><option>清涼風凍</option><option>其他</option>
           </select>
         </div>
-        <div class="field"><label>試飲杯總數</label><input type="number" id="f-demo-cups" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>試飲轉換數量</label><input type="number" id="f-demo-convert" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>試飲杯總數</label><input id="f-demo-cups" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲杯總數')"></div>
+        <div class="field"><label>試飲轉換數量</label><input id="f-demo-convert" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲轉換數量')"></div>
       </div>
     </div>
   </div>
@@ -191,10 +206,10 @@ canvas{width:100%!important}
     <div class="section-head">👥 客群分析</div>
     <div class="section-body">
       <div class="field-grid grid-4">
-        <div class="field"><label>第一次來</label><input type="number" id="f-new" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>有來過</label><input type="number" id="f-return" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>再喝風凍</label><input type="number" id="f-jello-return" min="0" placeholder="0" oninput="recalcAll()"></div>
-        <div class="field"><label>直接買</label><input type="number" id="f-jello-direct" min="0" placeholder="0" oninput="recalcAll()"></div>
+        <div class="field"><label>第一次來</label><input id="f-new" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'第一次來')"></div>
+        <div class="field"><label>有來過</label><input id="f-return" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'有來過')"></div>
+        <div class="field"><label>再喝風凍</label><input id="f-jello-return" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'再喝風凍')"></div>
+        <div class="field"><label>直接買</label><input id="f-jello-direct" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'直接買')"></div>
       </div>
     </div>
   </div>
@@ -276,6 +291,29 @@ canvas{width:100%!important}
 
 <div class="toast" id="toast"></div>
 
+<!-- 數字小鍵盤 -->
+<div class="np-backdrop" id="np-bd" onclick="npClose()"></div>
+<div class="np-wrap" id="np-wrap">
+  <div class="np-handle"></div>
+  <div class="np-label-row" id="np-lbl"></div>
+  <div class="np-display" id="np-disp">0</div>
+  <div class="np-grid">
+    <button class="npk" onclick="npK('7')">7</button>
+    <button class="npk" onclick="npK('8')">8</button>
+    <button class="npk" onclick="npK('9')">9</button>
+    <button class="npk" onclick="npK('4')">4</button>
+    <button class="npk" onclick="npK('5')">5</button>
+    <button class="npk" onclick="npK('6')">6</button>
+    <button class="npk" onclick="npK('1')">1</button>
+    <button class="npk" onclick="npK('2')">2</button>
+    <button class="npk" onclick="npK('3')">3</button>
+    <button class="npk npk-clear" onclick="npK('C')">清除</button>
+    <button class="npk" onclick="npK('0')">0</button>
+    <button class="npk npk-del" onclick="npK('DEL')">⌫</button>
+  </div>
+  <button class="np-ok" onclick="npDone()">✓ 確認</button>
+</div>
+
 <script>
 var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
 var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
@@ -317,11 +355,11 @@ function buildProductsBlock(){
       '<div class="buy-take">'+
         '<div>'+
           '<div class="bt-label">🛍 買入</div>'+
-          '<input class="bt-input" type="number" id="f-buy-'+p.key+'" min="0" value="0" oninput="recalcAll()">'+
+          '<input class="bt-input" type="text" id="f-buy-'+p.key+'" readonly value="0" onfocus="npOpen(this,p.name+\' 買入\')">'+
         '</div>'+
         '<div>'+
           '<div class="bt-label">📦 取出</div>'+
-          '<input class="bt-input" type="number" id="f-take-'+p.key+'" min="0" value="0" oninput="recalcAll()">'+
+          '<input class="bt-input" type="text" id="f-take-'+p.key+'" readonly value="0" onfocus="npOpen(this,p.name+\' 取出\')">'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -330,6 +368,38 @@ function buildProductsBlock(){
 }
 
 // ── 計算 ─────────────────────────────────────────
+// ── 數字小鍵盤 ──────────────────────────────────────────────
+var _np = { val:'0', el:null, label:'' };
+function npOpen(el, label){
+  el.blur();
+  _np.el = el; _np.label = label;
+  _np.val = el.value || '0';
+  document.getElementById('np-lbl').textContent = label;
+  document.getElementById('np-disp').textContent = _np.val;
+  document.getElementById('np-bd').classList.add('show');
+  document.getElementById('np-wrap').classList.add('show');
+}
+function npClose(){
+  document.getElementById('np-bd').classList.remove('show');
+  document.getElementById('np-wrap').classList.remove('show');
+}
+function npK(k){
+  var v = _np.val === '0' ? '' : _np.val;
+  if(k==='C')     { _np.val = '0'; }
+  else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
+  else            { if(v.length >= 7) return; _np.val = v+k; }
+  document.getElementById('np-disp').textContent = _np.val;
+}
+function npDone(){
+  if(_np.el){
+    _np.el.value = _np.val;
+    // 觸發 oninput 重新計算
+    var evt = new Event('input', {bubbles:true});
+    _np.el.dispatchEvent(evt);
+  }
+  npClose();
+}
+
 function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
 function pct(n,d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
 
@@ -708,8 +778,11 @@ function api(params, cb){
     .catch(function(e){ if(cb) cb(null,e); });
 }
 function apiPost(params, cb){
-  var body = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
-  fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body })
+  fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(params)
+  })
     .then(function(r){ return r.json(); })
     .then(function(d){ if(cb) cb(d,null); })
     .catch(function(e){ if(cb) cb(null,e); });
