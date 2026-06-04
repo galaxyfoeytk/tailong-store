@@ -1127,20 +1127,41 @@ function finishCount(){
   showPage('result');
 }
 
-function pushToSheets(rec,modeItems,actionItems){
-  var data=modeItems.map(function(item){
-    var c=rec.counts[item.id]||{s:0,m:0,l:0,w:0};
-    var total=calcTotal(item,c);
-    var wConverted=item.sw>0?((c.w||0)/item.sw):0;
-    var realTotal=total+wConverted;
-    var cfg=item[rec.mode];
-    var need=cfg?Math.max(0,cfg.target-realTotal):0;
-    return {cat:item.cat,item:item.name,unit:item.sn,
-      qty_l:c.l||0,qty_m:c.m||0,qty_s:c.s||0,qty_w:c.w||0,
-      total:Math.round(realTotal*100)/100,need:Math.ceil(need)};
-  });
-  api({action:'invSave',mode:rec.mode,date:rec.date,person:rec.person,data:JSON.stringify(data)},
-    function(d){if(d&&d.ok) showToast('✓ 已同步 Google Sheets');});
+function pushToSheets(rec, modeItems, actionItems){
+  var data;
+  if(rec.mode === 'monthly'){
+    // 月盤：分現場、倉庫、合計三欄
+    data = modeItems.map(function(item){
+      var cS = rec.counts['S_'+item.id] || {s:0,m:0,l:0,w:0};
+      var cW = rec.counts['W_'+item.id] || {s:0,m:0,l:0,w:0};
+      var totalS = calcTotal(item,cS) + (item.sw>0?(cS.w||0)/item.sw:0);
+      var totalW = calcTotal(item,cW) + (item.sw>0?(cW.w||0)/item.sw:0);
+      var totalAll = Math.round((totalS+totalW)*100)/100;
+      return {
+        cat: item.cat, item: item.name, unit: item.sn,
+        qty_scene: Math.round(totalS*100)/100,
+        qty_store: Math.round(totalW*100)/100,
+        total: totalAll, need: 0
+      };
+    });
+  } else {
+    // 日盤/週盤
+    data = modeItems.map(function(item){
+      var c = rec.counts[item.id] || {s:0,m:0,l:0,w:0};
+      var total = calcTotal(item,c);
+      var wConverted = item.sw>0?((c.w||0)/item.sw):0;
+      var realTotal = total + wConverted;
+      var cfg = item[rec.mode];
+      var need = cfg ? Math.max(0, cfg.target - realTotal) : 0;
+      return {
+        cat: item.cat, item: item.name, unit: item.sn,
+        qty_l: c.l||0, qty_m: c.m||0, qty_s: c.s||0, qty_w: c.w||0,
+        total: Math.round(realTotal*100)/100, need: Math.ceil(need)
+      };
+    });
+  }
+  api({action:'invSave', mode:rec.mode, date:rec.date, person:rec.person, data:JSON.stringify(data)},
+    function(d){ if(d&&d.ok) showToast('✓ 已同步 Google Sheets'); });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1548,16 +1569,90 @@ function addNewItem(){
 // ── 歷史記錄 ──────────────────────────────────────────────────
 function showHist(){
   var modeLabels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+  var modeColors={daily:'var(--b)',weekly:'var(--purple)',monthly:'var(--g)'};
   var el=document.getElementById('hist-body');
   if(!records.length){el.innerHTML='<div class="empty">尚無記錄</div>';openOv('hist');return;}
-  el.innerHTML=records.slice(0,30).map(function(r){
-    return '<div style="padding:12px 0;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center">'
-      +'<div><div style="font-size:14px;font-weight:700">'+r.date+'</div>'
-        +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+r.person+'</div></div>'
-      +'<span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:var(--bl);color:var(--b)">'+(modeLabels[r.mode]||r.mode)+'</span>'
-    +'</div>';
+  el.innerHTML=records.slice(0,30).map(function(r,ri){
+    var mc=modeColors[r.mode]||'var(--b)';
+    var ml=modeLabels[r.mode]||r.mode;
+    return '<div style="border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden">'+
+      '<div style="padding:11px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--white)" onclick="toggleHistRow('+ri+')">'+
+        '<div>'+
+          '<div style="font-size:14px;font-weight:700">'+r.date+'</div>'+
+          '<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+r.person+'</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:'+mc+'22;color:'+mc+'">'+ml+'</span>'+
+          '<span id="hist-arrow-'+ri+'" style="color:var(--ink3);font-size:13px">▼</span>'+
+        '</div>'+
+      '</div>'+
+      '<div id="hist-detail-'+ri+'" style="display:none;border-top:1px solid var(--bd);background:var(--bg)">'+
+        histDetailHtml(r)+
+      '</div>'+
+    '</div>';
   }).join('');
   openOv('hist');
+}
+
+function toggleHistRow(ri){
+  var detail=document.getElementById('hist-detail-'+ri);
+  var arrow=document.getElementById('hist-arrow-'+ri);
+  var open=detail.style.display==='none';
+  detail.style.display=open?'block':'none';
+  arrow.textContent=open?'▲':'▼';
+}
+
+function histDetailHtml(r){
+  var modeItems=r.mode==='monthly'?items:items.filter(function(i){
+    return i.modes&&i.modes.indexOf(r.mode==='daily'?'D':'W')>-1;
+  });
+  var html='';
+  if(r.mode==='monthly'){
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;padding:7px 13px;border-bottom:1px solid var(--bd)">'+
+      '<div>品項</div><div style="text-align:right">🏪現場</div><div style="text-align:right">📦倉庫</div><div style="text-align:right;color:var(--g)">合計</div>'+
+    '</div>';
+    var lastCat='';
+    modeItems.forEach(function(item){
+      var cS=r.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var cW=r.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+      var tS=Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*100)/100;
+      var tW=Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*100)/100;
+      var tAll=Math.round((tS+tW)*100)/100;
+      if(item.cat!==lastCat){
+        lastCat=item.cat;
+        html+='<div style="padding:5px 13px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;background:#eaeff7;border-top:1px solid var(--bd)">'+item.cat+'</div>';
+      }
+      html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;padding:7px 13px;border-top:1px solid var(--bd);font-size:13px;align-items:center">'+
+        '<div style="font-weight:500">'+item.name+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tS+' '+item.sn+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tW+' '+item.sn+'</div>'+
+        '<div style="text-align:right;font-weight:700;color:var(--g)">'+tAll+' '+item.sn+'</div>'+
+      '</div>';
+    });
+  } else {
+    var actionWord=r.mode==='daily'?'需補':'需叫';
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 70px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;padding:7px 13px;border-bottom:1px solid var(--bd)">'+
+      '<div>品項</div><div style="text-align:right">現有</div><div style="text-align:right;color:var(--red)">'+actionWord+'</div>'+
+    '</div>';
+    var lastCat2='';
+    modeItems.forEach(function(item){
+      var c=r.counts[item.id]||{s:0,m:0,l:0,w:0};
+      var total=Math.round((calcTotal(item,c)+(item.sw>0?(c.w||0)/item.sw:0))*100)/100;
+      var cfg=item[r.mode]||{min:0,target:0};
+      var need=Math.max(0,Math.ceil(cfg.target-total));
+      if(item.cat!==lastCat2){
+        lastCat2=item.cat;
+        html+='<div style="padding:5px 13px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;background:#eaeff7;border-top:1px solid var(--bd)">'+item.cat+'</div>';
+      }
+      var needColor=need>0?'color:var(--red);font-weight:700':'color:var(--g)';
+      html+='<div style="display:grid;grid-template-columns:1fr 80px 70px;padding:7px 13px;border-top:1px solid var(--bd);font-size:13px;align-items:center">'+
+        '<div style="font-weight:500">'+item.name+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+total+' '+item.sn+'</div>'+
+        '<div style="text-align:right;'+needColor+'">'+(need>0?'+'+need:'✓')+'</div>'+
+      '</div>';
+    });
+  }
+  return html;
 }
 
 // ── API ───────────────────────────────────────────────────────
