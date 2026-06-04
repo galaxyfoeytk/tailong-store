@@ -250,6 +250,21 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .bt-sort{border:1px solid var(--bd);background:#fff;color:var(--ink3);font-size:10px;cursor:pointer;border-radius:3px;padding:2px 5px;line-height:1}
 .bt-sort:disabled{opacity:.2;cursor:default}
 .bt-sort:active:not(:disabled){background:var(--bl)}
+/* 記錄頁簽 */
+.hist-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.hist-tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:700}
+/* 月盤總表 */
+.ms-table{width:100%;border-collapse:collapse;font-size:12px}
+.ms-table th{position:sticky;top:0;background:#1A3A5C;color:#fff;padding:7px 8px;text-align:right;white-space:nowrap;border-right:1px solid rgba(255,255,255,.12);font-size:11px;font-weight:700;z-index:2}
+.ms-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:#0F2640;min-width:90px}
+.ms-table th.th-total{background:var(--g)}
+.ms-table td{padding:6px 8px;border-bottom:1px solid var(--bd);border-right:1px solid #eaeff7;text-align:right;color:var(--ink2);vertical-align:middle}
+.ms-table td:first-child{position:sticky;left:0;background:var(--white);text-align:left;font-weight:600;color:var(--ink);z-index:1}
+.ms-table tr:nth-child(even) td{background:#f7f9fc}
+.ms-table tr:nth-child(even) td:first-child{background:#f7f9fc}
+.ms-table tr.cat-row td{background:#eaeff7!important;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;padding:5px 8px}
+.ms-table td.total-col{font-weight:700;color:var(--g);background:var(--gl)!important}
+.ms-table td.usage-col{font-weight:700;color:var(--b)}
 </style>
 </head>
 <body>
@@ -427,13 +442,30 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 
 <!-- 歷史記錄 overlay -->
 <div class="ov" id="ov-hist">
-  <div class="sh" style="max-height:88dvh;overflow-y:auto">
+  <div class="sh" style="max-height:92dvh;overflow-y:auto;display:flex;flex-direction:column">
     <div class="sh-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0">
       <div style="font-size:15px;font-weight:900">盤點記錄</div>
       <button onclick="closeOv('hist')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
     </div>
-    <div id="hist-body"></div>
+    <!-- 頁簽 -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:12px;flex-shrink:0">
+      <button class="hist-tab on" id="htab-all" onclick="switchHistTab('all')">全部記錄</button>
+      <button class="hist-tab" id="htab-monthly" onclick="switchHistTab('monthly')">📊 月盤總表</button>
+    </div>
+    <!-- 全部記錄 -->
+    <div id="hist-all-panel" style="flex:1;overflow-y:auto">
+      <div id="hist-body"></div>
+    </div>
+    <!-- 月盤總表 -->
+    <div id="hist-monthly-panel" style="display:none;flex:1;overflow-y:auto">
+      <!-- 月份選擇 -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <select id="hist-month-sel" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;flex:1"></select>
+        <button onclick="renderMonthSummary()" style="padding:7px 14px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">查看</button>
+      </div>
+      <div id="month-summary-body"></div>
+    </div>
   </div>
 </div>
 
@@ -1568,13 +1600,39 @@ function addNewItem(){
 
 // ── 歷史記錄 ──────────────────────────────────────────────────
 function showHist(){
+  var el = document.getElementById('hist-body');
+  var monthlyRecs = records.filter(function(r){ return r.mode==='monthly'; });
+  // 填入月份選擇器
+  var months = {};
+  monthlyRecs.forEach(function(r){
+    var m = (r.date||'').slice(0,7);
+    if(m) months[m] = true;
+  });
+  var monthSel = document.getElementById('hist-month-sel');
+  monthSel.innerHTML = Object.keys(months).sort().reverse().map(function(m){
+    return '<option value="'+m+'">'+m+'</option>';
+  }).join('') || '<option value="">（無月盤記錄）</option>';
+
+  renderAllHist();
+  openOv('hist');
+}
+
+function switchHistTab(tab){
+  document.getElementById('hist-all-panel').style.display     = tab==='all'?'':'none';
+  document.getElementById('hist-monthly-panel').style.display = tab==='monthly'?'':'none';
+  document.getElementById('htab-all').classList.toggle('on',     tab==='all');
+  document.getElementById('htab-monthly').classList.toggle('on', tab==='monthly');
+  if(tab==='monthly') renderMonthSummary();
+}
+
+function renderAllHist(){
   var modeLabels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
   var modeColors={daily:'var(--b)',weekly:'var(--purple)',monthly:'var(--g)'};
-  var el=document.getElementById('hist-body');
-  if(!records.length){el.innerHTML='<div class="empty">尚無記錄</div>';openOv('hist');return;}
-  el.innerHTML=records.slice(0,30).map(function(r,ri){
-    var mc=modeColors[r.mode]||'var(--b)';
-    var ml=modeLabels[r.mode]||r.mode;
+  var el = document.getElementById('hist-body');
+  if(!records.length){ el.innerHTML='<div class="empty">尚無記錄</div>'; return; }
+  el.innerHTML = records.slice(0,40).map(function(r,ri){
+    var mc = modeColors[r.mode]||'var(--b)';
+    var ml = modeLabels[r.mode]||r.mode;
     return '<div style="border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden">'+
       '<div style="padding:11px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--white)" onclick="toggleHistRow('+ri+')">'+
         '<div>'+
@@ -1591,7 +1649,125 @@ function showHist(){
       '</div>'+
     '</div>';
   }).join('');
-  openOv('hist');
+}
+
+// ── 月盤總表 ──────────────────────────────────────────────────
+function renderMonthSummary(){
+  var selMonth = document.getElementById('hist-month-sel').value;
+  var el = document.getElementById('month-summary-body');
+  if(!selMonth){ el.innerHTML='<div class="empty">請選擇月份</div>'; return; }
+
+  // 取出該月所有月盤記錄，依日期排序
+  var recs = records.filter(function(r){
+    return r.mode==='monthly' && (r.date||'').slice(0,7)===selMonth;
+  }).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+
+  if(!recs.length){ el.innerHTML='<div class="empty">此月份無月盤記錄</div>'; return; }
+
+  // 取上一個月的最後一筆月盤（用來算月用量）
+  var prevMonth = getPrevMonth(selMonth);
+  var prevRecs = records.filter(function(r){
+    return r.mode==='monthly' && (r.date||'').slice(0,7)===prevMonth;
+  }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var prevRec = prevRecs[0] || null; // 上月最後一筆
+
+  // 表頭：品項名 | 上月末 | 本月盤1 | 本月盤2 ... | 本月末 | 月用量
+  var colDates = recs.map(function(r){ return r.date; });
+  var hasPrev = !!prevRec;
+
+  // 依分類分組
+  var cats = [];
+  var catMap = {};
+  items.forEach(function(item){
+    if(!catMap[item.cat]){ catMap[item.cat]=[]; cats.push(item.cat); }
+    catMap[item.cat].push(item);
+  });
+
+  // 計算每筆記錄每個品項的合計
+  function getTotal(rec, item){
+    var cS = (rec.counts['S_'+item.id])||{s:0,m:0,l:0,w:0};
+    var cW = (rec.counts['W_'+item.id])||{s:0,m:0,l:0,w:0};
+    var tS = calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
+    var tW = calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
+    return Math.round((tS+tW)*100)/100;
+  }
+
+  // 計算月用量：上月末存量 + 0（進貨暫不計） - 本月末存量
+  // 如果有多次盤點，以第一次為「月初」，最後一次為「月末」
+  var firstRec = recs[0];
+  var lastRec  = recs[recs.length-1];
+
+  // HTML
+  var thHtml = '<tr>'+
+    '<th style="min-width:90px">品項</th>'+
+    (hasPrev ? '<th style="background:#37474F">上月末<div style="font-size:9px;font-weight:400;opacity:.75">'+prevRec.date.slice(5)+'</div></th>' : '')+
+    colDates.map(function(d,i){
+      var isFirst = i===0, isLast = i===colDates.length-1;
+      var style = isLast ? 'background:var(--g)' : isFirst&&colDates.length>1 ? 'background:#2A5A8C' : '';
+      return '<th style="'+style+'">'+d.slice(5)+
+        (isFirst&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月初</div>':'')+
+        (isLast&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月末</div>':'')+
+      '</th>';
+    }).join('')+
+    '<th class="th-total">月用量<div style="font-size:9px;font-weight:400;opacity:.8">估算</div></th>'+
+  '</tr>';
+
+  var bodyHtml = '';
+  cats.forEach(function(cat){
+    var catItems = catMap[cat];
+    // 跳過完全沒有月盤資料的品項
+    var hasData = catItems.some(function(item){
+      return recs.some(function(r){ return getTotal(r,item)>0; });
+    });
+    if(!hasData) return;
+
+    bodyHtml += '<tr class="cat-row"><td colspan="'+(2+colDates.length+(hasPrev?1:0))+'">'+cat+'</td></tr>';
+    catItems.forEach(function(item){
+      // 所有盤點都是0就跳過
+      var allZero = recs.every(function(r){ return getTotal(r,item)===0; }) &&
+                    (!hasPrev || getTotal(prevRec,item)===0);
+      if(allZero) return;
+
+      var prevVal = hasPrev ? getTotal(prevRec, item) : null;
+      var firstVal = getTotal(firstRec, item);
+      var lastVal  = getTotal(lastRec, item);
+
+      // 月用量估算：如果有上月末，用 上月末 - 本月末；否則用 本月初 - 本月末
+      var baseVal  = prevVal !== null ? prevVal : firstVal;
+      var usage    = Math.max(0, Math.round((baseVal - lastVal)*100)/100);
+
+      bodyHtml += '<tr>'+
+        '<td>'+item.name+'</td>'+
+        (hasPrev ? '<td style="color:var(--ink3)">'+(prevVal||0)+' '+item.sn+'</td>' : '')+
+        recs.map(function(r,i){
+          var v = getTotal(r,item);
+          var isLast = i===recs.length-1;
+          return '<td class="'+(isLast?'total-col':'')+'">'+(v||0)+' '+item.sn+'</td>';
+        }).join('')+
+        '<td class="usage-col">'+(usage||0)+' '+item.sn+'</td>'+
+      '</tr>';
+    });
+  });
+
+  el.innerHTML =
+    '<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">'+selMonth+' 共 '+recs.length+' 次盤點'+
+      (hasPrev?'　上月末參考：'+prevRec.date:'　（無上月末資料，月用量以本月初為基準）')+'</div>'+
+    '<div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bd)">'+
+      '<table class="ms-table">'+
+        '<thead>'+thHtml+'</thead>'+
+        '<tbody>'+bodyHtml+'</tbody>'+
+      '</table>'+
+    '</div>'+
+    '<div style="margin-top:10px;font-size:11px;color:var(--ink3);line-height:1.6">'+
+      '💡 月用量估算 = '+(hasPrev?'上月末庫存 − 本月末庫存':'本月初庫存 − 本月末庫存')+
+      '（尚未計入進貨量，僅供參考）'+
+    '</div>';
+}
+
+function getPrevMonth(ym){
+  var y=parseInt(ym.slice(0,4)), m=parseInt(ym.slice(5,7));
+  m--; if(m<1){ m=12; y--; }
+  return y+'-'+String(m).padStart(2,'0');
 }
 
 function toggleHistRow(ri){
