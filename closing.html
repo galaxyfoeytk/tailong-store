@@ -166,8 +166,8 @@ canvas{width:100%!important}
         <div class="field"><label>試飲主力</label>
           <select id="f-demo-focus">
             <option value="">— 選 —</option>
-            <option>原味風凍</option><option>芋香風凍</option><option>寧夏風凍</option>
-            <option>青春風凍</option><option>清涼風凍</option><option>其他</option>
+            <option>原味風凍</option><option>芋香風凍</option><option>檸夏風凍</option>
+            <option>輕春風凍</option><option>清涼風凍</option><option>其他</option>
           </select>
         </div>
         <div class="field"><label>試飲杯總數</label><input type="number" id="f-demo-cups" min="0" placeholder="0" oninput="recalcAll()"></div>
@@ -207,16 +207,19 @@ canvas{width:100%!important}
         <div>
           <div class="calc-row"><span class="calc-label">總杯數</span><span class="calc-value big" id="c-total-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
-          <div class="calc-row"><span class="calc-label">取寄杯總數</span><span class="calc-value" id="c-take-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">取寄杯數</span><span class="calc-value" id="c-take-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">原味總數</span><span class="calc-value" id="c-orig">0</span></div>
-          <div class="calc-row"><span class="calc-label">風味總數</span><span class="calc-value" id="c-flav">0</span></div>
+          <div class="calc-row"><span class="calc-label">風味加總</span><span class="calc-value" id="c-flav">0</span></div>
+          <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
         </div>
         <div style="padding-left:16px;border-left:1px solid var(--bd)">
+          <div class="calc-row"><span class="calc-label">仙草凍/總佔比</span><span class="calc-value green" id="c-jelly-ratio">—</span></div>
           <div class="calc-row"><span class="calc-label">原味佔比</span><span class="calc-value green" id="c-orig-pct">—</span></div>
           <div class="calc-row"><span class="calc-label">風味佔比</span><span class="calc-value amber" id="c-flav-pct">—</span></div>
-          <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
-          <div class="calc-row"><span class="calc-label">首次來店比例</span><span class="calc-value" id="c-first-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">首次來店比</span><span class="calc-value" id="c-first-pct">—</span></div>
           <div class="calc-row"><span class="calc-label">回購比例</span><span class="calc-value" id="c-return-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">風凍回購</span><span class="calc-value" id="c-jello-ret">—</span></div>
+          <div class="calc-row"><span class="calc-label">風凍直購</span><span class="calc-value" id="c-jello-direct">—</span></div>
         </div>
       </div>
     </div>
@@ -279,8 +282,8 @@ var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 var PRODUCTS = [
   {key:'original', name:'原味風凍', color:'#4A7CB5'},
   {key:'aromatic', name:'芋香風凍', color:'#7B5EA7'},
-  {key:'ningxia',  name:'寧夏風凍', color:'#C07000'},
-  {key:'youth',    name:'青春風凍', color:'#1A6B3C'},
+  {key:'ningxia',  name:'檸夏風凍', color:'#C07000'},
+  {key:'youth',    name:'輕春風凍', color:'#1A6B3C'},
   {key:'cool',     name:'清涼風凍', color:'#2A8FA8'},
 ];
 var _charts = {};
@@ -336,28 +339,64 @@ function recalcAll(){
     buy[p.key]  = getNum('f-buy-'+p.key);
     take[p.key] = getNum('f-take-'+p.key);
   });
-  var totalCups = PRODUCTS.reduce(function(s,p){ return s+buy[p.key]+take[p.key]; }, 0);
-  var takeCups  = PRODUCTS.reduce(function(s,p){ return s+take[p.key]; }, 0);
+
+  // 1. 總杯數 = 封口機+奶蓋+環保杯
+  var seal     = getNum('f-seal');
+  var cream    = getNum('f-cream');
+  var eco      = getNum('f-eco');
+  var totalCups = seal + cream + eco;
+
+  // 2. 均杯單價 = 總營業額 / 總杯數
+  var revenue  = getNum('f-revenue');
+  var avgPrice = totalCups > 0 ? (revenue / totalCups).toFixed(1) : '—';
+
+  // 3. 取寄杯數 = 原味取 + 芋香取 + 檸夏取 + 輕春取 + 清涼取
+  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool;
+
+  // 4. 原味總數 = 原味買 + 原味取
   var origTotal = buy.original + take.original;
-  var flavTotal = totalCups - origTotal;
-  var revenue   = getNum('f-revenue');
-  var avgPrice  = totalCups>0 ? (revenue/totalCups).toFixed(1) : '—';
-  var demoCups  = getNum('f-demo-cups');
-  var demoConv  = getNum('f-demo-convert');
-  var newCust   = getNum('f-new');
-  var retCust   = getNum('f-return');
-  var custTotal = newCust + retCust;
+
+  // 5. 風味加總 = 芋香+檸夏+輕春+清涼 的買+取全部
+  var flavTotal = (buy.aromatic + take.aromatic) +
+                  (buy.ningxia  + take.ningxia)  +
+                  (buy.youth    + take.youth)    +
+                  (buy.cool     + take.cool);
+
+  // 6. 仙草凍/總佔比 = (原味總數 + 風味總數) / 總杯數
+  var jellyTotal = origTotal + flavTotal;
+  var jellyRatio = totalCups > 0 ? (jellyTotal / totalCups * 100).toFixed(1)+'%' : '—';
+
+  // 7. 原味佔比 = 原味總數 / 總杯數
+  var origPct = pct(origTotal, totalCups);
+
+  // 8. 風味佔比 = 風味總數 / 總杯數
+  var flavPct = pct(flavTotal, totalCups);
+
+  // 9. 首次來店比 = 第一次來 / 單號
+  // 10. 回購比例 = 有來過 / 單號
+  // 11. 風凍回購 = 再喝風凍 / 單號
+  // 12. 風凍直購 = 直接買 / 單號
+  var receipt    = getNum('f-receipt');
+  var newCust    = getNum('f-new');
+  var retCust    = getNum('f-return');
+  var jelloRet   = getNum('f-jello-return');
+  var jelloDirect= getNum('f-jello-direct');
+  var demoCups   = getNum('f-demo-cups');
+  var demoConv   = getNum('f-demo-convert');
 
   document.getElementById('c-total-cups').textContent = totalCups;
   document.getElementById('c-avg-price').textContent  = avgPrice === '—' ? '—' : avgPrice + ' 元';
   document.getElementById('c-take-cups').textContent  = takeCups;
   document.getElementById('c-orig').textContent       = origTotal;
   document.getElementById('c-flav').textContent       = flavTotal;
-  document.getElementById('c-orig-pct').textContent   = pct(origTotal, totalCups);
-  document.getElementById('c-flav-pct').textContent   = pct(flavTotal, totalCups);
+  document.getElementById('c-jelly-ratio').textContent = jellyRatio;
+  document.getElementById('c-orig-pct').textContent   = origPct;
+  document.getElementById('c-flav-pct').textContent   = flavPct;
   document.getElementById('c-demo-rate').textContent  = pct(demoConv, demoCups);
-  document.getElementById('c-first-pct').textContent  = pct(newCust, custTotal);
-  document.getElementById('c-return-pct').textContent = pct(retCust, custTotal);
+  document.getElementById('c-first-pct').textContent  = pct(newCust,    receipt);
+  document.getElementById('c-return-pct').textContent = pct(retCust,    receipt);
+  document.getElementById('c-jello-ret').textContent  = pct(jelloRet,   receipt);
+  document.getElementById('c-jello-direct').textContent = pct(jelloDirect, receipt);
 }
 
 // ── 提交 ─────────────────────────────────────────
