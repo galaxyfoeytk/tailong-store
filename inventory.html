@@ -205,6 +205,44 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .numpad-ok:active{opacity:.85}
 .numpad-backdrop{display:none;position:fixed;inset:0;z-index:599}
 .numpad-backdrop.show{display:block}
+/* ── 批量編輯 ── */
+.bulk-ov{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;flex-direction:column}
+.bulk-ov.show{display:flex}
+.bulk-topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.bulk-title{color:#fff;font-size:15px;font-weight:900;flex:1}
+.bulk-tabs{display:flex;gap:4px;background:rgba(0,0,0,.18);border-radius:20px;padding:3px}
+.bulk-tab{padding:5px 11px;border-radius:16px;border:none;background:transparent;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bulk-tab.on{background:#fff;color:var(--b)}
+.bulk-bar{background:var(--white);border-bottom:1px solid var(--bd);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.bulk-save-btn{padding:8px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.bulk-save-btn:active{opacity:.8}
+.bulk-save-btn:disabled{opacity:.4;cursor:default}
+.bulk-add-btn{padding:8px 14px;background:var(--bl);color:var(--b);border:1.5px solid var(--bm);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.bulk-cancel-btn{padding:8px 14px;background:var(--white);color:var(--ink3);border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.bulk-badge{padding:4px 10px;background:var(--amberl);color:var(--amber);border-radius:10px;font-size:11px;font-weight:700}
+.bulk-body{flex:1;overflow:auto}
+.bt{border-collapse:collapse;width:max-content;min-width:100%}
+.bt thead th{position:sticky;top:0;z-index:2;background:#1A3A5C;color:#fff;padding:8px 9px;font-size:11px;font-weight:700;letter-spacing:.05em;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.12)}
+.bt thead th.th-grp{background:#0F2640;text-align:center}
+.bt thead th.th-fix{position:sticky;left:0;z-index:3;background:#0F2640}
+.bt tbody tr:nth-child(even) td{background:#f7f9fc}
+.bt tbody tr:hover td{background:#eef3fa}
+.bt tbody tr.row-changed td{background:#FFFBEA !important}
+.bt tbody tr.row-new td{background:#EDF7EE !important}
+.bt td{padding:3px 4px;border-bottom:1px solid var(--bd);border-right:1px solid #e4eaf2;vertical-align:middle}
+.bt td.td-fix{position:sticky;left:0;z-index:1;background:inherit;padding:3px 6px;min-width:80px}
+.bt-inp{width:100%;padding:5px 6px;border:1.5px solid transparent;border-radius:4px;font-size:13px;font-family:inherit;background:transparent;color:var(--ink);outline:none}
+.bt-inp:focus{border-color:var(--bm);background:#fff}
+.bt-inp.w-name{width:110px}
+.bt-inp.w-cat{width:80px}
+.bt-inp.w-unit{width:48px}
+.bt-inp.w-num{width:58px;text-align:right}
+.bt-chk{width:17px;height:17px;cursor:pointer;accent-color:var(--b);display:block;margin:0 auto}
+.bt-del{border:none;background:none;color:var(--ink4);font-size:15px;cursor:pointer;padding:3px 6px;border-radius:4px}
+.bt-del:hover{color:var(--red);background:var(--redl)}
+.bt-sort{border:1px solid var(--bd);background:#fff;color:var(--ink3);font-size:10px;cursor:pointer;border-radius:3px;padding:2px 5px;line-height:1}
+.bt-sort:disabled{opacity:.2;cursor:default}
+.bt-sort:active:not(:disabled){background:var(--bl)}
 </style>
 </head>
 <body>
@@ -216,7 +254,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
   <div style="display:flex;gap:6px;align-items:center">
     <span id="sync-status" style="font-size:11px;color:rgba(255,255,255,.6)">🔄</span>
     <button class="tib" onclick="showHist()">📂 記錄</button>
-    <button class="tib" onclick="openCfg()">⚙️ 設定</button>
+    <button class="tib" onclick="openBulk()">⚙️ 批量設定</button>
+    <button class="tib" onclick="openCfg()">＋ 新增</button>
     <button class="tib" onclick="goHome2()">🏠</button>
   </div>
 </div>
@@ -308,6 +347,22 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     </div>
     <button class="sh-ok" onclick="confirmNum()">✓ 確認數量</button>
   </div>
+</div>
+
+<!-- 批量編輯 overlay（全頁面） -->
+<div class="bulk-ov" id="bulk-ov">
+  <div class="bulk-topbar">
+    <div class="bulk-title">⚙️ 批量設定</div>
+    <div class="bulk-tabs" id="bulk-tabs"></div>
+  </div>
+  <div class="bulk-bar">
+    <button class="bulk-save-btn" id="bulk-save-btn" onclick="bulkSave()">💾 儲存全部</button>
+    <button class="bulk-add-btn" onclick="bulkAddRow()">＋ 新增品項</button>
+    <span class="bulk-badge" id="bulk-badge" style="display:none"></span>
+    <div style="flex:1"></div>
+    <button class="bulk-cancel-btn" onclick="closeBulk()">✕ 關閉</button>
+  </div>
+  <div class="bulk-body" id="bulk-body"></div>
 </div>
 
 <!-- 品項設定 overlay -->
@@ -986,8 +1041,228 @@ function pushToSheets(rec,modeItems,actionItems){
     function(d){if(d&&d.ok) showToast('✓ 已同步 Google Sheets');});
 }
 
+// ══════════════════════════════════════════════════════════════
+// 批量編輯系統
+// ══════════════════════════════════════════════════════════════
+var bulkMode = 'all';   // 'all' | 'daily' | 'weekly'
+var bulkDraft = [];     // 目前編輯中的草稿（items 的深拷貝）
+var bulkChanged = {};   // {id: true} 有修改的列
+
+function openBulk(){
+  bulkDraft = JSON.parse(JSON.stringify(items)); // 深拷貝
+  bulkChanged = {};
+  bulkMode = 'all';
+  renderBulkTabs();
+  renderBulkTable();
+  document.getElementById('bulk-ov').classList.add('show');
+}
+function closeBulk(){
+  var hasChanges = Object.keys(bulkChanged).length > 0;
+  if(hasChanges && !confirm('有未儲存的修改，確定關閉？')) return;
+  document.getElementById('bulk-ov').classList.remove('show');
+}
+
+function renderBulkTabs(){
+  var tabs = [
+    {id:'all',    lbl:'全部'},
+    {id:'daily',  lbl:'📅 日盤'},
+    {id:'weekly', lbl:'📆 週盤'},
+  ];
+  document.getElementById('bulk-tabs').innerHTML = tabs.map(function(t){
+    return '<button class="bulk-tab'+(t.id===bulkMode?' on':'')+'" onclick="switchBulkTab(\''+t.id+'\')">'+t.lbl+'</button>';
+  }).join('');
+}
+function switchBulkTab(m){ bulkMode=m; renderBulkTabs(); renderBulkTable(); }
+
+function bulkList(){
+  if(bulkMode==='all') return bulkDraft;
+  var key = bulkMode==='daily'?'D':'W';
+  return bulkDraft.filter(function(i){ return i.modes&&i.modes.indexOf(key)>-1; });
+}
+
+function renderBulkTable(){
+  var list = bulkList();
+  var isDailyOrWeekly = bulkMode!=='all';
+  var modeKey = bulkMode==='daily'?'D':'W';
+
+  var thHtml =
+    '<tr>'+
+    '<th class="th-fix" style="min-width:36px"></th>'+  // 排序
+    '<th class="th-fix" style="min-width:110px">品項名稱</th>'+
+    '<th style="min-width:80px">分類</th>'+
+    '<th class="th-grp" colspan="3">單位設定</th>'+
+    '<th class="th-grp" colspan="3">換算</th>'+
+    '<th class="th-grp" colspan="2">模式</th>'+
+    (isDailyOrWeekly ? '<th class="th-grp" colspan="2">低標 / 補至</th>' : '')+
+    '<th></th>'+  // 刪除
+    '</tr>'+
+    '<tr>'+
+    '<th class="th-fix"></th>'+
+    '<th class="th-fix"></th>'+
+    '<th></th>'+
+    '<th>小</th><th>中</th><th>大</th>'+
+    '<th style="min-width:70px">中→小</th>'+
+    '<th style="min-width:70px">大→中</th>'+
+    '<th style="min-width:60px">特殊單位</th>'+
+    '<th>日盤</th><th>週盤</th>'+
+    (isDailyOrWeekly ? '<th style="min-width:58px">低標</th><th style="min-width:58px">補至</th>' : '')+
+    '<th></th>'+
+    '</tr>';
+
+  var rows = list.map(function(item){
+    var globalIdx = bulkDraft.findIndex(function(x){ return x.id===item.id; });
+    var isFirst = globalIdx===0, isLast = globalIdx===bulkDraft.length-1;
+    var chg = bulkChanged[item.id] ? ' row-changed' : (item._new ? ' row-new' : '');
+    var t = item[bulkMode]||{min:0,target:0};
+    var hasD = item.modes&&item.modes.indexOf('D')>-1;
+    var hasW = item.modes&&item.modes.indexOf('W')>-1;
+    return '<tr class="'+chg+'" id="brow-'+item.id+'">'+
+      // 排序
+      '<td class="td-fix" style="text-align:center">'+
+        '<div style="display:flex;flex-direction:column;gap:2px;align-items:center">'+
+          '<button class="bt-sort" '+(isFirst?'disabled':'')+' onclick="bulkMove(\''+item.id+'\',-1)">▲</button>'+
+          '<button class="bt-sort" '+(isLast?'disabled':'')+' onclick="bulkMove(\''+item.id+'\',1)">▼</button>'+
+        '</div>'+
+      '</td>'+
+      // 名稱
+      '<td class="td-fix"><input class="bt-inp w-name" value="'+esc(item.name)+'" onchange="bulkEdit(\''+item.id+'\',\'name\',this.value)"></td>'+
+      // 分類
+      '<td><input class="bt-inp w-cat" value="'+esc(item.cat)+'" onchange="bulkEdit(\''+item.id+'\',\'cat\',this.value)"></td>'+
+      // 單位
+      '<td><input class="bt-inp w-unit" value="'+esc(item.sn)+'" placeholder="小" onchange="bulkEdit(\''+item.id+'\',\'sn\',this.value)"></td>'+
+      '<td><input class="bt-inp w-unit" value="'+esc(item.mn||'')+'" placeholder="中" onchange="bulkEdit(\''+item.id+'\',\'mn\',this.value)"></td>'+
+      '<td><input class="bt-inp w-unit" value="'+esc(item.ln||'')+'" placeholder="大" onchange="bulkEdit(\''+item.id+'\',\'ln\',this.value)"></td>'+
+      // 換算
+      '<td><input class="bt-inp w-num" type="number" min="0" value="'+(item.ms||'')+'" placeholder="—" onchange="bulkEdit(\''+item.id+'\',\'ms\',this.value)"></td>'+
+      '<td><input class="bt-inp w-num" type="number" min="0" value="'+(item.lm||'')+'" placeholder="—" onchange="bulkEdit(\''+item.id+'\',\'lm\',this.value)"></td>'+
+      '<td>'+
+        '<input class="bt-inp w-unit" value="'+esc(item.wu||'')+'" placeholder="單位" onchange="bulkEdit(\''+item.id+'\',\'wu\',this.value)" style="width:44px">'+
+        '<input class="bt-inp w-num" type="number" min="0" value="'+(item.sw||'')+'" placeholder="—" onchange="bulkEdit(\''+item.id+'\',\'sw\',this.value)" style="margin-top:2px">'+
+      '</td>'+
+      // 模式 checkbox
+      '<td style="text-align:center"><input type="checkbox" class="bt-chk" '+(hasD?'checked':'')+' onchange="bulkEditMode(\''+item.id+'\',\'D\',this.checked)"></td>'+
+      '<td style="text-align:center"><input type="checkbox" class="bt-chk" '+(hasW?'checked':'')+' onchange="bulkEditMode(\''+item.id+'\',\'W\',this.checked)"></td>'+
+      // 低標/補至
+      (isDailyOrWeekly ?
+        '<td><input class="bt-inp w-num" type="number" min="0" value="'+(t.min||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'min\',this.value)"></td>'+
+        '<td><input class="bt-inp w-num" type="number" min="0" value="'+(t.target||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'target\',this.value)"></td>'
+      : '')+
+      // 刪除
+      '<td><button class="bt-del" onclick="bulkDel(\''+item.id+'\')" title="刪除">🗑</button></td>'+
+    '</tr>';
+  }).join('');
+
+  var isEmpty = !list.length;
+  document.getElementById('bulk-body').innerHTML =
+    '<table class="bt">'+
+      '<thead>'+thHtml+'</thead>'+
+      '<tbody>'+(isEmpty ? '<tr><td colspan="20" style="text-align:center;padding:32px;color:var(--ink3)">此模式尚無品項</td></tr>' : rows)+'</tbody>'+
+    '</table>';
+
+  updateBulkBadge();
+}
+
+function bulkEdit(id, field, value){
+  var item = bulkDraft.find(function(i){ return i.id===id; });
+  if(!item) return;
+  if(['ms','lm','sw'].indexOf(field)>-1) item[field] = parseFloat(value)||0;
+  else item[field] = value;
+  bulkChanged[id] = true;
+  markRowChanged(id);
+  updateBulkBadge();
+}
+function bulkEditMode(id, key, checked){
+  var item = bulkDraft.find(function(i){ return i.id===id; });
+  if(!item) return;
+  item.modes = item.modes||'';
+  if(checked){ if(item.modes.indexOf(key)===-1) item.modes+=key; }
+  else { item.modes = item.modes.replace(key,''); }
+  bulkChanged[id] = true;
+  markRowChanged(id);
+  updateBulkBadge();
+}
+function bulkEditTarget(id, mode, field, value){
+  var item = bulkDraft.find(function(i){ return i.id===id; });
+  if(!item) return;
+  if(!item[mode]) item[mode]={min:0,target:0};
+  item[mode][field] = parseFloat(value)||0;
+  bulkChanged[id] = true;
+  markRowChanged(id);
+  updateBulkBadge();
+}
+function bulkMove(id, dir){
+  var idx = bulkDraft.findIndex(function(i){ return i.id===id; });
+  if(idx<0) return;
+  var ni = idx+dir;
+  if(ni<0||ni>=bulkDraft.length) return;
+  var tmp=bulkDraft[idx]; bulkDraft[idx]=bulkDraft[ni]; bulkDraft[ni]=tmp;
+  // 標記兩者都 changed
+  bulkChanged[id]=true;
+  bulkChanged[bulkDraft[idx].id]=true;
+  renderBulkTable();
+}
+function bulkDel(id){
+  if(!confirm('確定刪除？')) return;
+  bulkDraft = bulkDraft.filter(function(i){ return i.id!==id; });
+  delete bulkChanged[id];
+  // 標記整體有改動（用特殊 key）
+  bulkChanged['__deleted__'] = true;
+  renderBulkTable();
+}
+function bulkAddRow(){
+  var newItem = {
+    id: 'c_'+Date.now(),
+    name:'新品項', cat:'其他',
+    modes:'DW', sn:'個', mn:'', ln:'',
+    ms:0, lm:0, wu:'', sw:0,
+    daily:{min:0,target:0}, weekly:{min:0,target:0},
+    _new: true
+  };
+  bulkDraft.push(newItem);
+  bulkChanged[newItem.id]=true;
+  renderBulkTable();
+  // 滾到底部
+  setTimeout(function(){
+    var body = document.getElementById('bulk-body');
+    body.scrollTop = body.scrollHeight;
+  }, 60);
+}
+
+function markRowChanged(id){
+  var row = document.getElementById('brow-'+id);
+  if(row){ row.className = row.className.replace(/row-changed|row-new/g,'').trim()+' row-changed'; }
+}
+function updateBulkBadge(){
+  var n = Object.keys(bulkChanged).filter(function(k){ return k!=='__deleted__'; }).length;
+  var badge = document.getElementById('bulk-badge');
+  if(n>0||bulkChanged['__deleted__']){
+    badge.style.display='inline-block';
+    badge.textContent = '⚠ '+(n>0?n+'項有修改':'已有刪除');
+  } else {
+    badge.style.display='none';
+  }
+}
+
+function bulkSave(){
+  var hasChanges = Object.keys(bulkChanged).length > 0;
+  if(!hasChanges){ showToast('沒有修改'); return; }
+  var btn = document.getElementById('bulk-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ 儲存中...';
+  // 把草稿寫回 items
+  items = JSON.parse(JSON.stringify(bulkDraft));
+  // 清除暫時的 _new flag
+  items.forEach(function(i){ delete i._new; });
+  saveItems(); // 儲存到本機 + 雲端
+  bulkChanged = {};
+  updateBulkBadge();
+  btn.disabled = false; btn.textContent = '💾 儲存全部';
+  renderBulkTable(); // 重繪（清除高亮）
+  showToast('✓ 已儲存全部設定');
+}
+
 // ── 設定 overlay ──────────────────────────────────────────────
 function openCfg(){
+  // openCfg 現在只開新增表單（設定改用 openBulk）
   cfgMode='daily';
   renderCfgTabs();
   renderCfgBody();
