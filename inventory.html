@@ -599,10 +599,13 @@ function api(params, cb){
   }
 }
 function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
   fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params)
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body
   })
     .then(function(r){ return r.json(); })
     .then(function(d){ if(cb) cb(d, null); })
