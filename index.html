@@ -321,13 +321,27 @@ tbody tr:hover td{background:#FAFCFF}
               <div class="ho-inline-body">
                 <!-- 頁簽 -->
                 <div class="ho-inline-tabs">
-                  <button class="ho-inline-tab on" id="hoit-write" onclick="hoInlineTab('write')">✏️ 填寫</button>
-                  <button class="ho-inline-tab" id="hoit-today" onclick="hoInlineTab('today')">📅 今日記錄</button>
+                  <button class="ho-inline-tab on" id="hoit-today" onclick="hoInlineTab('today')">📅 今日記錄</button>
+                  <button class="ho-inline-tab" id="hoit-write" onclick="hoInlineTab('write')">✏️ 填寫交接</button>
                   <button class="ho-inline-tab" id="hoit-hist" onclick="hoInlineTab('hist')">📂 查詢</button>
                 </div>
 
+                <!-- 今日記錄面板（預設顯示） -->
+                <div id="ho-inline-today">
+                  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                    <select class="ho-filter-sel" id="ho-today-shift" style="flex:1">
+                      <option value="all">全部班別</option>
+                      <option value="早班">☀️ 早班</option>
+                      <option value="中班">🌤 中班</option>
+                      <option value="晚班">🌙 晚班</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="hoLoadInlineToday()">🔄 重新整理</button>
+                  </div>
+                  <div id="ho-today-list"><div class="empty">載入中...</div></div>
+                </div>
+
                 <!-- 填寫面板 -->
-                <div id="ho-inline-write">
+                <div id="ho-inline-write" style="display:none">
                   <!-- 班別 + 人員 + 日期 一列 -->
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
                     <div>
@@ -361,20 +375,6 @@ tbody tr:hover td{background:#FAFCFF}
                     <textarea class="ho-textarea-sm" id="ho-msg" placeholder="給下一班的話…"></textarea>
                   </div>
                   <button class="ho-submit-sm" onclick="hoSubmit()">📤 送出交接記錄</button>
-                </div>
-
-                <!-- 今日記錄面板 -->
-                <div id="ho-inline-today" style="display:none">
-                  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-                    <select class="ho-filter-sel" id="ho-today-shift" style="flex:1">
-                      <option value="all">全部班別</option>
-                      <option value="早班">☀️ 早班</option>
-                      <option value="中班">🌤 中班</option>
-                      <option value="晚班">🌙 晚班</option>
-                    </select>
-                    <button class="btn btn-primary btn-sm" onclick="hoLoadInlineToday()">🔄 重新整理</button>
-                  </div>
-                  <div id="ho-today-list"><div class="empty">載入中...</div></div>
                 </div>
 
                 <!-- 查詢面板 -->
@@ -825,33 +825,32 @@ var hoShift = '早班';
 var hoEditId = null;
 
 function hoInit(){
+  // 載入今日記錄（主頁預設顯示）
+  hoLoadInlineToday();
+}
+
+// 切到填寫頁簽時才初始化表單
+function hoInitWriteForm(){
   var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
   var today=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-  // 填日期
   var de=document.getElementById('ho-date');
-  if(de) de.value=today;
+  if(de && !de.value) de.value=today;
   var df=document.getElementById('ho-filter-date');
-  if(df) df.value=today;
-  // 填人員下拉
+  if(df && !df.value) df.value=today;
   function fillPersonSel(persons){
-    ['ho-person'].forEach(function(selId){
-      var sel=document.getElementById(selId);
-      if(!sel) return;
-      sel.innerHTML='<option value="">— 選擇 —</option>';
-      persons.forEach(function(p){ sel.innerHTML+='<option value="'+p+'">'+p+'</option>'; });
-      if(currentUser&&currentUser.name){
-        var opt=sel.querySelector('option[value="'+currentUser.name+'"]');
-        if(opt) opt.selected=true;
-      }
-    });
+    var sel=document.getElementById('ho-person');
+    if(!sel) return;
+    sel.innerHTML='<option value="">— 選擇 —</option>';
+    persons.forEach(function(p){ sel.innerHTML+='<option value="'+p+'">'+p+'</option>'; });
+    if(currentUser&&currentUser.name){
+      var opt=sel.querySelector('option[value="'+currentUser.name+'"]');
+      if(opt) opt.selected=true;
+    }
   }
   fillPersonSel(HO_PERSONS);
   api({action:'getEmps'},function(d){ if(d&&d.ok&&d.data&&d.data.length) fillPersonSel(d.data); });
-  // 自動選班別
   var h=new Date().getHours();
   hoPickShift(h<14?'早班':(h<19?'中班':'晚班'));
-  // 載入今日記錄
-  hoLoadInlineToday();
 }
 
 function hoInlineTab(tab){
@@ -860,6 +859,7 @@ function hoInlineTab(tab){
     document.getElementById('hoit-'+t).classList.toggle('on', t===tab);
   });
   if(tab==='today') hoLoadInlineToday();
+  if(tab==='write') hoInitWriteForm(); // 切到填寫時才初始化表單
 }
 
 function hoPickShift(shift){
@@ -892,7 +892,7 @@ function hoSubmit(){
     document.getElementById('ho-notes').value='';
     document.getElementById('ho-msg').value='';
     hoEditId=null;
-    // 切到今日記錄 tab 顯示最新結果
+    // 送出後切回今日記錄
     hoInlineTab('today');
   });
 }
