@@ -396,11 +396,10 @@ function npK(k){
 function npDone(){
   if(_np.el){
     _np.el.value = _np.val;
-    // 觸發 oninput 重新計算
-    var evt = new Event('input', {bubbles:true});
-    _np.el.dispatchEvent(evt);
   }
   npClose();
+  // 每次確認後都重新計算（不論哪個欄位）
+  recalcAll();
 }
 
 function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
@@ -578,7 +577,7 @@ function histCard(r, i){
         '<div class="hist-revenue">$ '+(r.revenue||0).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--ink3)">'+
           totalCups+' 杯　'+
-          (totalCups>0?'均 '+Math.round((r.revenue||0)/totalCups)+'元':'—')+
+          (totalCups>0?'均 '+Math.round((r.revenue||0)/(totalCups-calcTakeCups(r)))+'元':'—')+
           (receipt>0?'　'+receipt+'張':'') +
         '</div>'+
       '</div>'+
