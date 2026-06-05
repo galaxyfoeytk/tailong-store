@@ -197,7 +197,7 @@ body{font-family:-apple-system,sans-serif;background:var(--gray);font-size:16px;
     <div class="logo">🌊 瀧飲山潮</div>
     <div class="sub">前冰仙凍溫度記錄 · 學士店</div>
   </div>
-  <button onclick="location.href='index.html'" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit">🏠 主頁</button>
+  <button onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit">🏠 主頁</button>
 </div>
 
 <div class="tabs">
@@ -601,7 +601,7 @@ function renderView(ym, list) {
   var byDay = {};
   list.forEach(function(r){ if(!byDay[r.day]) byDay[r.day]=[]; byDay[r.day].push(r); });
   var tLabels = {'10':'上午 10:00','14':'下午 14:00','18':'下午 18:00'};
-  var html = Object.keys(byDay).sort(function(a,b){return+a-+b}).map(function(day){
+  var html = Object.keys(byDay).sort(function(a,b){return+b-+a}).map(function(day){  // 降序：最新日期在最上
     var recs = byDay[day];
     var body = recs.map(function(r, ri){
       var boxes = POS.map(function(p,i){

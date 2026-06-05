@@ -19,7 +19,7 @@
   --r:14px;--r2:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;display:flex;flex-direction:column;min-height:100dvh}
 
 .topbar{background:linear-gradient(135deg,#142E4A,#1E4A78);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .brand-name{color:#fff;font-size:16px;font-weight:900}
@@ -32,8 +32,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border:none;background:transparent;font-family:inherit;border-bottom:2.5px solid transparent}
 .tab.on{color:var(--b);font-weight:700;border-bottom-color:var(--b)}
 
-.pages{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:12px 12px 32px}
+.pages{flex:1;overflow-y:auto;position:relative}
+.page{display:none;padding:12px 12px 32px}
 .page.on{display:block}
 
 /* 主選單 */
@@ -321,8 +321,15 @@ function api(params, cb){
   if(!API_URL){ if(cb) cb(null,'未設定API'); return; }
   var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
   fetch(API_URL+'?'+qs)
-    .then(function(r){return r.json();})
-    .then(function(d){if(cb)cb(d,null);})
+    .then(function(r){return r.text();})
+    .then(function(t){ try{cb(JSON.parse(t),null);}catch(e){cb(null,'非JSON:'+t.slice(0,60));} })
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+function apiPost(params, cb){
+  var body=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));}).join('&');
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+    .then(function(r){return r.text();})
+    .then(function(t){ try{cb(JSON.parse(t),null);}catch(e){cb(null,'非JSON:'+t.slice(0,60));} })
     .catch(function(e){if(cb)cb(null,e.toString());});
 }
 
@@ -369,12 +376,15 @@ var _cloudReady = false; // 雲端載入完成標記
 
 // ── 通用雲端 cfg helper ──────────────────
 function cfgSet(key, value, cb){
-  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+  var strVal = (typeof value==='string') ? value : JSON.stringify(value);
+  apiPost({action:'cfgSet', key:key, value:strVal}, cb||null);
 }
 function cfgGet(key, cb){
   api({action:'cfgGet', key:key}, function(d){
     if(d&&d.ok&&d.value!=null){
-      try{ cb(JSON.parse(d.value)); return; }catch(e){}
+      var raw=d.value;
+      if(typeof raw==='string'){ try{cb(JSON.parse(raw));return;}catch(e){} }
+      else { cb(raw); return; }
     }
     cb(null);
   });
@@ -411,23 +421,23 @@ function saveData(){
 function syncFromCloud(){
   setSyncStatus(false);
   var loaded={persons:false, steps:false, history:false};
+  // 5秒後強制完成，避免 API 失敗導致 UI 卡住
+  var forceTimer = setTimeout(function(){
+    _cloudReady=true; setSyncStatus(true); buildPersonGrid(); renderHist();
+  }, 5000);
   function checkDone(){
     if(loaded.persons&&loaded.steps&&loaded.history){
-      _cloudReady=true;
-      setSyncStatus(true);
-      buildPersonGrid();
-      renderHist();
+      clearTimeout(forceTimer);
+      _cloudReady=true; setSyncStatus(true); buildPersonGrid(); renderHist();
     }
   }
-  // 同步人員
   cfgGet('cl:persons', function(v){
     if(v&&Array.isArray(v)&&v.length>0){
       persons=v;
-      try{var d=JSON.parse(localStorage.getItem('checklist_v2')||'{}');d.persons=v;localStorage.setItem('checklist_v2',JSON.stringify(d));}catch(e){}
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.persons=v;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
     }
     loaded.persons=true; checkDone();
   });
-  // 同步步驟（已有專屬 API）
   api({action:'clGetSteps'}, function(d,e){
     if(!e&&d&&d.ok){
       if(d.open&&d.open.length>0) openSteps=d.open;
@@ -436,11 +446,10 @@ function syncFromCloud(){
     }
     loaded.steps=true; checkDone();
   });
-  // 同步歷史
   cfgGet('cl:history', function(v){
     if(v&&Array.isArray(v)&&v.length>0){
       history=v;
-      try{var d=JSON.parse(localStorage.getItem('checklist_v2')||'{}');d.history=v;localStorage.setItem('checklist_v2',JSON.stringify(d));}catch(e){}
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.history=v;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
     }
     loaded.history=true; checkDone();
   });
