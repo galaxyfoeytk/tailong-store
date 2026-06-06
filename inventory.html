@@ -934,98 +934,8 @@ function switchMonthlyLoc(loc){
   renderMonthlyLocPage();
 }
 
-function openNumOvMonthly(itemId){
-  curItemId='monthly_'+itemId;
-  var item=items.find(function(i){return i.id===itemId;});
-  if(!item) return;
-  var key=curMonthlyLoc==='現場'?'S':'W';
-  var cntKey=key+'_'+itemId;
-  var c=counts[cntKey]||{l:0,m:0,s:0,w:0};
-  document.getElementById('num-title').textContent=item.name+' （'+curMonthlyLoc+'）';
-  document.getElementById('num-total-unit').textContent=item.sn;
-  var hints=[];
-  if(item.mn&&item.ms>0) hints.push('1'+item.mn+' = '+item.ms+' '+item.sn);
-  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+' = '+item.lm+' '+item.mn);
-  if(item.wu&&item.sw>0) hints.push('1'+item.sn+' = '+item.sw+' '+item.wu);
-  document.getElementById('num-hint').textContent=hints.join('　')||'輸入數量';
-  var html='';
-  if(item.ln){
-    html+='<div class="unit-row"><span class="ur-lbl">'+item.ln+'（大）</span>'
-      +'<input class="ur-inp" id="inp-l" type="number" min="0" step="0.1" value="'+(c.l||0)+'" oninput="recalc()" inputmode="decimal">'
-      +'<span class="ur-unit">'+item.ln+'</span></div>';
-  }
-  if(item.mn){
-    html+='<div class="unit-row"><span class="ur-lbl">'+item.mn+'（中）</span>'
-      +'<input class="ur-inp" id="inp-m" type="number" min="0" step="0.1" value="'+(c.m||0)+'" oninput="recalc()" inputmode="decimal">'
-      +'<span class="ur-unit">'+item.mn+'</span></div>';
-  }
-  html+='<div class="unit-row"><span class="ur-lbl">'+item.sn+'（小）</span>'
-    +'<input class="ur-inp" id="inp-s" type="number" min="0" step="0.1" value="'+(c.s||0)+'" oninput="recalc()" inputmode="decimal">'
-    +'<span class="ur-unit">'+item.sn+'</span></div>';
-  if(item.wu&&item.sw>0){
-    html+='<div class="unit-row"><span class="ur-lbl">'+item.wu+'（重）</span>'
-      +'<input class="ur-inp" id="inp-w" type="number" min="0" step="0.1" value="'+(c.w||0)+'" oninput="recalcW()" inputmode="decimal" style="color:var(--purple)">'
-      +'<span class="ur-unit">'+item.wu+'</span></div>'
-      +'<div style="font-size:11px;color:var(--purple);text-align:center;margin-bottom:8px">重量換算加入總量（1'+item.sn+' = '+item.sw+' '+item.wu+'）</div>';
-  }
-  document.getElementById('num-unit-rows').innerHTML=html;
-  recalc();
-  openOv('num');
-  setTimeout(function(){var first=document.querySelector('#num-unit-rows .ur-inp');if(first){first.focus();first.select();}},100);
-}
 
 // ── 開啟數量輸入 overlay（日盤/週盤）──────────────────────────
-function openNumOv(itemId){
-  curItemId=itemId;
-  var item=items.find(function(i){return i.id===itemId;});
-  if(!item) return;
-  var c=counts[itemId]||{l:0,m:0,s:0,w:0};
-  document.getElementById('num-title').textContent=item.name;
-  document.getElementById('num-total-unit').textContent=item.sn;
-
-  // 提示說明
-  var hints=[];
-  if(item.mn&&item.ms>0) hints.push('1'+item.mn+' = '+item.ms+' '+item.sn);
-  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+' = '+item.lm+' '+item.mn);
-  if(item.wu&&item.sw>0) hints.push('1'+item.sn+' = '+item.sw+' '+item.wu);
-  if(curMode!=='monthly'&&item[curMode]){
-    var t=item[curMode];
-    hints.push('低標：'+t.min+' '+item.sn+'　補至：'+t.target+' '+item.sn);
-  }
-  document.getElementById('num-hint').textContent=hints.join('　');
-
-  var html='';
-  if(item.ln){
-    html+='<div class="unit-row">'
-      +'<span class="ur-lbl">'+item.ln+'(大)</span>'
-      +'<input class="ur-inp" id="inp-l" type="number" min="0" step="0.1" value="'+(c.l||0)+'" oninput="recalc()" inputmode="decimal">'
-      +'<span class="ur-unit">'+item.ln+'</span></div>';
-  }
-  if(item.mn){
-    html+='<div class="unit-row">'
-      +'<span class="ur-lbl">'+item.mn+'(中)</span>'
-      +'<input class="ur-inp" id="inp-m" type="number" min="0" step="0.1" value="'+(c.m||0)+'" oninput="recalc()" inputmode="decimal">'
-      +'<span class="ur-unit">'+item.mn+'</span></div>';
-  }
-  html+='<div class="unit-row">'
-    +'<span class="ur-lbl">'+item.sn+'(小)</span>'
-    +'<input class="ur-inp" id="inp-s" type="number" min="0" step="0.1" value="'+(c.s||0)+'" oninput="recalc()" inputmode="decimal">'
-    +'<span class="ur-unit">'+item.sn+'</span></div>';
-  if(item.wu&&item.sw>0){
-    html+='<div class="unit-row" style="opacity:.7">'
-      +'<span class="ur-lbl">'+item.wu+'(重)</span>'
-      +'<input class="ur-inp" id="inp-w" type="number" min="0" step="0.1" value="'+(c.w||0)+'" oninput="recalcW()" inputmode="decimal" style="font-size:16px;color:var(--purple)">'
-      +'<span class="ur-unit">'+item.wu+'</span></div>';
-    html+='<div style="font-size:11px;color:var(--purple);text-align:center;margin-bottom:8px">重量會換算加入總量（'+item.sw+' '+item.wu+'/'+item.sn+'）</div>';
-  }
-  document.getElementById('num-unit-rows').innerHTML=html;
-  recalc();
-  openOv('num');
-  setTimeout(function(){
-    var first=document.querySelector('#num-unit-rows .ur-inp');
-    if(first){first.focus();first.select();}
-  },100);
-}
 
 function recalc(){
   var item=items.find(function(i){return i.id===curItemId;});
@@ -1166,8 +1076,11 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
   lines.push('📅 '+rec.date+'　👤 '+rec.person);
 
   if(rec.mode==='monthly'){
-    // 月盤：發送現場/倉庫/總量匯總表
-    lines.push('');
+    // 先傳一則 debug 訊息確認資料格式
+    var countKeys = Object.keys(rec.counts).slice(0,5).join(', ');
+    var itemIds = modeItems.slice(0,3).map(function(i){ return i.id; }).join(', ');
+    var debugMsg = '🔍 月盤 debug\ncountKeys: '+countKeys+'\nitemIds: '+itemIds;
+    api({action:'sendLine', msg:debugMsg}, null);
 
     // 依分類分組
     var cats = [];
