@@ -1155,7 +1155,29 @@ function finishCount(){
   records.unshift(rec);
   saveRecords();
   pushToSheets(rec,modeItems,actionItems);
+  sendLineInventoryNotify(rec,modeItems,actionItems);
   showPage('result');
+}
+
+function sendLineInventoryNotify(rec, modeItems, actionItems){
+  var modeLabels={daily:'每日盤補貨',weekly:'每週盤叫貨',monthly:'月盤點'};
+  var actionWord = rec.mode==='daily'?'補貨':'叫貨';
+  var lines = ['📦 '+modeLabels[rec.mode]+' 完成'];
+  lines.push('📅 '+rec.date+'　👤 '+rec.person);
+  if(rec.mode!=='monthly' && actionItems && actionItems.length>0){
+    lines.push('⚠️ 需'+actionWord+'：'+actionItems.length+' 項');
+    actionItems.slice(0,5).forEach(function(x){
+      lines.push('  • '+x.item.name+' 需補 +'+Math.ceil(x.need)+' '+x.item.sn);
+    });
+    if(actionItems.length>5) lines.push('  ...等共 '+actionItems.length+' 項');
+  } else if(rec.mode!=='monthly'){
+    lines.push('✅ 庫存充足，無需'+actionWord);
+  }
+  var msg = lines.join('\n');
+  api({action:'sendLine', msg:msg}, function(d){
+    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+    // 失敗靜默，不影響主流程
+  });
 }
 
 function pushToSheets(rec, modeItems, actionItems){
