@@ -336,9 +336,11 @@ function apiPost(params, cb){
 // 儲存步驟到 Sheets
 function pushStepsToSheets(type){
   var steps=type==='open'?openSteps:closeSteps;
-  apiPost({action:'clSaveSteps',type:type,steps:JSON.stringify(steps)},function(d,e){
-    if(d&&d.ok) showToast('✓ 已同步到雲端');
-    else showToast('同步失敗，已儲存在本機');
+  var stepsJson = JSON.stringify(steps);
+  apiPost({action:'clSaveSteps',type:type,steps:stepsJson},function(d,e){
+    if(e){ showToast('同步失敗：'+String(e).slice(0,50)); return; }
+    if(d&&d.ok) showToast('✓ 步驟已同步到雲端（'+steps.length+'筆）');
+    else showToast('同步失敗：'+(d&&d.error?d.error:'未知'));
   });
 }
 var DEFAULT_PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
