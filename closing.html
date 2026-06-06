@@ -170,6 +170,13 @@ canvas{width:100%!important}
         <div class="field"><label>🧋 奶蓋</label><input id="f-cream" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧋 奶蓋')"></div>
         <div class="field"><label>♻️ 環保杯</label><input id="f-eco" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'♻️ 環保杯')"></div>
       </div>
+      <!-- 寄杯組 -->
+      <div class="section-head" style="margin:10px 0 6px;font-size:13px">🎁 寄杯組（組數）</div>
+      <div class="field-grid grid-3">
+        <div class="field"><label>原味組 <span style="color:var(--ink3);font-size:11px">$650/組</span></label><input id="f-dep-orig" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'原味組 組數')"></div>
+        <div class="field"><label>風味組 <span style="color:var(--ink3);font-size:11px">$750/組</span></label><input id="f-dep-flav" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'風味組 組數')"></div>
+        <div class="field"><label>超值組 <span style="color:var(--ink3);font-size:11px">$1400/組</span></label><input id="f-dep-super" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'超值組 組數')"></div>
+      </div>
     </div>
   </div>
 
@@ -221,8 +228,9 @@ canvas{width:100%!important}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
         <div>
           <div class="calc-row"><span class="calc-label">總杯數</span><span class="calc-value big" id="c-total-cups">0</span></div>
-          <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
           <div class="calc-row"><span class="calc-label">取寄杯數</span><span class="calc-value" id="c-take-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">寄杯組金額</span><span class="calc-value" id="c-dep-amt">0 元</span></div>
+          <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
           <div class="calc-row"><span class="calc-label">原味總數</span><span class="calc-value" id="c-orig">0</span></div>
           <div class="calc-row"><span class="calc-label">風味加總</span><span class="calc-value" id="c-flav">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲杯總數</span><span class="calc-value" id="c-demo-cups">0</span></div>
@@ -422,10 +430,17 @@ function recalcAll(){
   // 3. 取寄杯數（先算，因為均杯單價需要用到）
   var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool;
 
-  // 2. 均杯單價 = 總營業額 / (總杯數 - 取寄杯數)
+  // 寄杯組
+  var depOrig  = getNum('f-dep-orig');
+  var depFlav  = getNum('f-dep-flav');
+  var depSuper = getNum('f-dep-super');
+  var depAmt   = depOrig*650 + depFlav*750 + depSuper*1400;
+
+  // 2. 均杯單價 = (總營業額 - 寄杯組金額) / (總杯數 - 取寄杯數)
   var revenue   = getNum('f-revenue');
   var dineInCups = totalCups - takeCups;
-  var avgPrice  = dineInCups > 0 ? (revenue / dineInCups).toFixed(1) : '—';
+  var dineInRev  = revenue - depAmt;
+  var avgPrice  = dineInCups > 0 ? (dineInRev / dineInCups).toFixed(1) : '—';
 
   // 4. 原味總數 = 原味買 + 原味取
   var origTotal = buy.original + take.original;
@@ -459,8 +474,9 @@ function recalcAll(){
   var demoConv   = getNum('f-demo-convert');
 
   document.getElementById('c-total-cups').textContent = totalCups;
-  document.getElementById('c-avg-price').textContent  = avgPrice === '—' ? '—' : avgPrice + ' 元';
   document.getElementById('c-take-cups').textContent  = takeCups;
+  document.getElementById('c-dep-amt').textContent    = depAmt > 0 ? depAmt.toLocaleString()+' 元' : '0 元';
+  document.getElementById('c-avg-price').textContent  = avgPrice === '—' ? '—' : avgPrice + ' 元';
   document.getElementById('c-orig').textContent       = origTotal;
   document.getElementById('c-flav').textContent       = flavTotal;
   document.getElementById('c-jelly-ratio').textContent = jellyRatio;
@@ -495,6 +511,9 @@ function submitForm(){
     sealMachine:  getNum('f-seal'),
     creamTop:     getNum('f-cream'),
     ecoCup:       getNum('f-eco'),
+    depOrig:      getNum('f-dep-orig'),
+    depFlav:      getNum('f-dep-flav'),
+    depSuper:     getNum('f-dep-super'),
     demoFocus:    document.getElementById('f-demo-focus').value,
     demoCups:     getNum('f-demo-cups'),
     demoConvert:  getNum('f-demo-convert'),
@@ -579,7 +598,7 @@ function histCard(r, i){
         '<div class="hist-revenue">$ '+(r.revenue||0).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--ink3)">'+
           totalCups+' 杯　'+
-          (totalCups>0?'均 '+Math.round((r.revenue||0)/(totalCups-calcTakeCups(r)))+'元':'—')+
+          (totalCups>0?'均 '+Math.round(((r.revenue||0)-(r.depAmt||0))/(totalCups-calcTakeCups(r)))+'元':'—')+
           (receipt>0?'　'+receipt+'張':'') +
         '</div>'+
       '</div>'+
@@ -620,9 +639,16 @@ function histDetail(r){
       kv('環保杯',r.ecoCup||0,'杯')+
       kv('總杯數',totalCups,'杯','var(--b)')+
     '</div>'+
+    ((r.depOrig||r.depFlav||r.depSuper)?
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">'+
+      kv('原味組',r.depOrig||0,'組')+
+      kv('風味組',r.depFlav||0,'組')+
+      kv('超值組',r.depSuper||0,'組')+
+      kv('寄杯金額',(r.depAmt||0).toLocaleString(),'元','var(--amber)')+
+    '</div>':'')+
     // 計算結果
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">'+
-      kv('均杯單價',(totalCups-calcTakeCups(r))>0?Math.round((r.revenue||0)/(totalCups-calcTakeCups(r))):'—','元')+
+      kv('均杯單價',(totalCups-calcTakeCups(r))>0?Math.round(((r.revenue||0)-(r.depAmt||0))/(totalCups-calcTakeCups(r))):'—','元')+
       kv('仙草凍佔比',ratioStr(jellyTotal,totalCups),'')+
       kv('原味佔比',ratioStr(origTotal,totalCups),'')+
       kv('風味佔比',ratioStr(flavTotal,totalCups),'')+
