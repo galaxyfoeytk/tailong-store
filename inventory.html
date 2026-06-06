@@ -1164,20 +1164,78 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
   var actionWord = rec.mode==='daily'?'補貨':'叫貨';
   var lines = ['📦 '+modeLabels[rec.mode]+' 完成'];
   lines.push('📅 '+rec.date+'　👤 '+rec.person);
-  if(rec.mode!=='monthly' && actionItems && actionItems.length>0){
-    lines.push('⚠️ 需'+actionWord+'：'+actionItems.length+' 項');
-    actionItems.slice(0,5).forEach(function(x){
-      lines.push('  • '+x.item.name+' 需補 +'+Math.ceil(x.need)+' '+x.item.sn);
+
+  if(rec.mode==='monthly'){
+    // 月盤：發送現場/倉庫/總量匯總表
+    lines.push('');
+
+    // 依分類分組
+    var cats = [];
+    var catMap = {};
+    modeItems.forEach(function(item){
+      if(!catMap[item.cat]){ catMap[item.cat]=[]; cats.push(item.cat); }
+      catMap[item.cat].push(item);
     });
-    if(actionItems.length>5) lines.push('  ...等共 '+actionItems.length+' 項');
-  } else if(rec.mode!=='monthly'){
-    lines.push('✅ 庫存充足，無需'+actionWord);
+
+    cats.forEach(function(cat){
+      var catItems = catMap[cat];
+      lines.push('【'+cat+'】');
+      catItems.forEach(function(item){
+        var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+        var cW = rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+        var tS = Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*10)/10;
+        var tW = Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*10)/10;
+        var tAll = Math.round((tS+tW)*10)/10;
+        lines.push(item.name+'　現場:'+tS+' 倉庫:'+tW+' 合計:'+tAll+item.sn);
+      });
+    });
+
+  } else {
+    // 日盤/週盤
+    lines.push('');
+    if(actionItems && actionItems.length>0){
+      lines.push('⚠️ 需'+actionWord+'：'+actionItems.length+' 項');
+      actionItems.slice(0,8).forEach(function(x){
+        lines.push('  • '+x.item.name+' 需'+actionWord+' +'+Math.ceil(x.need)+' '+x.item.sn);
+      });
+      if(actionItems.length>8) lines.push('  ...等共 '+actionItems.length+' 項');
+    } else {
+      lines.push('✅ 庫存充足，無需'+actionWord);
+    }
   }
+
   var msg = lines.join('\n');
-  api({action:'sendLine', msg:msg}, function(d){
-    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
-    // 失敗靜默，不影響主流程
-  });
+
+  // LINE 單則訊息上限 5000 字元，超過自動分割
+  var MAX = 4800;
+  if(msg.length <= MAX){
+    api({action:'sendLine', msg:msg}, function(d){
+      if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+    });
+  } else {
+    // 分割成多則
+    var parts = [];
+    var current = [];
+    var currentLen = 0;
+    lines.forEach(function(line){
+      if(currentLen + line.length + 1 > MAX){
+        parts.push(current.join('\n'));
+        current = [line]; currentLen = line.length;
+      } else {
+        current.push(line); currentLen += line.length + 1;
+      }
+    });
+    if(current.length) parts.push(current.join('\n'));
+    // 依序傳送
+    var sent = 0;
+    function sendNext(){
+      if(sent >= parts.length){ showToast('✓ 已傳送 LINE 通知（共'+parts.length+'則）'); return; }
+      var part = (parts.length>1?'（'+(sent+1)+'/'+parts.length+'）\n':'')+parts[sent];
+      sent++;
+      api({action:'sendLine', msg:part}, function(){ sendNext(); });
+    }
+    sendNext();
+  }
 }
 
 function pushToSheets(rec, modeItems, actionItems){
