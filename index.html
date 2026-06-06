@@ -322,21 +322,22 @@ tbody tr:hover td{background:#FAFCFF}
               <div class="ho-inline-body">
                 <!-- 頁簽 -->
                 <div class="ho-inline-tabs">
-                  <button class="ho-inline-tab on" id="hoit-today" onclick="hoInlineTab('today')">📅 今日記錄</button>
+                  <button class="ho-inline-tab on" id="hoit-today" onclick="hoInlineTab('today')">📋 交接記錄</button>
                   <button class="ho-inline-tab" id="hoit-write" onclick="hoInlineTab('write')">✏️ 填寫交接</button>
-                  <button class="ho-inline-tab" id="hoit-hist" onclick="hoInlineTab('hist')">📂 查詢</button>
                 </div>
 
-                <!-- 今日記錄面板（預設顯示） -->
+                <!-- 記錄面板（預設顯示） -->
                 <div id="ho-inline-today">
-                  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+                  <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+                    <input type="date" id="ho-today-date" style="padding:6px 8px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:12px;font-family:inherit;outline:none;color:var(--ink);flex:1">
                     <select class="ho-filter-sel" id="ho-today-shift" style="flex:1">
                       <option value="all">全部班別</option>
                       <option value="早班">☀️ 早班</option>
                       <option value="中班">🌤 中班</option>
                       <option value="晚班">🌙 晚班</option>
                     </select>
-                    <button class="btn btn-primary btn-sm" onclick="hoLoadInlineToday()">🔄 重新整理</button>
+                    <button class="btn btn-primary btn-sm" onclick="hoLoadInlineToday()">查詢</button>
+                    <button class="btn btn-sm" onclick="hoClearDateFilter()" style="background:var(--bg);border:1.5px solid var(--bd);color:var(--ink3)">全部</button>
                   </div>
                   <div id="ho-today-list"><div class="empty">載入中...</div></div>
                 </div>
@@ -379,19 +380,6 @@ tbody tr:hover td{background:#FAFCFF}
                 </div>
 
                 <!-- 查詢面板 -->
-                <div id="ho-inline-hist" style="display:none">
-                  <div class="ho-filter-bar" style="margin-bottom:10px">
-                    <input type="date" id="ho-filter-date" style="flex:1;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
-                    <select class="ho-filter-sel" id="ho-filter-shift">
-                      <option value="all">全部班別</option>
-                      <option value="早班">☀️ 早班</option>
-                      <option value="中班">🌤 中班</option>
-                      <option value="晚班">🌙 晚班</option>
-                    </select>
-                    <button class="btn btn-primary btn-sm" onclick="hoLoad()">查詢</button>
-                  </div>
-                  <div id="ho-list"><div class="empty">請選擇日期查詢</div></div>
-                </div>
 
               </div>
             </div>
@@ -874,12 +862,13 @@ function hoInitWriteForm(){
 }
 
 function hoInlineTab(tab){
-  ['write','today','hist'].forEach(function(t){
+  ['write','today'].forEach(function(t){
     document.getElementById('ho-inline-'+t).style.display = t===tab?'':'none';
-    document.getElementById('hoit-'+t).classList.toggle('on', t===tab);
+    var btn=document.getElementById('hoit-'+t);
+    if(btn) btn.classList.toggle('on', t===tab);
   });
   if(tab==='today') hoLoadInlineToday();
-  if(tab==='write') hoInitWriteForm(); // 切到填寫時才初始化表單
+  if(tab==='write') hoInitWriteForm();
 }
 
 function hoPickShift(shift){
@@ -921,19 +910,29 @@ function hoLoadInlineToday(){
   var now=new Date(), pad=function(n){return String(n).padStart(2,'0');};
   var today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
   var shiftEl=document.getElementById('ho-today-shift');
+  var dateEl=document.getElementById('ho-today-date');
   var shiftVal=shiftEl?shiftEl.value:'all';
+  var dateVal=dateEl?dateEl.value:'';
   var list=document.getElementById('ho-today-list');
   if(list) list.innerHTML='<div class="empty" style="padding:16px">⏳ 載入中...</div>';
-  document.getElementById('ho-sync-lbl').textContent='🔄';
-  var params={action:'handoverGetAll',date:today};
+  var params={action:'handoverGetAll'};
+  if(dateVal) params.date=dateVal;
   if(shiftVal&&shiftVal!=='all') params.shift=shiftVal;
   api(params,function(res){
-    document.getElementById('ho-sync-lbl').textContent='';
     if(!list) return;
     if(!res||!res.ok){ list.innerHTML='<div class="empty" style="padding:16px">載入失敗</div>'; return; }
-    if(!res.data.length){ list.innerHTML='<div class="empty" style="padding:16px">今日尚無交接記錄</div>'; return; }
+    if(!res.data||!res.data.length){
+      list.innerHTML='<div class="empty" style="padding:16px">'+(dateVal?dateVal+' 無記錄':'尚無交接記錄')+'</div>';
+      return;
+    }
     list.innerHTML=res.data.map(function(r){ return hoCardHtml(r,true); }).join('');
   });
+}
+
+function hoClearDateFilter(){
+  var dateEl=document.getElementById('ho-today-date');
+  if(dateEl) dateEl.value='';
+  hoLoadInlineToday();
 }
 
 function hoLoadToday(){
