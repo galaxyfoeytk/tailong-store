@@ -236,7 +236,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
     </div>
     <div id="checklist-body"></div>
-    <button class="save-btn" id="finish-btn" onclick="finishChecklist()" style="margin-top:4px;opacity:.4" disabled></button>
+    <button class="save-btn" id="finish-btn" onclick="finishChecklist()" style="margin-top:4px"></button>
   </div>
 
   <!-- 完成 -->
@@ -611,14 +611,12 @@ function updateProgress(){
   bar.className='progress-bar-fill'+(pct===100?' done':'');
   var reqItems=session.items.filter(function(i){return i.req;});
   var allDone=session.items.every(function(i){return i.done||i.warn;});
-  var reqDone=reqItems.length===0
-    ? allDone
-    : reqItems.every(function(i){return i.done||i.warn;});
-  // 所有步驟完成 或 所有必填步驟完成，都可以按
+  var reqDone=reqItems.length===0 ? allDone : reqItems.every(function(i){return i.done||i.warn;});
   var canFinish = allDone || reqDone;
   var btn=document.getElementById('finish-btn');
-  btn.disabled=!canFinish;
-  btn.style.opacity=canFinish?1:0.4;
+  // 按鈕永遠可點，但顏色反映完成狀態
+  btn.disabled=false;
+  btn.style.opacity=canFinish?1:0.7;
 }
 
 function renderDoneSummary(){
