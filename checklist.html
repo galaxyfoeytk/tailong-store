@@ -236,7 +236,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
     </div>
     <div id="checklist-body"></div>
-    <button class="save-btn" id="finish-btn" onclick="finishChecklist()" style="margin-top:4px"></button>
+    <button class="save-btn save-open" id="finish-btn" onclick="finishChecklist()" style="margin-top:4px">✓ 完成開班並儲存</button>
   </div>
 
   <!-- 完成 -->
@@ -524,24 +524,32 @@ function startChecklist(){
 }
 
 function finishChecklist(){
-  if(!session) return;
-  session.endTime=nowStr();
-  var total=session.items.length;
-  var done=session.items.filter(function(i){return i.done;}).length;
-  var warns=session.items.filter(function(i){return i.warn;}).length;
-  session.total=total; session.done=done; session.warns=warns;
-  history.unshift(JSON.parse(JSON.stringify(session)));
-  if(history.length>60) history=history.slice(0,60);
-  saveData(); // 同時寫本機+雲端
-  var isOpen=session.type==='open';
-  document.getElementById('check-section').style.display='none';
-  document.getElementById('done-section').style.display='block';
-  var banner=document.getElementById('done-banner');
-  banner.style.background=isOpen?'linear-gradient(135deg,#1A6B3C,#3DA86A)':'linear-gradient(135deg,#5B2D8E,#8B5DBE)';
-  document.getElementById('done-icon').textContent=isOpen?'🎉':'🌙';
-  document.getElementById('done-title').textContent=isOpen?'開班完成！':'收班完成！';
-  document.getElementById('done-sub').textContent=selPerson+' · '+selShift+' · '+done+'/'+total+' 項完成'+(warns>0?' · '+warns+'項需注意':'');
-  renderDoneSummary();
+  if(!session){
+    showToast('請重新開始 Checklist');
+    resetChecklist();
+    return;
+  }
+  try {
+    session.endTime=nowStr();
+    var total=session.items.length;
+    var done=session.items.filter(function(i){return i.done;}).length;
+    var warns=session.items.filter(function(i){return i.warn;}).length;
+    session.total=total; session.done=done; session.warns=warns;
+    history.unshift(JSON.parse(JSON.stringify(session)));
+    if(history.length>60) history=history.slice(0,60);
+    saveData();
+    var isOpen=session.type==='open';
+    document.getElementById('check-section').style.display='none';
+    document.getElementById('done-section').style.display='block';
+    var banner=document.getElementById('done-banner');
+    banner.style.background=isOpen?'linear-gradient(135deg,#1A6B3C,#3DA86A)':'linear-gradient(135deg,#5B2D8E,#8B5DBE)';
+    document.getElementById('done-icon').textContent=isOpen?'🎉':'🌙';
+    document.getElementById('done-title').textContent=isOpen?'開班完成！':'收班完成！';
+    document.getElementById('done-sub').textContent=selPerson+' · '+selShift+' · '+done+'/'+total+' 項完成'+(warns>0?' · '+warns+'項需注意':'');
+    renderDoneSummary();
+  } catch(e) {
+    showToast('儲存失敗：'+e.message);
+  }
 }
 
 function resetChecklist(){
