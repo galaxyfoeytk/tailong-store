@@ -1076,35 +1076,26 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
   lines.push('📅 '+rec.date+'　👤 '+rec.person);
 
   if(rec.mode==='monthly'){
-    // 先傳一則 debug 訊息確認資料格式
-    var countKeys = Object.keys(rec.counts).slice(0,5).join(', ');
-    var itemIds = modeItems.slice(0,3).map(function(i){ return i.id; }).join(', ');
-    var debugMsg = '🔍 月盤 debug\ncountKeys: '+countKeys+'\nitemIds: '+itemIds;
-    api({action:'sendLine', msg:debugMsg}, null);
-
+    lines.push('');
     // 依分類分組
-    var cats = [];
-    var catMap = {};
+    var cats=[], catMap={};
     modeItems.forEach(function(item){
       if(!catMap[item.cat]){ catMap[item.cat]=[]; cats.push(item.cat); }
       catMap[item.cat].push(item);
     });
-
     cats.forEach(function(cat){
-      var catItems = catMap[cat];
       lines.push('【'+cat+'】');
-      catItems.forEach(function(item){
-        var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
-        var cW = rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
-        var tS = Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*10)/10;
-        var tW = Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*10)/10;
-        var tAll = Math.round((tS+tW)*10)/10;
+      catMap[cat].forEach(function(item){
+        var cS=rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+        var cW=rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+        var tS=Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*10)/10;
+        var tW=Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*10)/10;
+        var tAll=Math.round((tS+tW)*10)/10;
         lines.push(item.name+'　現場:'+tS+' 倉庫:'+tW+' 合計:'+tAll+item.sn);
       });
     });
 
   } else {
-    // 日盤/週盤
     lines.push('');
     if(actionItems && actionItems.length>0){
       lines.push('⚠️ 需'+actionWord+'：'+actionItems.length+' 項');
@@ -1118,38 +1109,33 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
   }
 
   var msg = lines.join('\n');
-
-  // LINE 單則訊息上限 5000 字元，超過自動分割
   var MAX = 4800;
   if(msg.length <= MAX){
     api({action:'sendLine', msg:msg}, function(d){
       if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
     });
   } else {
-    // 分割成多則
-    var parts = [];
-    var current = [];
-    var currentLen = 0;
+    var parts=[], current=[], currentLen=0;
     lines.forEach(function(line){
-      if(currentLen + line.length + 1 > MAX){
+      if(currentLen+line.length+1>MAX){
         parts.push(current.join('\n'));
-        current = [line]; currentLen = line.length;
+        current=[line]; currentLen=line.length;
       } else {
-        current.push(line); currentLen += line.length + 1;
+        current.push(line); currentLen+=line.length+1;
       }
     });
     if(current.length) parts.push(current.join('\n'));
-    // 依序傳送
-    var sent = 0;
+    var sent=0;
     function sendNext(){
-      if(sent >= parts.length){ showToast('✓ 已傳送 LINE 通知（共'+parts.length+'則）'); return; }
-      var part = (parts.length>1?'（'+(sent+1)+'/'+parts.length+'）\n':'')+parts[sent];
+      if(sent>=parts.length){ showToast('✓ 已傳送 LINE 通知（共'+parts.length+'則）'); return; }
+      var part=(parts.length>1?'（'+(sent+1)+'/'+parts.length+'）\n':'')+parts[sent];
       sent++;
       api({action:'sendLine', msg:part}, function(){ sendNext(); });
     }
     sendNext();
   }
 }
+
 
 function pushToSheets(rec, modeItems, actionItems){
   var data;
