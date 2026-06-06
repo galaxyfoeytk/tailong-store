@@ -610,10 +610,15 @@ function updateProgress(){
   bar.style.width=pct+'%';
   bar.className='progress-bar-fill'+(pct===100?' done':'');
   var reqItems=session.items.filter(function(i){return i.req;});
-  var reqDone=reqItems.every(function(i){return i.done||i.warn;});
+  var allDone=session.items.every(function(i){return i.done||i.warn;});
+  var reqDone=reqItems.length===0
+    ? allDone
+    : reqItems.every(function(i){return i.done||i.warn;});
+  // 所有步驟完成 或 所有必填步驟完成，都可以按
+  var canFinish = allDone || reqDone;
   var btn=document.getElementById('finish-btn');
-  btn.disabled=!reqDone;
-  btn.style.opacity=reqDone?1:0.4;
+  btn.disabled=!canFinish;
+  btn.style.opacity=canFinish?1:0.4;
 }
 
 function renderDoneSummary(){
