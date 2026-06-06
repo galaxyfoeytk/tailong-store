@@ -538,8 +538,9 @@ function submitForm(){
     if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
     if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
     showToast('✓ 收班記錄已儲存！');
+    sendClosingLineNotify(params);
     // 清空數值欄位
-    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct'].forEach(function(id){
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super'].forEach(function(id){
       document.getElementById(id).value = '';
     });
     PRODUCTS.forEach(function(p){
@@ -547,6 +548,61 @@ function submitForm(){
       document.getElementById('f-take-'+p.key).value = 0;
     });
     recalcAll();
+  });
+}
+
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendClosingLineNotify(p){
+  var n = function(k){ return parseFloat(p[k]||0)||0; };
+  var totalCups  = n('sealMachine')+n('creamTop')+n('ecoCup');
+  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool');
+  var depAmt     = n('depOrig')*650+n('depFlav')*750+n('depSuper')*1400;
+  var dineInCups = totalCups-takeCups;
+  var avgPrice   = dineInCups>0 ? Math.round((n('revenue')-depAmt)/dineInCups*10)/10 : 0;
+  var origTotal  = n('buyOriginal')+n('takeOriginal');
+  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool');
+  var receipt    = n('receiptCount');
+  function pct(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
+
+  var lines = [
+    '📊 收班記錄 ─────────────',
+    '📅 '+p.date+'　👤 '+p.person,
+    '',
+    '💰 營業數據',
+    '總營業額：$'+Number(p.revenue||0).toLocaleString(),
+    '單號：'+receipt+' 張',
+    '總杯數：'+totalCups+' 杯　取寄：'+takeCups+' 杯',
+    '均杯單價：'+avgPrice+' 元',
+  ];
+
+  if(depAmt>0){
+    lines.push('寄杯組：原味'+n('depOrig')+'組 風味'+n('depFlav')+'組 超值'+n('depSuper')+'組（$'+depAmt.toLocaleString()+'）');
+  }
+
+  lines.push('');
+  lines.push('🧋 銷售明細');
+  PRODUCTS.forEach(function(prod){
+    var bk='buy'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
+    var tk='take'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
+    var bv=n(bk), tv=n(tk);
+    if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
+  });
+
+  lines.push('');
+  lines.push('📈 比例分析');
+  lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
+  lines.push('仙草凍/總：'+pct(origTotal+flavTotal,totalCups));
+  lines.push('首次來店：'+pct(n('newCustomer'),receipt)+'　回購：'+pct(n('returnCustomer'),receipt));
+  lines.push('風凍回購：'+pct(n('jelloReturn'),receipt)+'　風凍直購：'+pct(n('jelloDirect'),receipt));
+
+  if(n('demoCups')>0){
+    lines.push('');
+    lines.push('🥛 試飲　'+p.demoFocus+' '+n('demoCups')+'杯 → 轉換'+n('demoConvert')+'人（'+pct(n('demoConvert'),n('demoCups'))+'）');
+  }
+
+  var msg = lines.join('\n');
+  api({action:'sendLine', msg:msg}, function(d){
+    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
   });
 }
 

@@ -931,6 +931,7 @@ function doSave(){
     invoice:S.invoice,note:S.note
   };
   records.unshift(rec); save(); pushSaveRec(rec);
+  sendStockLineNotify(rec);
   resetForm();
   showToast('✓ 已儲存：'+rec.itemName);
 }
@@ -1248,6 +1249,37 @@ function showPage(p){
 // ══ 工具
 function dateStr(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendStockLineNotify(rec){
+  var lines = [
+    '📦 進貨記錄 ─────────────',
+    '📅 '+rec.date+'　👤 '+rec.person,
+    '',
+    '品項：'+rec.catName+' › '+rec.itemName,
+    '來源：'+rec.src,
+  ];
+
+  // 數量
+  var qtys = [];
+  rec.units.forEach(function(u){
+    var q = rec.unitQtys[u.n];
+    if(q && parseFloat(q)>0) qtys.push(parseFloat(q)+' '+u.n);
+  });
+  if(qtys.length) lines.push('數量：'+qtys.join('、'));
+
+  // 金額
+  if(rec.expense && rec.amt>0){
+    lines.push('金額：$'+Number(rec.amt).toLocaleString()+(rec.invoice?' ✅發票':''));
+  }
+
+  if(rec.note) lines.push('備注：'+rec.note);
+
+  var msg = lines.join('\n');
+  api({action:'sendLine', msg:msg}, function(d){
+    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+  });
+}
+
 function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);}
 
 </script>
