@@ -551,6 +551,31 @@ function submitForm(){
   });
 }
 
+function resendLineNotify(id){
+  // 從歷史記錄找到這筆資料
+  api({action:'closingGetAll', startDate:'2020-01-01', endDate:'2030-12-31'}, function(d){
+    if(!d||!d.ok) return;
+    var r = d.data.find(function(x){ return String(x.id)===String(id); });
+    if(!r){ showToast('找不到記錄'); return; }
+    // 轉換成 params 格式
+    var p = {
+      date:r.date, person:r.person,
+      revenue:r.revenue, receiptCount:r.receiptCount,
+      sealMachine:r.sealMachine, creamTop:r.creamTop, ecoCup:r.ecoCup,
+      depOrig:r.depOrig||0, depFlav:r.depFlav||0, depSuper:r.depSuper||0,
+      demoFocus:r.demoFocus, demoCups:r.demoCups, demoConvert:r.demoConvert,
+      buyOriginal:r.buyOriginal, takeOriginal:r.takeOriginal,
+      buyAromatic:r.buyAromatic, takeAromatic:r.takeAromatic,
+      buyNingxia:r.buyNingxia, takeNingxia:r.takeNingxia,
+      buyYouth:r.buyYouth, takeYouth:r.takeYouth,
+      buyCool:r.buyCool, takeCool:r.takeCool,
+      newCustomer:r.newCustomer, returnCustomer:r.returnCustomer,
+      jelloReturn:r.jelloReturn, jelloDirect:r.jelloDirect
+    };
+    sendClosingLineNotify(p);
+  });
+}
+
 // ── LINE 通知 ────────────────────────────────────────────────
 function sendClosingLineNotify(p){
   var n = function(k){ return parseFloat(p[k]||0)||0; };
@@ -592,7 +617,7 @@ function sendClosingLineNotify(p){
   lines.push('📈 比例分析');
   lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
   lines.push('仙草凍/總：'+pct(origTotal+flavTotal,totalCups));
-  lines.push('首次來店：'+pct(n('newCustomer'),receipt)+'　回購：'+pct(n('returnCustomer'),receipt));
+  lines.push('首次來店：'+n('newCustomer')+'張（'+pct(n('newCustomer'),receipt)+'）　回購：'+n('returnCustomer')+'張（'+pct(n('returnCustomer'),receipt)+'）');
   lines.push('風凍回購：'+pct(n('jelloReturn'),receipt)+'　風凍直購：'+pct(n('jelloDirect'),receipt));
 
   if(n('demoCups')>0){
@@ -724,7 +749,8 @@ function histDetail(r){
       cust(r.jelloReturn||0,'再喝風凍','var(--gl)','var(--g)')+
       cust(r.jelloDirect||0,'直接買','var(--gl)','var(--g)')+
     '</div>'+
-    '<div style="text-align:right;margin-top:8px">'+
+    '<div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">'+
+      '<button onclick="resendLineNotify(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--g);font-size:12px;cursor:pointer">📲 重傳 LINE</button>'+
       '<button onclick="delRecord(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--red);font-size:12px;cursor:pointer">🗑 刪除</button>'+
     '</div>'+
   '</div>';
