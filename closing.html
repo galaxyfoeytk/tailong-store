@@ -225,6 +225,7 @@ canvas{width:100%!important}
           <div class="calc-row"><span class="calc-label">取寄杯數</span><span class="calc-value" id="c-take-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">原味總數</span><span class="calc-value" id="c-orig">0</span></div>
           <div class="calc-row"><span class="calc-label">風味加總</span><span class="calc-value" id="c-flav">0</span></div>
+          <div class="calc-row"><span class="calc-label">試飲杯總數</span><span class="calc-value" id="c-demo-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
         </div>
         <div style="padding-left:16px;border-left:1px solid var(--bd)">
@@ -465,6 +466,7 @@ function recalcAll(){
   document.getElementById('c-jelly-ratio').textContent = jellyRatio;
   document.getElementById('c-orig-pct').textContent   = origPct;
   document.getElementById('c-flav-pct').textContent   = flavPct;
+  document.getElementById('c-demo-cups').textContent  = demoCups;
   document.getElementById('c-demo-rate').textContent  = pct(demoConv, demoCups);
   document.getElementById('c-first-pct').textContent  = pct(newCust,    receipt);
   document.getElementById('c-return-pct').textContent = pct(retCust,    receipt);

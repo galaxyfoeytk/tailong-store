@@ -369,11 +369,31 @@ function doSave(){
   if(!date){showToast('請選擇日期');return;}
   if(!reading||isNaN(reading)){showToast('請填寫電表讀數');return;}
   var rv=parseInt(reading);
-  // 防呆：讀數小於前一筆時詢問（電表換新/歸零時允許輸入）
+  // 防呆：讀數驗證
   var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   var prev=sorted.filter(function(r){return r.date<date;}).pop();
-  if(prev&&rv<prev.reading){
-    if(!confirm('⚠ 新讀數（'+rv+'）小於前一筆（'+prev.reading+'）\n\n若電表已換新或歸零，請按「確定」繼續。\n若是輸入錯誤，請按「取消」重新填寫。')){return;}
+  if(prev){
+    var diff = rv - prev.reading;
+    if(diff < 0){
+      // 讀數低於前一筆 → 必須確認
+      var msg = '⚠️ 電表讀數異常\n\n'
+        + '今日輸入：' + rv + ' 度\n'
+        + '前一筆（'+prev.date+'）：' + prev.reading + ' 度\n'
+        + '差異：' + diff + ' 度（比前一筆低）\n\n'
+        + '是否為電表歸零或換新表？\n'
+        + '→ 確定：繼續儲存（系統會標記為重置）\n'
+        + '→ 取消：重新輸入';
+      if(!confirm(msg)) return;
+    } else if(diff > 500){
+      // 單日用電超過 500 度 → 提示確認
+      var msg2 = '⚠️ 用電量異常偏高\n\n'
+        + '今日輸入：' + rv + ' 度\n'
+        + '前一筆（'+prev.date+'）：' + prev.reading + ' 度\n'
+        + '差異：+' + diff + ' 度（是否輸入正確？）\n\n'
+        + '→ 確定：繼續儲存\n'
+        + '→ 取消：重新確認';
+      if(!confirm(msg2)) return;
+    }
   }
   // 同日已有記錄
   var dup=records.find(function(r){return r.date===date;});
