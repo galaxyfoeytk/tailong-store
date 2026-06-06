@@ -336,7 +336,7 @@ function apiPost(params, cb){
 // 儲存步驟到 Sheets
 function pushStepsToSheets(type){
   var steps=type==='open'?openSteps:closeSteps;
-  api({action:'clSaveSteps',type:type,steps:JSON.stringify(steps)},function(d,e){
+  apiPost({action:'clSaveSteps',type:type,steps:JSON.stringify(steps)},function(d,e){
     if(d&&d.ok) showToast('✓ 已同步到雲端');
     else showToast('同步失敗，已儲存在本機');
   });
