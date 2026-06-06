@@ -369,7 +369,7 @@ var DEFAULT_CLOSE_STEPS=[
   {id:110,name:'關閉招牌/店燈',desc:'確認店面關閉狀態',cat:'收店流程',req:true},
 ];
 
-var persons, openSteps, closeSteps, history;
+var persons, openSteps, closeSteps, checkHistory;
 var checkType = 'open'; // 'open' | 'close'
 var mgmtType = 'open';
 var _cloudReady = false; // 雲端載入完成標記
@@ -399,34 +399,34 @@ function loadData(){
       persons=d.persons||DEFAULT_PERSONS.slice();
       openSteps=d.openSteps||JSON.parse(JSON.stringify(DEFAULT_OPEN_STEPS));
       closeSteps=d.closeSteps||JSON.parse(JSON.stringify(DEFAULT_CLOSE_STEPS));
-      history=d.history||[];
+      checkHistory=d.checkHistory||[];
     } else { throw 0; }
   }catch(e){
     persons=DEFAULT_PERSONS.slice();
     openSteps=JSON.parse(JSON.stringify(DEFAULT_OPEN_STEPS));
     closeSteps=JSON.parse(JSON.stringify(DEFAULT_CLOSE_STEPS));
-    history=[];
+    checkHistory=[];
   }
 }
 
 function saveData(){
   // 同時寫 localStorage 和雲端
-  var payload={persons:persons,openSteps:openSteps,closeSteps:closeSteps,history:history};
+  var payload={persons:persons,openSteps:openSteps,closeSteps:closeSteps,checkHistory:checkHistory};
   try{localStorage.setItem('checklist_v2',JSON.stringify(payload));}catch(e){}
   cfgSet('cl:persons', persons);
-  cfgSet('cl:history', history.slice(0,60)); // 最多存60筆
+  cfgSet('cl:checkHistory', checkHistory.slice(0,60)); // 最多存60筆
 }
 
 // 從雲端同步（啟動時呼叫）
 function syncFromCloud(){
   setSyncStatus(false);
-  var loaded={persons:false, steps:false, history:false};
+  var loaded={persons:false, steps:false, checkHistory:false};
   // 5秒後強制完成，避免 API 失敗導致 UI 卡住
   var forceTimer = setTimeout(function(){
     _cloudReady=true; setSyncStatus(true); buildPersonGrid(); renderHist();
   }, 5000);
   function checkDone(){
-    if(loaded.persons&&loaded.steps&&loaded.history){
+    if(loaded.persons&&loaded.steps&&loaded.checkHistory){
       clearTimeout(forceTimer);
       _cloudReady=true; setSyncStatus(true); buildPersonGrid(); renderHist();
     }
@@ -446,12 +446,12 @@ function syncFromCloud(){
     }
     loaded.steps=true; checkDone();
   });
-  cfgGet('cl:history', function(v){
+  cfgGet('cl:checkHistory', function(v){
     if(v&&Array.isArray(v)&&v.length>0){
-      history=v;
-      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.history=v;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
+      checkHistory=v;
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.checkHistory=v;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
     }
-    loaded.history=true; checkDone();
+    loaded.checkHistory=true; checkDone();
   });
 }
 
@@ -535,8 +535,8 @@ function finishChecklist(){
     var done=session.items.filter(function(i){return i.done;}).length;
     var warns=session.items.filter(function(i){return i.warn;}).length;
     session.total=total; session.done=done; session.warns=warns;
-    history.unshift(JSON.parse(JSON.stringify(session)));
-    if(history.length>60) history=history.slice(0,60);
+    checkHistory.unshift(JSON.parse(JSON.stringify(session)));
+    if(checkHistory.length>60) checkHistory=checkHistory.slice(0,60);
     saveData();
     var isOpen=session.type==='open';
     document.getElementById('check-section').style.display='none';
@@ -652,8 +652,8 @@ function renderDoneSummary(){
 // ══════════════════════════════
 function renderHist(){
   var el=document.getElementById('hist-content');
-  if(!history.length){el.innerHTML='<div class="empty">尚無歷史記錄</div>';return;}
-  el.innerHTML=history.map(function(h){
+  if(!checkHistory.length){el.innerHTML='<div class="empty">尚無歷史記錄</div>';return;}
+  el.innerHTML=checkHistory.map(function(h){
     var isOpen=h.type==='open';
     var isFull=h.done===h.total;
     return '<div class="hist-card">'
