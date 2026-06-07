@@ -36,10 +36,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 /* PAGES */
 .pages{flex:1;overflow:hidden;position:relative}
 .page{position:absolute;inset:0;display:none;overflow:hidden}
-.page.on{display:block}
+.page.on{display:flex;flex-direction:column}
 
 /* ══════ KANBAN ══════ */
-.board-wrap{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;display:flex;align-items:stretch;padding:10px;gap:10px;-webkit-overflow-scrolling:touch}
+.board-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;display:flex;align-items:stretch;padding:10px;gap:10px;-webkit-overflow-scrolling:touch;touch-action:pan-x}
 .board-wrap::-webkit-scrollbar{height:4px}
 .board-wrap::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 .zone{width:200px;flex-shrink:0;border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;border:1.5px solid var(--bd);background:var(--white)}
@@ -68,7 +68,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .zone-empty{text-align:center;color:var(--ink4);font-size:12px;padding:18px 8px}
 
 /* ══════ TRACKER ══════ */
-.track-board{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;display:flex;padding:10px;gap:10px;-webkit-overflow-scrolling:touch}
+.track-board{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;display:flex;padding:10px;gap:10px;-webkit-overflow-scrolling:touch;touch-action:pan-x}
 .track-board::-webkit-scrollbar{height:4px}
 .track-board::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
 .track-zone{width:220px;flex-shrink:0;border-radius:var(--r);border:1.5px solid var(--bd);background:var(--white);display:flex;flex-direction:column;overflow:hidden}
