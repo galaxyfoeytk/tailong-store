@@ -344,6 +344,7 @@ function renderList(){
         +usageHtml
         +(r.note?'<div class="rc-note">📌 '+r.note+'</div>':'<div style="flex:1"></div>')
         +'<button class="rc-edit" data-id="'+r.id+'" onclick="event.stopPropagation();openEdit(this.dataset.id)">修改</button>'
+        +'<button class="rc-del" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C" data-date="'+r.date+'" data-reading="'+r.reading+'" data-note="'+(r.note||'')+'" onclick="event.stopPropagation();sendElecLineNotify(this.dataset.date,parseInt(this.dataset.reading),this.dataset.note)">📲</button>'
         +'<button class="rc-del" data-id="'+r.id+'" onclick="event.stopPropagation();delRec(this.dataset.id)">刪除</button>'
       +'</div>'
     +'</div>';
@@ -402,6 +403,8 @@ function doSave(){
   saveData();
   // 同步到 Sheets
   api({action:'elecSave',date:date,reading:rv,note:note,id:records[records.length-1].id},null);
+  // 計算用電量傳 LINE
+  sendElecLineNotify(date, rv, note);
   document.getElementById('f-reading').value='';
   document.getElementById('f-note').value='';
   document.getElementById('f-date').value=todayStr();
@@ -518,6 +521,49 @@ document.addEventListener('click',function(e){
   var ov=document.getElementById('ov-edit');
   if(e.target===ov) closeEdit();
 });
+
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendElecLineNotify(date, reading, note){
+  var sorted = records.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  
+  // 昨日用電
+  var prev = sorted.filter(function(r){ return r.date < date; }).pop();
+  var usage = prev ? reading - prev.reading : null;
+  var isReset = usage !== null && usage < 0;
+
+  // 本月累積（同月所有有計算用電量的記錄加總）
+  var curMonth = date.slice(0, 7);
+  var data = calcUsage();
+  var monthData = data.filter(function(r){
+    return r.date.startsWith(curMonth) && r.usage !== null && r.usage >= 0;
+  });
+  var monthTotal = monthData.reduce(function(s,r){ return s+r.usage; }, 0);
+  var monthAvg   = monthData.length ? Math.round(monthTotal/monthData.length) : 0;
+
+  var lines = [
+    '⚡ 電表記錄 ─────────────',
+    '📅 '+date,
+    '本日讀數：'+reading+' 度',
+  ];
+
+  if(usage !== null){
+    if(isReset){
+      lines.push('🔄 電表重置（前一筆：'+prev.reading+'度）');
+    } else {
+      lines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
+    }
+  }
+
+  lines.push('本月累積：'+monthTotal+' 度');
+  lines.push('每日平均：'+monthAvg+' 度');
+
+  if(note) lines.push('備注：'+note);
+
+  var msg = lines.join('\n');
+  api({action:'sendLine', msg:msg}, function(d){
+    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+  });
+}
 
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 </script>

@@ -1008,6 +1008,7 @@ function renderList(){
         +'</div>'
         +'<div class="rc-btn-group">'
           +'<button class="rc-edit-btn" data-id="'+r.id+'" onclick="event.stopPropagation();openEditRec(this.dataset.id)">修改</button>'
+          +'<button class="rc-edit-btn" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C" data-id="'+r.id+'" onclick="event.stopPropagation();resendStockLine(this.dataset.id)">📲</button>'
           +'<button class="rc-del-btn" data-id="'+r.id+'" onclick="event.stopPropagation();delRec(this.dataset.id)">刪除</button>'
         +'</div>'
       +'</div>'
@@ -1249,6 +1250,12 @@ function showPage(p){
 // ══ 工具
 function dateStr(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function resendStockLine(id){
+  var r = records.find(function(x){ return String(x.id)===String(id); });
+  if(!r){ showToast('找不到記錄'); return; }
+  sendStockLineNotify(r);
+}
+
 // ── LINE 通知 ────────────────────────────────────────────────
 function sendStockLineNotify(rec){
   var lines = [

@@ -1624,6 +1624,9 @@ function renderAllHist(){
       '</div>'+
       '<div id="hist-detail-'+ri+'" style="display:none;border-top:1px solid var(--bd);background:var(--bg)">'+
         histDetailHtml(r)+
+        '<div style="padding:8px 13px;text-align:right">'+
+          '<button onclick="resendInvLine('+ri+')" style="padding:6px 14px;border:1px solid #1A6B3C;border-radius:8px;background:#E8F5E9;color:#1A6B3C;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 重傳 LINE 通知</button>'+
+        '</div>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1807,6 +1810,26 @@ function histDetailHtml(r){
     });
   }
   return html;
+}
+
+function resendInvLine(ri){
+  var r = records[ri];
+  if(!r){ showToast('找不到記錄'); return; }
+  var modeItems = r.mode==='monthly' ? items : items.filter(function(i){
+    return i.modes && i.modes.indexOf(r.mode==='daily'?'D':'W')>-1;
+  });
+  var actionItems = [];
+  if(r.mode !== 'monthly'){
+    modeItems.forEach(function(item){
+      var c = r.counts[item.id]||{s:0,m:0,l:0,w:0};
+      var total = calcTotal(item, c);
+      var target = r.mode==='daily' ? item.daily : item.weekly;
+      if(target && total < target.min){
+        actionItems.push({item:item, need:target.target-total});
+      }
+    });
+  }
+  sendLineInventoryNotify(r, modeItems, actionItems);
 }
 
 // ── API ───────────────────────────────────────────────────────
