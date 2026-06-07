@@ -229,6 +229,13 @@ tbody tr:hover td{background:#F8F7F3}
 
   <!-- 流程看板 -->
   <div class="page on" id="page-board">
+    <!-- 口味統整面板 -->
+    <div id="flavor-summary" style="background:var(--white);border-bottom:1px solid var(--bd);padding:10px 12px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;margin-bottom:8px">📊 各口味桶數統整</div>
+      <div id="flavor-summary-body" style="overflow-x:auto">
+        <!-- 由 renderFlavorSummary() 填入 -->
+      </div>
+    </div>
     <div class="board-wrap">
       <div class="zone z-cook">
         <div class="zone-hd"><span class="zone-icon">🍳</span><span class="zone-name">煮好</span><span class="zone-cnt" id="cnt-cook">0</span></div>
@@ -957,6 +964,84 @@ function renderAll(){
     var sorted=sortActives(list);
     el.innerHTML=sorted.length?sorted.map(buildBoardCard).join(''):'<div class="zone-empty">目前無</div>';
   });
+  renderFlavorSummary();
+}
+
+function renderFlavorSummary(){
+  var el = document.getElementById('flavor-summary-body');
+  if(!el) return;
+
+  // 收集所有口味
+  var flavorSet = {};
+  actives.forEach(function(a){ flavorSet[a.item]=true; });
+  var flavors = Object.keys(flavorSet).sort();
+  if(!flavors.length){ el.innerHTML='<div style="color:var(--ink3);font-size:12px">目前無進行中的桶子</div>'; return; }
+
+  var zones = [
+    {key:'cook',  label:'🍳 煮好'},
+    {key:'lower', label:'⬇️ 下層'},
+    {key:'upper', label:'⬆️ 上層'},
+    {key:'bed',   label:'🛏️ 臥式'},
+  ];
+
+  // 計算每個口味在每個區塊的數量
+  var data = {};
+  flavors.forEach(function(f){
+    data[f] = {};
+    var total = 0;
+    zones.forEach(function(z){
+      var cnt = actives.filter(function(a){ return a.item===f && a.stage===z.key; }).length;
+      data[f][z.key] = cnt;
+      total += cnt;
+    });
+    data[f].total = total;
+  });
+
+  // 各區塊總計
+  var zoneTotals = {};
+  var grandTotal = 0;
+  zones.forEach(function(z){
+    zoneTotals[z.key] = actives.filter(function(a){ return a.stage===z.key; }).length;
+    grandTotal += zoneTotals[z.key];
+  });
+
+  // 建立表格
+  var html = '<table style="border-collapse:collapse;font-size:12px;min-width:360px">';
+
+  // 表頭
+  html += '<tr>';
+  html += '<th style="padding:4px 10px;background:#1A3A5C;color:#fff;text-align:left;border-radius:4px 0 0 0">口味</th>';
+  zones.forEach(function(z){
+    html += '<th style="padding:4px 10px;background:#1A3A5C;color:#fff;text-align:center;white-space:nowrap">'+z.label+'</th>';
+  });
+  html += '<th style="padding:4px 10px;background:var(--g);color:#fff;text-align:center;border-radius:0 4px 0 0">合計</th>';
+  html += '</tr>';
+
+  // 各口味列
+  flavors.forEach(function(f, fi){
+    var bg = fi%2===0 ? 'var(--white)' : '#f7f9fc';
+    html += '<tr style="background:'+bg+'">';
+    html += '<td style="padding:5px 10px;font-weight:700;color:var(--ink)">'+f+'</td>';
+    zones.forEach(function(z){
+      var cnt = data[f][z.key];
+      html += '<td style="padding:5px 10px;text-align:center;color:'+(cnt>0?'var(--ink)':'var(--bd)')+'">'+
+        (cnt>0?'<b>'+cnt+'</b>':'—')+'</td>';
+    });
+    html += '<td style="padding:5px 10px;text-align:center;font-weight:900;color:var(--g)">'+data[f].total+'</td>';
+    html += '</tr>';
+  });
+
+  // 總計列
+  html += '<tr style="background:#eaeff7">';
+  html += '<td style="padding:5px 10px;font-weight:700;color:var(--ink3);font-size:11px">合計</td>';
+  zones.forEach(function(z){
+    html += '<td style="padding:5px 10px;text-align:center;font-weight:700;color:var(--ink)">'+zoneTotals[z.key]+'</td>';
+  });
+  html += '<td style="padding:5px 10px;text-align:center;font-weight:900;color:var(--g);font-size:14px">'+grandTotal+'</td>';
+  html += '</tr>';
+
+  html += '</table>';
+  el.innerHTML = html;
 }
 function fmtTime(t){
   if(!t) return '';
