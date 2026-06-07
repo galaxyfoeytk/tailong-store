@@ -1215,6 +1215,14 @@ function bulkList(){
 
 function renderBulkTable(){
   var list = bulkList();
+  // 按分類排序
+  var catOrder={};
+  list.forEach(function(item){
+    if(!(item.cat in catOrder)) catOrder[item.cat]=Object.keys(catOrder).length;
+  });
+  list=list.slice().sort(function(a,b){
+    return (catOrder[a.cat]||0)-(catOrder[b.cat]||0);
+  });
   var isDailyOrWeekly = bulkMode!=='all';
   var modeKey = bulkMode==='daily'?'D':'W';
 
@@ -1242,14 +1250,22 @@ function renderBulkTable(){
     '<th></th>'+
     '</tr>';
 
-  var rows = list.map(function(item){
+  var rows = [];
+  var lastCat = '';
+  list.forEach(function(item){
     var globalIdx = bulkDraft.findIndex(function(x){ return x.id===item.id; });
     var isFirst = globalIdx===0, isLast = globalIdx===bulkDraft.length-1;
     var chg = bulkChanged[item.id] ? ' row-changed' : (item._new ? ' row-new' : '');
     var t = item[bulkMode]||{min:0,target:0};
     var hasD = item.modes&&item.modes.indexOf('D')>-1;
     var hasW = item.modes&&item.modes.indexOf('W')>-1;
-    return '<tr class="'+chg+'" id="brow-'+item.id+'">'+
+    // 分類標題列
+    if(item.cat !== lastCat){
+      lastCat = item.cat;
+      var colSpan = 10 + (isDailyOrWeekly?2:0);
+      rows.push('<tr><td colspan="'+colSpan+'" style="background:#1A3A5C;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:5px 10px">'+item.cat+'</td></tr>');
+    }
+    rows.push('<tr class="'+chg+'" id="brow-'+item.id+'">'+
       // 排序
       '<td class="td-fix" style="text-align:center">'+
         '<div style="display:flex;flex-direction:column;gap:2px;align-items:center">'+
@@ -1282,14 +1298,14 @@ function renderBulkTable(){
       : '')+
       // 刪除
       '<td><button class="bt-del" onclick="bulkDel(\''+item.id+'\')" title="刪除">🗑</button></td>'+
-    '</tr>';
-  }).join('');
+    '</tr>');
+  });
 
   var isEmpty = !list.length;
   document.getElementById('bulk-body').innerHTML =
     '<table class="bt">'+
       '<thead>'+thHtml+'</thead>'+
-      '<tbody>'+(isEmpty ? '<tr><td colspan="20" style="text-align:center;padding:32px;color:var(--ink3)">此模式尚無品項</td></tr>' : rows)+'</tbody>'+
+      '<tbody>'+(isEmpty ? '<tr><td colspan="20" style="text-align:center;padding:32px;color:var(--ink3)">此模式尚無品項</td></tr>' : rows.join(''))+'</tbody>'+
     '</table>';
 
   updateBulkBadge();
@@ -1412,7 +1428,15 @@ function switchCfgTab(m){cfgMode=m;renderCfgTabs();renderCfgBody();}
 function renderCfgBody(){
   var list=cfgMode==='monthly'?items:items.filter(function(i){return i.modes&&i.modes.indexOf(cfgMode==='daily'?'D':'W')>-1;});
   if(!list.length){document.getElementById('cfg-body').innerHTML='<div class="empty">此模式尚無品項</div>';return;}
-  // 按 items 全域順序顯示（不重新排分類）
+  // 按分類排序（保留同分類內的相對順序）
+  var catOrder={};
+  list.forEach(function(item){
+    if(!(item.cat in catOrder)) catOrder[item.cat]=Object.keys(catOrder).length;
+  });
+  list=list.slice().sort(function(a,b){
+    var ca=catOrder[a.cat]||0, cb=catOrder[b.cat]||0;
+    return ca!==cb ? ca-cb : 0; // 同分類保持原順序
+  });
   var html='';
   var lastCat='';
   list.forEach(function(item){
