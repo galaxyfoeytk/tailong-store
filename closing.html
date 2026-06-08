@@ -570,6 +570,8 @@ function submitForm(){
     if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
     showToast('✓ 收班記錄已儲存！');
     sendClosingLineNotify(params);
+    sendTodayElecWithClosing(params.date);
+    sendTodayElecWithClosing(params.date);
     // 清空數值欄位
     ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-amt'].forEach(function(id){
       document.getElementById(id).value = '';
@@ -580,6 +582,77 @@ function submitForm(){
       document.getElementById('f-take-'+p.key).value = 0;
     });
     recalcAll();
+  });
+}
+
+function sendTodayElecWithClosing(date){
+  // 查當天電表記錄
+  api({action:'elecGetAll'}, function(d){
+    if(!d||!d.ok||!d.data) return;
+    var sorted = d.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+    var today = sorted.filter(function(r){ return r.date===date; });
+    if(!today.length) return; // 當天沒有電表記錄就不傳
+
+    var rec = today[today.length-1]; // 取當天最後一筆
+    var prev = sorted.filter(function(r){ return r.date < date; }).pop();
+    var usage = prev ? rec.reading - prev.reading : null;
+
+    // 本月累積
+    var curMonth = date.slice(0,7);
+    var monthData = [];
+    sorted.forEach(function(r,i){
+      if(i===0) return;
+      var u = r.reading - sorted[i-1].reading;
+      if(r.date.startsWith(curMonth) && u>=0) monthData.push(u);
+    });
+    var monthTotal = monthData.reduce(function(s,u){ return s+u; }, 0);
+    var monthAvg = monthData.length ? Math.round(monthTotal/monthData.length) : 0;
+
+    var lines = [
+      '⚡ 電表記錄 ─────────────',
+      '📅 '+date,
+      '本日讀數：'+rec.reading+' 度',
+    ];
+    if(usage!==null){
+      if(usage<0) lines.push('🔄 電表重置（前一筆：'+prev.reading+'度）');
+      else lines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
+    }
+    lines.push('本月累積：'+monthTotal+' 度');
+    lines.push('每日平均：'+monthAvg+' 度');
+    if(rec.note) lines.push('備注：'+rec.note);
+
+    api({action:'sendLine', msg:lines.join('\n')}, null);
+  });
+}
+
+function sendTodayElecWithClosing(date){
+  // 從後端拉電表記錄，找今天的
+  api({action:'elecGetAll'}, function(d){
+    if(!d||!d.ok||!d.data||!d.data.length) return;
+    var sorted = d.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+    var today = sorted.filter(function(r){ return r.date===date; }).pop();
+    if(!today) return; // 今天沒有電表記錄就不傳
+    var prev = sorted.filter(function(r){ return r.date < date; }).pop();
+    var usage = prev ? today.reading - prev.reading : null;
+    var curMonth = date.slice(0,7);
+    var monthUsages = [];
+    for(var i=1; i<sorted.length; i++){
+      if(sorted[i].date.startsWith(curMonth) && sorted[i-1]){
+        var u = sorted[i].reading - sorted[i-1].reading;
+        if(u >= 0) monthUsages.push(u);
+      }
+    }
+    var monthTotal = monthUsages.reduce(function(s,v){ return s+v; }, 0);
+    var monthAvg   = monthUsages.length ? Math.round(monthTotal/monthUsages.length) : 0;
+    var lines = [
+      '⚡ 電表記錄 ─────────────',
+      '本日讀數：'+today.reading+' 度',
+    ];
+    if(usage !== null && usage >= 0) lines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
+    lines.push('本月累積：'+monthTotal+' 度');
+    lines.push('每日平均：'+monthAvg+' 度');
+    if(today.note) lines.push('備注：'+today.note);
+    api({action:'sendLine', msg:lines.join('\n')}, null);
   });
 }
 
