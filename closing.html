@@ -102,6 +102,8 @@ canvas{width:100%!important}
 .stat-card .sl{font-size:11px;color:var(--ink3);margin-top:3px}
 
 .empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
+.weather-btn{padding:6px 12px;border:1.5px solid var(--bd);border-radius:20px;background:var(--white);font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink3);transition:all .1s}
+.weather-btn.on{border-color:var(--b);background:var(--bl);color:var(--b);font-weight:700}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;font-weight:500}
 .badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700}
 /* 數字小鍵盤 */
@@ -164,6 +166,22 @@ canvas{width:100%!important}
       <div class="field-grid grid-2" style="margin-bottom:10px">
         <div class="field highlight"><label>💵 總營業額</label><input id="f-revenue" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'💵 總營業額')"></div>
         <div class="field highlight"><label>🧾 單號（張數）</label><input id="f-receipt" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧾 單號')"></div>
+        <!-- 天氣 -->
+        <div class="field">
+          <label>🌤 天氣</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <button class="weather-btn on" id="wb-sunny"    onclick="pickWeather('晴天')"   >☀️ 晴天</button>
+            <button class="weather-btn"    id="wb-cloudy"   onclick="pickWeather('陰天')"   >☁️ 陰天</button>
+            <button class="weather-btn"    id="wb-rain"     onclick="pickWeather('雨天')"   >🌧 雨天</button>
+            <button class="weather-btn"    id="wb-thunder"  onclick="pickWeather('雷雨')"   >⛈ 雷雨</button>
+            <button class="weather-btn"    id="wb-typhoon"  onclick="pickWeather('颱風')"   >🌀 颱風</button>
+          </div>
+        </div>
+        <!-- 外送 -->
+        <div class="field-grid grid-2" style="margin-top:6px">
+          <div class="field"><label>🛵 外送單數</label><input id="f-delivery-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🛵 外送單數')"></div>
+          <div class="field"><label>💰 外送金額</label><input id="f-delivery-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 外送金額')"></div>
+        </div>
       </div>
       <div class="field-grid grid-3">
         <div class="field"><label>🥤 封口機杯數</label><input id="f-seal" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🥤 封口機杯數')"></div>
@@ -233,6 +251,8 @@ canvas{width:100%!important}
           <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
           <div class="calc-row"><span class="calc-label">原味總數</span><span class="calc-value" id="c-orig">0</span></div>
           <div class="calc-row"><span class="calc-label">風味加總</span><span class="calc-value" id="c-flav">0</span></div>
+          <div class="calc-row"><span class="calc-label">原味總杯數</span><span class="calc-value" id="c-orig">0</span></div>
+          <div class="calc-row"><span class="calc-label">風味總杯數</span><span class="calc-value" id="c-flav">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲杯總數</span><span class="calc-value" id="c-demo-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
         </div>
@@ -411,6 +431,16 @@ function npDone(){
   recalcAll();
 }
 
+// ── 天氣選擇 ────────────────────────────────────────────────
+var selectedWeather = '晴天';
+function pickWeather(w){
+  selectedWeather = w;
+  var wmap = {晴天:'sunny',陰天:'cloudy',雨天:'rain',雷雨:'thunder',颱風:'typhoon'};
+  Object.keys(wmap).forEach(function(k){
+    document.getElementById('wb-'+wmap[k]).classList.toggle('on', k===w);
+  });
+}
+
 function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
 function pct(n,d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
 
@@ -506,6 +536,9 @@ function submitForm(){
   var params = {
     action: 'closingSave',
     date: date, person: person,
+    weather:      selectedWeather,
+    deliveryCnt:  getNum('f-delivery-cnt'),
+    deliveryAmt:  getNum('f-delivery-amt'),
     revenue: getNum('f-revenue'),
     receiptCount: getNum('f-receipt'),
     sealMachine:  getNum('f-seal'),
@@ -540,15 +573,20 @@ function submitForm(){
     showToast('✓ 收班記錄已儲存！');
     sendClosingLineNotify(params);
     // 清空數值欄位
-    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super'].forEach(function(id){
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-amt'].forEach(function(id){
       document.getElementById(id).value = '';
     });
+    pickWeather('晴天');
     PRODUCTS.forEach(function(p){
       document.getElementById('f-buy-'+p.key).value = 0;
       document.getElementById('f-take-'+p.key).value = 0;
     });
     recalcAll();
   });
+}
+
+function weatherIcon(w){
+  return {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'}[w]||'';
 }
 
 function resendLineNotify(id){
@@ -591,7 +629,7 @@ function sendClosingLineNotify(p){
 
   var lines = [
     '📊 收班記錄 ─────────────',
-    '📅 '+p.date+'　👤 '+p.person,
+    '📅 '+p.date+'　👤 '+p.person+(p.weather?'　'+weatherIcon(p.weather)+p.weather:''),
     '',
     '💰 營業數據',
     '總營業額：$'+Number(p.revenue||0).toLocaleString(),
@@ -606,12 +644,18 @@ function sendClosingLineNotify(p){
 
   lines.push('');
   lines.push('🧋 銷售明細');
+  lines.push('原味總杯數：'+origTotal+' 杯　風味總杯數：'+flavTotal+' 杯');
   PRODUCTS.forEach(function(prod){
     var bk='buy'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
     var tk='take'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
     var bv=n(bk), tv=n(tk);
     if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
   });
+
+  if(n('deliveryCnt')>0 || n('deliveryAmt')>0){
+    lines.push('');
+    lines.push('🛵 外送　'+n('deliveryCnt')+'單　$'+Number(n('deliveryAmt')).toLocaleString());
+  }
 
   lines.push('');
   lines.push('📈 比例分析');
