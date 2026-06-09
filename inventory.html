@@ -793,7 +793,8 @@ function renderCountPage(){
       if(filled&&curMode!=='monthly'){
         var cfg=item[curMode];
         if(cfg){
-          if(total<cfg.min){cls='filled-low';status='⚠ 不足 低標:'+cfg.min+item.sn+' 不足';}
+          var minInSmall=unitToSmall(item,cfg.min,cfg.minUnit||'s');
+          if(total<minInSmall){cls='filled-low';status='⚠ 不足';}
           else if(total===0){cls='filled-zero';}
           else{cls='filled-ok';}
         }
@@ -814,7 +815,9 @@ function renderCountPage(){
       }
       if(curMode!=='monthly'&&item[curMode]){
         var t=item[curMode];
-        html+='<div class="ic-sub"><span class="ic-threshold">低標:'+t.min+item.sn+'</span><span>補至:'+t.target+item.sn+'</span>';
+        var minLbl=t.min+getUnitLabel(item,t.minUnit||'s');
+        var tgtLbl=t.target+getUnitLabel(item,t.targetUnit||'s');
+        html+='<div class="ic-sub"><span class="ic-threshold">低標:'+minLbl+'</span><span>補至:'+tgtLbl+'</span>';
         if(status) html+='<span style="color:var(--red);font-weight:700">'+status+'</span>';
         html+='</div>';
       }
@@ -996,7 +999,8 @@ function finishCount(){
       okItems.push({item:item,c:c,total:realTotal});
     } else {
       var cfg=item[curMode];
-      var needAmt=cfg?(cfg.target-realTotal):0;
+      var targetInSmall=cfg?unitToSmall(item,cfg.target,cfg.targetUnit||'s'):0;
+      var needAmt=cfg?(targetInSmall-realTotal):0;
       if(needAmt>0){
         actionItems.push({item:item,c:c,total:realTotal,need:Math.ceil(needAmt)});
       } else {
@@ -1065,7 +1069,7 @@ function finishCount(){
   records.unshift(rec);
   saveRecords();
   pushToSheets(rec,modeItems,actionItems);
-  sendLineInventoryNotify(rec,modeItems,actionItems);
+  if(rec.mode !== 'daily') sendLineInventoryNotify(rec,modeItems,actionItems);
   showPage('result');
 }
 
@@ -1162,7 +1166,8 @@ function pushToSheets(rec, modeItems, actionItems){
       var wConverted = item.sw>0?((c.w||0)/item.sw):0;
       var realTotal = total + wConverted;
       var cfg = item[rec.mode];
-      var need = cfg ? Math.max(0, cfg.target - realTotal) : 0;
+      var targetInSmall2 = cfg ? unitToSmall(item,cfg.target,cfg.targetUnit||'s') : 0;
+      var need = cfg ? Math.max(0, targetInSmall2 - realTotal) : 0;
       return {
         cat: item.cat, item: item.name, unit: item.sn,
         qty_l: c.l||0, qty_m: c.m||0, qty_s: c.s||0, qty_w: c.w||0,
@@ -1293,8 +1298,18 @@ function renderBulkTable(){
       '<td style="text-align:center"><input type="checkbox" class="bt-chk" '+(hasW?'checked':'')+' onchange="bulkEditMode(\''+item.id+'\',\'W\',this.checked)"></td>'+
       // 低標/補至
       (isDailyOrWeekly ?
-        '<td><input class="bt-inp w-num" type="number" min="0" value="'+(t.min||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'min\',this.value)"></td>'+
-        '<td><input class="bt-inp w-num" type="number" min="0" value="'+(t.target||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'target\',this.value)"></td>'
+        '<td>'+
+          '<div style="display:flex;align-items:center;gap:3px">'+
+          '<input class="bt-inp w-num" type="number" min="0" value="'+(t.min||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'min\',this.value)">'+
+          buildUnitSel(item, t.minUnit||'s', item.id, bulkMode, 'minUnit')+
+          '</div>'+
+        '</td>'+
+        '<td>'+
+          '<div style="display:flex;align-items:center;gap:3px">'+
+          '<input class="bt-inp w-num" type="number" min="0" value="'+(t.target||0)+'" onchange="bulkEditTarget(\''+item.id+'\',\''+bulkMode+'\',\'target\',this.value)">'+
+          buildUnitSel(item, t.targetUnit||'s', item.id, bulkMode, 'targetUnit')+
+          '</div>'+
+        '</td>'
       : '')+
       // 刪除
       '<td><button class="bt-del" onclick="bulkDel(\''+item.id+'\')" title="刪除">🗑</button></td>'+
@@ -1330,11 +1345,43 @@ function bulkEditMode(id, key, checked){
   markRowChanged(id);
   updateBulkBadge();
 }
+// 把指定單位的數量換算成小單位
+function unitToSmall(item, val, unit){
+  var v = parseFloat(val)||0;
+  if(unit==='m') return v * (item.ms||1);
+  if(unit==='l') return v * (item.lm||1) * (item.ms||1);
+  return v; // 's' 小單位
+}
+// 取得單位標籤
+function getUnitLabel(item, unit){
+  if(unit==='m') return item.mn||item.sn;
+  if(unit==='l') return item.ln||item.mn||item.sn;
+  return item.sn;
+}
+
+function buildUnitSel(item, selVal, itemId, mode, field){
+  // 建立單位選擇下拉：小(s)/中(m)/大(l)
+  var opts = [{v:'s',label:item.sn||'小'}];
+  if(item.mn) opts.push({v:'m',label:item.mn});
+  if(item.ln) opts.push({v:'l',label:item.ln});
+  if(opts.length<=1) return '<span style="font-size:11px;color:var(--ink3)">'+item.sn+'</span>';
+  var html = '<select style="font-size:11px;padding:2px 2px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--ink)" onchange="bulkEditTarget(\''+itemId+'\',\''+mode+'\',\''+field+'\',this.value)">';
+  opts.forEach(function(o){
+    html += '<option value="'+o.v+'"'+(selVal===o.v?' selected':'')+'>'+o.label+'</option>';
+  });
+  html += '</select>';
+  return html;
+}
+
 function bulkEditTarget(id, mode, field, value){
   var item = bulkDraft.find(function(i){ return i.id===id; });
   if(!item) return;
   if(!item[mode]) item[mode]={min:0,target:0};
-  item[mode][field] = parseFloat(value)||0;
+  if(field==='minUnit'||field==='targetUnit'){
+    item[mode][field] = value; // 字串
+  } else {
+    item[mode][field] = parseFloat(value)||0;
+  }
   bulkChanged[id] = true;
   markRowChanged(id);
   updateBulkBadge();
@@ -1649,7 +1696,7 @@ function renderAllHist(){
       '<div id="hist-detail-'+ri+'" style="display:none;border-top:1px solid var(--bd);background:var(--bg)">'+
         histDetailHtml(r)+
         '<div style="padding:8px 13px;text-align:right">'+
-          '<button onclick="resendInvLine('+ri+')" style="padding:6px 14px;border:1px solid #1A6B3C;border-radius:8px;background:#E8F5E9;color:#1A6B3C;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 重傳 LINE 通知</button>'+
+          (r.mode !== 'daily' ? '<button onclick="resendInvLine('+ri+')" style="padding:6px 14px;border:1px solid #1A6B3C;border-radius:8px;background:#E8F5E9;color:#1A6B3C;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 重傳 LINE 通知</button>' : '')+
         '</div>'+
       '</div>'+
     '</div>';
