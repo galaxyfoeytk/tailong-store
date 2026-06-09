@@ -228,6 +228,22 @@ body{font-family:-apple-system,sans-serif;background:var(--gray);font-size:16px;
   </div>
 
   <div class="block">
+    <div class="block-title">天氣</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="t-btn on" id="wb-sunny"   onclick="pickWeatherT('晴天')"  style="padding:8px 14px;font-size:13px">☀️ 晴天</button>
+      <button class="t-btn"    id="wb-cloudy"  onclick="pickWeatherT('陰天')"  style="padding:8px 14px;font-size:13px">☁️ 陰天</button>
+      <button class="t-btn"    id="wb-rain"    onclick="pickWeatherT('雨天')"  style="padding:8px 14px;font-size:13px">🌧 雨天</button>
+      <button class="t-btn"    id="wb-thunder" onclick="pickWeatherT('雷雨')"  style="padding:8px 14px;font-size:13px">⛈ 雷雨</button>
+      <button class="t-btn"    id="wb-typhoon" onclick="pickWeatherT('颱風')"  style="padding:8px 14px;font-size:13px">🌀 颱風</button>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">室外氣溫（°C，選填）</div>
+    <input class="note-input" type="number" id="f-outdoor-temp" placeholder="例：28" step="0.1" style="width:120px">
+  </div>
+
+  <div class="block">
     <div class="block-title">冰箱溫度（點擊填寫）</div>
     <div class="fridge-grid" id="fridge-grid"></div>
   </div>
@@ -513,6 +529,16 @@ document.getElementById('overlay').addEventListener('click', function(e){
 });
 
 // ── 儲存（呼叫 API）
+var selWeatherT = '晴天';
+function pickWeatherT(w){
+  selWeatherT = w;
+  var wmap = {晴天:'sunny',陰天:'cloudy',雨天:'rain',雷雨:'thunder',颱風:'typhoon'};
+  Object.keys(wmap).forEach(function(k){
+    var el = document.getElementById('wb-'+wmap[k]);
+    if(el) el.classList.toggle('on', k===w);
+  });
+}
+
 function doSave() {
   if (!selYM || !selDay) { showToast('請選擇月份與日期'); return; }
   var sign = document.getElementById('emp-sel').value;
@@ -524,7 +550,8 @@ function doSave() {
   btn.textContent = '儲存中…';
 
   var note = document.getElementById('f-note').value.trim();
-  var params = { action: 'saveTempRec', ym: selYM, day: selDay, time: selTime, sign: sign, note: note };
+  var outdoorTemp = document.getElementById('f-outdoor-temp').value.trim();
+  var params = { action: 'saveTempRec', ym: selYM, day: selDay, time: selTime, sign: sign, note: note, weather: selWeatherT, outdoorTemp: outdoorTemp };
   temps.forEach(function(v, i){ params['t'+(i+1)] = v; });
 
   api(params).then(function(res) {
@@ -532,6 +559,8 @@ function doSave() {
       temps = ['','','','','','','',''];
       refreshGrid();
       document.getElementById('f-note').value = '';
+      document.getElementById('f-outdoor-temp').value = '';
+      pickWeatherT('晴天');
       showToast('✓ ' + (res.message || '已儲存！'));
     } else {
       showToast('✗ ' + (res.error || '儲存失敗'));

@@ -344,7 +344,6 @@ function renderList(){
         +usageHtml
         +(r.note?'<div class="rc-note">📌 '+r.note+'</div>':'<div style="flex:1"></div>')
         +'<button class="rc-edit" data-id="'+r.id+'" onclick="event.stopPropagation();openEdit(this.dataset.id)">修改</button>'
-        +'<button class="rc-del" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C" data-date="'+r.date+'" data-reading="'+r.reading+'" data-note="'+(r.note||'')+'" onclick="event.stopPropagation();sendElecLineNotify(this.dataset.date,parseInt(this.dataset.reading),this.dataset.note)">📲</button>'
         +'<button class="rc-del" data-id="'+r.id+'" onclick="event.stopPropagation();delRec(this.dataset.id)">刪除</button>'
       +'</div>'
     +'</div>';
