@@ -102,6 +102,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 
 .empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+.np-backdrop{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)}
+.np-backdrop.show{display:block}
+.np-wrap{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;z-index:501;padding:12px 14px 32px;max-width:540px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.15);transform:translateY(100%);transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.np-wrap.show{transform:translateY(0)}
+.np-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.np-label-row{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;margin-bottom:4px}
+.np-display{font-size:38px;font-weight:900;color:var(--ink);letter-spacing:-.5px;min-height:48px;margin-bottom:10px}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.npk{padding:15px;border-radius:8px;border:none;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:#f3f6fa;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.npk:active{background:#dde3ea;transform:scale(.94)}
+.npk-del{background:#fff8e1;color:#f59c00}
+.npk-clear{background:#fdecea;color:#d32f2f;font-size:13px;font-weight:800}
+.np-ok{width:100%;padding:14px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -138,7 +151,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     </div>
     <div class="field">
       <label class="field-label">電表讀數（度）</label>
-      <input type="number" id="f-reading" placeholder="例：65810" inputmode="decimal">
+      <input type="text" id="f-reading" placeholder="例：65810" readonly onfocus="npOpen(this,'電表讀數')">
     </div>
     <div class="field">
       <label class="field-label">特殊備注（選填）</label>
@@ -170,7 +183,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div class="sec-lbl" style="margin-top:0">日期</div>
     <input type="date" id="edit-date" class="edit-inp">
     <div class="sec-lbl">電表讀數（度）</div>
-    <input type="number" id="edit-reading" class="edit-inp" inputmode="decimal">
+    <input type="text" id="edit-reading" class="edit-inp" readonly onfocus="npOpen(this,'電表讀數')">
     <div class="sec-lbl">特殊備注</div>
     <textarea id="edit-note" class="edit-inp" style="resize:none;height:80px" placeholder="備注說明（可留空）"></textarea>
     <button class="sh-ok" onclick="saveEdit()">✓ 儲存修改</button>
@@ -203,6 +216,35 @@ var INIT_DATA=[
 ];
 
 var records;
+
+var _np = {el:null, label:'', val:'0'};
+function npOpen(el, label){
+  _np.el = el; _np.label = label;
+  _np.val = (el.value && el.value !== '0') ? String(el.value) : '0';
+  document.getElementById('np-lbl').textContent = label;
+  document.getElementById('np-disp').textContent = _np.val;
+  document.getElementById('np-bd').classList.add('show');
+  document.getElementById('np-wrap').classList.add('show');
+  setTimeout(function(){ el.blur(); }, 10);
+}
+function npClose(){
+  document.getElementById('np-bd').classList.remove('show');
+  document.getElementById('np-wrap').classList.remove('show');
+}
+function npK(k){
+  var v = _np.val === '0' ? '' : _np.val;
+  if(k==='C')      { _np.val = '0'; }
+  else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
+  else if(k==='.'){ if(v.indexOf('.')===-1) _np.val = (v||'0')+'.'; }
+  else if(k==='-'){ _np.val = _np.val.startsWith('-') ? _np.val.slice(1) : '-'+_np.val; }
+  else             { if(v.replace('-','').replace('.','').length >= 6) return; _np.val = (v||'')+k; }
+  document.getElementById('np-disp').textContent = _np.val;
+}
+function npDone(){
+  if(_np.el){ _np.el.value = _np.val === '0' ? '' : _np.val; }
+  npClose();
+}
+
 var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
 
 function api(params, cb){
@@ -564,5 +606,28 @@ function sendElecLineNotify(date, reading, note){
 
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 </script>
+
+<!-- 數字小鍵盤 -->
+<div class="np-backdrop" id="np-bd" onclick="npClose()"></div>
+<div class="np-wrap" id="np-wrap">
+  <div class="np-handle"></div>
+  <div class="np-label-row" id="np-lbl"></div>
+  <div class="np-display" id="np-disp">0</div>
+  <div class="np-grid">
+    <button class="npk" onclick="npK('7')">7</button>
+    <button class="npk" onclick="npK('8')">8</button>
+    <button class="npk" onclick="npK('9')">9</button>
+    <button class="npk" onclick="npK('4')">4</button>
+    <button class="npk" onclick="npK('5')">5</button>
+    <button class="npk" onclick="npK('6')">6</button>
+    <button class="npk" onclick="npK('1')">1</button>
+    <button class="npk" onclick="npK('2')">2</button>
+    <button class="npk" onclick="npK('3')">3</button>
+    <button class="npk npk-clear" onclick="npK('C')">清除</button>
+    <button class="npk" onclick="npK('0')">0</button>
+    <button class="npk npk-del" onclick="npK('DEL')">⌫</button>
+  </div>
+  <button class="np-ok" onclick="npDone()">✓ 確認</button>
+</div>
 </body>
 </html>
