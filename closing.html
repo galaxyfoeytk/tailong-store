@@ -166,21 +166,11 @@ canvas{width:100%!important}
       <div class="field-grid grid-2" style="margin-bottom:10px">
         <div class="field highlight"><label>💵 總營業額</label><input id="f-revenue" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'💵 總營業額')"></div>
         <div class="field highlight"><label>🧾 單號（張數）</label><input id="f-receipt" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧾 單號')"></div>
-        <!-- 天氣 -->
-        <div class="field">
-          <label>🌤 天氣</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-            <button class="weather-btn on" id="wb-sunny"    onclick="pickWeather('晴天')"   >☀️ 晴天</button>
-            <button class="weather-btn"    id="wb-cloudy"   onclick="pickWeather('陰天')"   >☁️ 陰天</button>
-            <button class="weather-btn"    id="wb-rain"     onclick="pickWeather('雨天')"   >🌧 雨天</button>
-            <button class="weather-btn"    id="wb-thunder"  onclick="pickWeather('雷雨')"   >⛈ 雷雨</button>
-            <button class="weather-btn"    id="wb-typhoon"  onclick="pickWeather('颱風')"   >🌀 颱風</button>
-          </div>
-        </div>
-        <!-- 外送 -->
-        <div class="field-grid grid-3" style="margin-top:6px">
+        <div class="field-grid grid-2" style="margin-top:6px">
           <div class="field"><label>🛵 外送單數</label><input id="f-delivery-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🛵 外送單數')"></div>
           <div class="field"><label>🥤 外送杯數</label><input id="f-delivery-cups" placeholder="0" type="text" readonly onfocus="npOpen(this,'🥤 外送杯數')"></div>
+        </div>
+        <div class="field-grid grid-2" style="margin-top:6px">
           <div class="field"><label>💰 外送金額</label><input id="f-delivery-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 外送金額')"></div>
         </div>
       </div>
@@ -246,6 +236,7 @@ canvas{width:100%!important}
     <div class="section-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
         <div>
+          <div class="calc-row"><span class="calc-label">外送單數</span><span class="calc-value" id="c-delivery">—</span></div>
           <div class="calc-row"><span class="calc-label">總杯數</span><span class="calc-value big" id="c-total-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">取寄杯數</span><span class="calc-value" id="c-take-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">寄杯組金額</span><span class="calc-value" id="c-dep-amt">0 元</span></div>
@@ -430,16 +421,6 @@ function npDone(){
   recalcAll();
 }
 
-// ── 天氣選擇 ────────────────────────────────────────────────
-var selectedWeather = '晴天';
-function pickWeather(w){
-  selectedWeather = w;
-  var wmap = {晴天:'sunny',陰天:'cloudy',雨天:'rain',雷雨:'thunder',颱風:'typhoon'};
-  Object.keys(wmap).forEach(function(k){
-    document.getElementById('wb-'+wmap[k]).classList.toggle('on', k===w);
-  });
-}
-
 function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
 function pct(n,d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
 
@@ -502,6 +483,9 @@ function recalcAll(){
   var demoCups   = getNum('f-demo-cups');
   var demoConv   = getNum('f-demo-convert');
 
+  var dCnt = getNum('f-delivery-cnt'), dCups = getNum('f-delivery-cups'), dAmt = getNum('f-delivery-amt');
+  var dEl = document.getElementById('c-delivery');
+  if(dEl) dEl.textContent = dCnt>0 ? dCnt+'單 '+dCups+'杯 $'+dAmt : '—';
   document.getElementById('c-total-cups').textContent = totalCups;
   document.getElementById('c-take-cups').textContent  = takeCups;
   document.getElementById('c-dep-amt').textContent    = depAmt > 0 ? depAmt.toLocaleString()+' 元' : '0 元';
@@ -535,7 +519,6 @@ function submitForm(){
   var params = {
     action: 'closingSave',
     date: date, person: person,
-    weather:      selectedWeather,
     deliveryCnt:  getNum('f-delivery-cnt'),
     deliveryCups: getNum('f-delivery-cups'),
     deliveryAmt:  getNum('f-delivery-amt'),
@@ -574,9 +557,8 @@ function submitForm(){
     sendClosingLineNotify(params);
     // 清空數值欄位
     ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt'].forEach(function(id){
-      document.getElementById(id).value = '';
+      var el = document.getElementById(id); if(el) el.value = '';
     });
-    pickWeather('晴天');
     PRODUCTS.forEach(function(p){
       document.getElementById('f-buy-'+p.key).value = 0;
       document.getElementById('f-take-'+p.key).value = 0;
@@ -652,12 +634,12 @@ function sendClosingLineNotify(p){
     if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
   });
 
-  if(n('deliveryCnt')>0 || n('deliveryAmt')>0){
+  if(n('deliveryCnt')>0 || n('deliveryAmt')>0 || n('deliveryCups')>0){
     lines.push('');
-    var deliveryLine = '🛵 外送　'+n('deliveryCnt')+'單';
-    if(n('deliveryCups')>0) deliveryLine += '　'+n('deliveryCups')+'杯';
-    if(n('deliveryAmt')>0) deliveryLine += '　$'+Number(n('deliveryAmt')).toLocaleString();
-    lines.push(deliveryLine);
+    var dLine = '🛵 外送　'+n('deliveryCnt')+'單';
+    if(n('deliveryCups')>0) dLine += '　'+n('deliveryCups')+'杯';
+    if(n('deliveryAmt')>0) dLine += '　$'+Number(n('deliveryAmt')).toLocaleString();
+    lines.push(dLine);
   }
 
   lines.push('');
@@ -681,13 +663,19 @@ function sendClosingLineNotify(p){
 
     var extraLines = [];
 
-    // 天氣氣溫（來自溫度系統）
-    if(done.weather && done.weather.ok && done.weather.weather){
-      var wIcon = {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'}[done.weather.weather]||'';
-      var wLine = '🌡 天氣：'+wIcon+done.weather.weather;
-      if(done.weather.outdoorTemp!=='') wLine += '　氣溫：'+done.weather.outdoorTemp+'°C';
+    // 天氣氣溫（來自溫度系統，顯示三個時段）
+    if(done.weather && done.weather.ok && done.weather.times && done.weather.times.length){
+      var wIcon = {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
+      var timeLabel = {'10':'上午','14':'下午','18':'傍晚'};
       extraLines.push('');
-      extraLines.push(wLine);
+      extraLines.push('🌡 今日天氣氣溫 ─────────');
+      done.weather.times.forEach(function(t){
+        var icon = wIcon[t.weather]||'';
+        var label = timeLabel[t.time]||t.time+'時';
+        var line = label+'　'+icon+t.weather;
+        if(t.outdoorTemp!==''&&t.outdoorTemp!==undefined) line += '　'+t.outdoorTemp+'°C';
+        extraLines.push(line);
+      });
     }
 
     // 電表
