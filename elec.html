@@ -403,8 +403,6 @@ function doSave(){
   saveData();
   // 同步到 Sheets
   api({action:'elecSave',date:date,reading:rv,note:note,id:records[records.length-1].id},null);
-  // 計算用電量傳 LINE
-  sendElecLineNotify(date, rv, note);
   document.getElementById('f-reading').value='';
   document.getElementById('f-note').value='';
   document.getElementById('f-date').value=todayStr();
