@@ -512,6 +512,23 @@ tbody tr:hover td{background:#FAFCFF}
             <div><span class="badge r8">8</span> 外部顧問</div>
           </div>
         </div>
+
+        <!-- LINE 成員管理 -->
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="card-title" style="margin:0">📲 LINE 成員管理</div>
+            <button class="btn btn-primary btn-sm" onclick="loadLineMembers()">🔄 重新整理</button>
+          </div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">
+            成員在群組傳 <b style="color:var(--ink)">「報到 姓名」</b> 後會自動出現在這裡。也可以手動新增。
+          </div>
+          <div id="line-member-list"><div class="empty">載入中...</div></div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <input id="lm-name" placeholder="姓名" style="flex:1;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
+            <input id="lm-uid"  placeholder="userId（U開頭）" style="flex:2;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
+            <button class="btn btn-primary btn-sm" onclick="addLineMember()">新增</button>
+          </div>
+        </div>
       </div>
 
     </div><!-- /content-area -->
@@ -720,7 +737,7 @@ function showPage(p){
     document.getElementById('frame-'+p).src=p+'.html';
     framesLoaded[p]=true;
   }
-  if(p==='accounts') loadAccounts();
+  if(p==='accounts'){ loadAccounts(); loadLineMembers(); }
 }
 
 function toggleMenu(){ document.getElementById('sidebar').classList.toggle('open'); }
@@ -776,6 +793,59 @@ function saveAcc(){
     if(d&&d.ok){ closeOv('acc'); loadAccounts(); showToast('✓ '+d.message); }
     else showToast(d&&d.error||'儲存失敗');
   });
+}
+
+// ── LINE 成員管理 ─────────────────────────────────────────────
+function loadLineMembers(){
+  var el = document.getElementById('line-member-list');
+  if(!el) return;
+  el.innerHTML = '<div class="empty">載入中...</div>';
+  api({action:'getGroupMembers'}, function(d){
+    if(!d||!d.ok){ el.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    if(!d.members||!d.members.length){
+      el.innerHTML='<div class="empty">尚無成員，請在群組傳「報到 姓名」</div>'; return;
+    }
+    var html = '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr style="background:#f5f7fa"><th style="padding:7px 10px;text-align:left;font-size:12px;color:var(--ink3)">姓名</th><th style="padding:7px 10px;text-align:left;font-size:12px;color:var(--ink3)">userId</th><th style="padding:7px 10px;width:60px"></th></tr></thead><tbody>';
+    d.members.forEach(function(m){
+      html += '<tr style="border-top:1px solid var(--bd)">'+
+        '<td style="padding:8px 10px;font-weight:700">'+m.name+'</td>'+
+        '<td style="padding:8px 10px;font-size:11px;color:var(--ink3);font-family:monospace">'+m.userId+'</td>'+
+        '<td style="padding:8px 10px">'+
+          '<button onclick="deleteLineMember(\''+m.userId+'\')" style="padding:3px 8px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--red);font-size:12px;cursor:pointer">刪除</button>'+
+        '</td>'+
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  });
+}
+
+function addLineMember(){
+  var name = document.getElementById('lm-name').value.trim();
+  var uid  = document.getElementById('lm-uid').value.trim();
+  if(!name){ showToastG('請填入姓名'); return; }
+  if(!uid||!uid.startsWith('U')){ showToastG('userId 格式錯誤（需 U 開頭）'); return; }
+  api({action:'setMemberName', userId:uid, name:name}, function(d){
+    if(d&&d.ok){
+      document.getElementById('lm-name').value='';
+      document.getElementById('lm-uid').value='';
+      loadLineMembers();
+      showToastG('✓ 已新增：'+name);
+    }
+  });
+}
+
+function deleteLineMember(uid){
+  if(!confirm('確定刪除此成員？')) return;
+  api({action:'deleteLineMember', userId:uid}, function(d){
+    if(d&&d.ok){ loadLineMembers(); showToastG('✓ 已刪除'); }
+  });
+}
+
+function showToastG(m){
+  var t=document.getElementById('toast');
+  if(t){ t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 }
 
 function loadAccounts(){
