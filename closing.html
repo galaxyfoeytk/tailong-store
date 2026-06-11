@@ -166,6 +166,7 @@ canvas{width:100%!important}
       <div class="field-grid grid-2" style="margin-bottom:10px">
         <div class="field highlight"><label>💵 總營業額</label><input id="f-revenue" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'💵 總營業額')"></div>
         <div class="field highlight"><label>🧾 單號（張數）</label><input id="f-receipt" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧾 單號')"></div>
+        <div class="field highlight"><label>⏱ 今日時數</label><input id="f-hours" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'⏱ 今日時數')"></div>
         <div class="field-grid grid-2" style="margin-top:6px">
           <div class="field"><label>🛵 外送單數</label><input id="f-delivery-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🛵 外送單數')"></div>
           <div class="field"><label>🥤 外送杯數</label><input id="f-delivery-cups" placeholder="0" type="text" readonly onfocus="npOpen(this,'🥤 外送杯數')"></div>
@@ -245,6 +246,9 @@ canvas{width:100%!important}
           <div class="calc-row"><span class="calc-label">風味總杯數</span><span class="calc-value" id="c-flav">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲杯總數</span><span class="calc-value" id="c-demo-cups">0</span></div>
           <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
+          <div class="calc-row" style="margin-top:6px;border-top:1px solid var(--bd);padding-top:6px"><span class="calc-label">時數表</span><span class="calc-value" id="c-hour-sales">—</span></div>
+          <div class="calc-row"><span class="calc-label">平時數</span><span class="calc-value" id="c-avg-hour">—</span></div>
+          <div class="calc-row"><span class="calc-label">每日盈虧</span><span class="calc-value" id="c-profit" style="font-weight:900"></span></div>
         </div>
         <div style="padding-left:16px;border-left:1px solid var(--bd)">
           <div class="calc-row"><span class="calc-label">仙草凍/總佔比</span><span class="calc-value green" id="c-jelly-ratio">—</span></div>
@@ -259,7 +263,20 @@ canvas{width:100%!important}
     </div>
   </div>
 
-  <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
+    <!-- 時數比設定 -->
+    <details id="cfg-section" style="margin:0 0 8px">
+      <summary style="padding:10px 14px;font-size:12px;color:var(--ink3);cursor:pointer;user-select:none;background:var(--bg);border-radius:var(--r2)">⚙️ 時數比設定（點擊展開）</summary>
+      <div style="padding:10px 14px;background:var(--bg);border-radius:0 0 var(--r2) var(--r2);border-top:1px solid var(--bd)">
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">平時數 = (每日工資 + 月租/26 + 月水電/26) ÷ 時數</div>
+        <div class="field-grid grid-3" style="margin-bottom:8px">
+          <div class="field"><label>👤 每日工資</label><input id="cfg-wage" placeholder="225" type="text" readonly onfocus="npOpen(this,'每日工資')"></div>
+          <div class="field"><label>🏠 月租金</label><input id="cfg-rent" placeholder="1300" type="text" readonly onfocus="npOpen(this,'月租金')"></div>
+          <div class="field"><label>💡 月水電</label><input id="cfg-utility" placeholder="500" type="text" readonly onfocus="npOpen(this,'月水電')"></div>
+        </div>
+        <button onclick="saveClosingConfig()" style="padding:7px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">儲存設定</button>
+      </div>
+    </details>
+    <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
   <div style="height:20px"></div>
 </div>
 </div>
@@ -351,6 +368,7 @@ window.onload = function(){
   var today = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   document.getElementById('f-date').value = today;
   document.getElementById('today-label').textContent = today;
+  loadClosingConfig();
 
   // 人員下拉
   var sel = document.getElementById('f-person');
@@ -419,6 +437,26 @@ function npDone(){
   npClose();
   // 每次確認後都重新計算（不論哪個欄位）
   recalcAll();
+}
+
+function loadClosingConfig(){
+  api({action:'getClosingConfig'}, function(d){
+    if(!d||!d.ok) return;
+    var set = function(id, v){ var el=document.getElementById(id); if(el&&v) el.value=v; };
+    set('cfg-wage',    d.wage||225);
+    set('cfg-rent',    d.rent||1300);
+    set('cfg-utility', d.utility||500);
+    recalcAll();
+  });
+}
+function saveClosingConfig(){
+  var wage    = parseFloat(document.getElementById('cfg-wage').value)||225;
+  var rent    = parseFloat(document.getElementById('cfg-rent').value)||1300;
+  var utility = parseFloat(document.getElementById('cfg-utility').value)||500;
+  api({action:'setClosingConfig', wage:wage, rent:rent, utility:utility}, function(d){
+    showToast(d&&d.ok ? '✓ 設定已儲存' : '儲存失敗');
+    recalcAll();
+  });
 }
 
 function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
@@ -501,6 +539,27 @@ function recalcAll(){
   document.getElementById('c-return-pct').textContent = pct(retCust,    receipt);
   document.getElementById('c-jello-ret').textContent  = pct(jelloRet,   receipt);
   document.getElementById('c-jello-direct').textContent = pct(jelloDirect, receipt);
+
+  // 時數比
+  var hours = getNum('f-hours');
+  var wage  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
+  var rent  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
+  var util  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
+  var fixedDay  = wage + rent/26 + util/26;
+  var avgHour   = hours>0 ? (fixedDay/hours).toFixed(1) : null;
+  var hourSale  = hours>0 ? (revenue/hours).toFixed(1)  : null;
+  var profitVal = hours>0 ? ((parseFloat(hourSale)-parseFloat(avgHour))*hours*0.5).toFixed(0) : null;
+  var hSalesEl = document.getElementById('c-hour-sales');
+  var hAvgEl   = document.getElementById('c-avg-hour');
+  var hProfEl  = document.getElementById('c-profit');
+  if(hSalesEl) hSalesEl.textContent = hourSale  ? hourSale+' 元/時' : '—';
+  if(hAvgEl)   hAvgEl.textContent   = avgHour   ? avgHour+' 元/時'  : '—';
+  if(hProfEl){
+    if(profitVal!==null){
+      hProfEl.textContent = (profitVal>=0?'+':'')+profitVal+' 元';
+      hProfEl.style.color = profitVal>=0 ? 'var(--g)' : 'var(--red)';
+    } else { hProfEl.textContent='—'; hProfEl.style.color=''; }
+  }
 }
 
 // ── 提交 ─────────────────────────────────────────
@@ -522,6 +581,7 @@ function submitForm(){
     deliveryCnt:  getNum('f-delivery-cnt'),
     deliveryCups: getNum('f-delivery-cups'),
     deliveryAmt:  getNum('f-delivery-amt'),
+    hours:        getNum('f-hours'),
     revenue: getNum('f-revenue'),
     receiptCount: getNum('f-receipt'),
     sealMachine:  getNum('f-seal'),
@@ -556,7 +616,7 @@ function submitForm(){
     showToast('✓ 收班記錄已儲存！');
     sendClosingLineNotify(params);
     // 清空數值欄位
-    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt'].forEach(function(id){
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-hours'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.value = '';
     });
     PRODUCTS.forEach(function(p){
@@ -652,6 +712,20 @@ function sendClosingLineNotify(p){
   if(n('demoCups')>0){
     lines.push('');
     lines.push('🥛 試飲　'+p.demoFocus+' '+n('demoCups')+'杯 → 轉換'+n('demoConvert')+'人（'+pct(n('demoConvert'),n('demoCups'))+'）');
+  }
+
+  if(n('hours')>0){
+    var wage2  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
+    var rent2  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
+    var util2  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
+    var fixD   = wage2+rent2/26+util2/26;
+    var hSale  = (n('revenue')/n('hours')).toFixed(1);
+    var avgH   = (fixD/n('hours')).toFixed(1);
+    var prof   = ((parseFloat(hSale)-parseFloat(avgH))*n('hours')*0.5).toFixed(0);
+    lines.push('');
+    lines.push('⏱ 時數比（'+n('hours')+'時）');
+    lines.push('時數表：'+hSale+' 元/時　平時數：'+avgH+' 元/時');
+    lines.push('每日盈虧：'+(prof>=0?'+':'')+prof+' 元');
   }
 
   var closingMsg = lines.join('\n');
