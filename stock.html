@@ -206,6 +206,7 @@ tbody tr:last-child td{border-bottom:none}
 <div class="topbar">
   <div>
     <div class="brand-name">📦 進貨盤點</div>
+    <button onclick="openNotifySettings()" style="padding:5px 10px;font-size:12px;background:#E8F5E9;color:#1A6B3C;border:1px solid #1A6B3C;border-radius:16px;cursor:pointer;font-family:inherit">📲 @ 設定</button>
     <div class="brand-sub">瀧飲山潮 · 學士店</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -1266,7 +1267,6 @@ function sendStockLineNotify(rec){
     '來源：'+rec.src,
   ];
 
-  // 數量
   var qtys = [];
   rec.units.forEach(function(u){
     var q = rec.unitQtys[u.n];
@@ -1274,17 +1274,89 @@ function sendStockLineNotify(rec){
   });
   if(qtys.length) lines.push('數量：'+qtys.join('、'));
 
-  // 金額
   if(rec.expense && rec.amt>0){
     lines.push('金額：$'+Number(rec.amt).toLocaleString()+(rec.invoice?' ✅發票':''));
   }
 
   if(rec.note) lines.push('備注：'+rec.note);
 
-  var msg = lines.join('\n');
-  apiCall({action:'sendLine', msg:msg}, function(d){
-    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+  // 查設定的 @ 人員
+  apiCall({action:'getGroupMembers'}, function(d){
+    var msg = lines.join('\n');
+    var mentionIds = [];
+    if(d && d.ok && d.members && d.members.length > 0 && stockNotifyUids.length > 0){
+      mentionIds = stockNotifyUids;
+    }
+    // 若有設定 @ 人員，附上名字
+    if(mentionIds.length > 0 && stockNotifyNames.length > 0){
+      msg += '\n' + stockNotifyNames.map(function(n){ return '@'+n; }).join(' ');
+    }
+    apiCall({action:'sendLine', msg:msg}, function(r){
+      if(r&&r.ok) showToast('✓ 已傳送 LINE 通知');
+    });
   });
+}
+
+// ── 進貨通知 @ 設定 ───────────────────────────────────────────
+var stockNotifyUids  = JSON.parse(localStorage.getItem('stock_notify_uids') ||'[]');
+var stockNotifyNames = JSON.parse(localStorage.getItem('stock_notify_names')||'[]');
+
+function openNotifySettings(){
+  apiCall({action:'getGroupMembers'}, function(d){
+    if(!d||!d.ok||!d.members||!d.members.length){
+      showToast('尚無群組成員記錄，請群組成員先傳一則訊息');
+      return;
+    }
+    // 顯示成員列表讓用戶選擇要 @ 誰
+    var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:flex-end">'+
+      '<div style="background:#fff;width:100%;border-radius:16px 16px 0 0;padding:16px;max-height:80vh;overflow-y:auto">'+
+      '<div style="font-weight:700;font-size:15px;margin-bottom:12px">📲 選擇進貨通知要 @ 的人員</div>';
+
+    d.members.forEach(function(m){
+      var uid = m.userId;
+      var name = (window._memberNames&&window._memberNames[uid]) || '';
+      var checked = stockNotifyUids.indexOf(uid) > -1;
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">'+
+        '<input type="checkbox" id="chk_'+uid+'" '+(checked?'checked':'')+' style="width:18px;height:18px">'+
+        '<input type="text" placeholder="輸入此人的LINE名字" value="'+name+'" id="name_'+uid+'" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px">'+
+        '<span style="font-size:10px;color:#999">'+uid.slice(0,8)+'...</span>'+
+      '</div>';
+    });
+
+    html += '<div style="display:flex;gap:8px;margin-top:12px">'+
+      '<button onclick="saveNotifySettings('+JSON.stringify(d.members)+')" style="flex:1;padding:12px;background:#1A3A5C;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700">儲存</button>'+
+      '<button onclick="document.getElementById(\'notify-modal\').remove()" style="padding:12px 16px;background:#f0f0f0;border:none;border-radius:8px;font-size:14px">取消</button>'+
+    '</div></div></div>';
+
+    var modal = document.createElement('div');
+    modal.id = 'notify-modal';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+
+    // 載入名字
+    apiCall({action:'getGroupMembers'}, function(){});
+  });
+}
+
+function saveNotifySettings(members){
+  var uids=[], names=[];
+  members.forEach(function(m){
+    var uid = m.userId;
+    var chk = document.getElementById('chk_'+uid);
+    var nameEl = document.getElementById('name_'+uid);
+    if(chk&&chk.checked&&nameEl&&nameEl.value.trim()){
+      uids.push(uid);
+      names.push(nameEl.value.trim());
+      // 儲存名字到後端
+      apiCall({action:'setMemberName', userId:uid, name:nameEl.value.trim()}, null);
+    }
+  });
+  stockNotifyUids  = uids;
+  stockNotifyNames = names;
+  localStorage.setItem('stock_notify_uids',  JSON.stringify(uids));
+  localStorage.setItem('stock_notify_names', JSON.stringify(names));
+  document.getElementById('notify-modal').remove();
+  showToast('✓ 通知設定已儲存，將 @ '+names.join('、'));
 }
 
 function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);}
