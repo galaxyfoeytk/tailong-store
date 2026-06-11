@@ -439,6 +439,10 @@ function npDone(){
   recalcAll();
 }
 
+var _todayChecksLoaded  = false;
+var _todayElecChecked   = false;
+var _todayWeatherChecked= false;
+
 function loadClosingConfig(){
   api({action:'getClosingConfig'}, function(d){
     if(!d||!d.ok) return;
@@ -570,6 +574,47 @@ function submitForm(){
   if(!date)   { showToast('請填入日期'); return; }
   if(!person) { showToast('請選擇人員'); return; }
   if(!revenue){ showToast('請填入總營業額'); return; }
+  if(!getNum('f-hours')){ showToast('請填入今日時數'); return; }
+
+  // 驗證今日電表是否已記錄
+  var elecOk = false;
+  (function(){
+    // 從本機快取或直接給過
+    elecOk = _todayElecChecked;
+  })();
+
+  // 驗證今日溫度是否已有天氣記錄
+  var weatherOk = false;
+  (function(){
+    weatherOk = _todayWeatherChecked;
+  })();
+
+  if(!_todayChecksLoaded){
+    // 尚未查詢，先查再送
+    showToast('⏳ 確認電表及天氣資料中...');
+    var checked = {elec:null, weather:null};
+    function tryCheck(){
+      if(checked.elec===null||checked.weather===null) return;
+      var errs=[];
+      if(!checked.elec)    errs.push('今日尚未記錄電表');
+      if(!checked.weather) errs.push('今日尚未記錄天氣');
+      if(errs.length){ showToast('❌ '+errs.join('、')); return; }
+      _todayElecChecked=true; _todayWeatherChecked=true; _todayChecksLoaded=true;
+      submitForm();
+    }
+    api({action:'elecGetAll'}, function(d){
+      checked.elec = d&&d.ok&&d.data&&d.data.some(function(r){ return r.date===date; });
+      tryCheck();
+    });
+    api({action:'getTodayWeather', date:date}, function(d){
+      checked.weather = d&&d.ok&&d.times&&d.times.length>0;
+      tryCheck();
+    });
+    return;
+  }
+
+  // 已通過驗證，重置後繼續送出
+  _todayChecksLoaded=false; _todayElecChecked=false; _todayWeatherChecked=false;
 
   var btn = document.querySelector('.submit-btn');
   btn.textContent = '⏳ 送出中...'; btn.disabled = true;
