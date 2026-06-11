@@ -1282,7 +1282,7 @@ function sendStockLineNotify(rec){
   if(rec.note) lines.push('備注：'+rec.note);
 
   var msg = lines.join('\n');
-  api({action:'sendLine', msg:msg}, function(d){
+  apiCall({action:'sendLine', msg:msg}, function(d){
     if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
   });
 }
