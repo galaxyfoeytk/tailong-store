@@ -682,8 +682,13 @@ function renderView(ym, list) {
         return '<div class="vt-box"><div class="vt-lbl">'+p+'</div><div class="vt-val '+cls+'">'+(v!==''?v+'°':'—')+'</div></div>';
       }).join('');
       var updAt = r.updatedAt ? '<span style="float:right;font-size:11px">'+r.updatedAt+'</span>' : '';
+      var weatherStr = '';
+      if(r.weather){
+        var wIcon = {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'}[r.weather]||'';
+        weatherStr = wIcon+r.weather+(r.outdoorTemp!==''?' '+r.outdoorTemp+'°C':'');
+      }
       return (ri>0?'<hr class="divider">':'')
-        +'<div class="t-tag">'+(tLabels[r.time]||r.time+':00')+'</div>'
+        +'<div class="t-tag">'+(tLabels[r.time]||r.time+':00')+(weatherStr?' <span style="font-size:12px;color:var(--ink3);font-weight:400;margin-left:6px">'+weatherStr+'</span>':'')+'</div>'
         +'<div class="view-temps">'+boxes+'</div>'
         +'<div class="sign-row">負責人：'+(r.sign||'—')+(r.note?' ・ '+r.note:'')+updAt+'</div>';
     }).join('');
