@@ -598,10 +598,10 @@ function submitForm(){
     function tryCheck(){
       if(checked.elec===null||checked.weather===null) return;
       var warns=[];
-      if(!checked.elec)    warns.push('今日尚未記錄電表');
-      if(!checked.weather) warns.push('今日尚未記錄天氣');
+      if(!checked.elec)    warns.push(date+' 尚未記錄電表');
+      if(!checked.weather) warns.push(date+' 尚未記錄天氣');
       if(warns.length){
-        if(!confirm('⚠️ '+warns.join('、')+'\n\n確定仍要送出收班記錄？')){
+        if(!confirm('⚠️ '+warns.join('\n')+'\n\n確定仍要送出收班記錄？')){
           _todayChecksLoaded=false; return;
         }
       }
