@@ -345,7 +345,8 @@ canvas{width:100%!important}
     <button class="npk" onclick="npK('3')">3</button>
     <button class="npk npk-clear" onclick="npK('C')">清除</button>
     <button class="npk" onclick="npK('0')">0</button>
-    <button class="npk npk-del" onclick="npK('DEL')">⌫</button>
+    <button class="npk" onclick="npK('.')">.</button>
+    <button class="npk npk-del" onclick="npK('DEL')" style="grid-column:span 1">⌫</button>
   </div>
   <button class="np-ok" onclick="npDone()">✓ 確認</button>
 </div>
@@ -427,7 +428,8 @@ function npK(k){
   var v = _np.val === '0' ? '' : _np.val;
   if(k==='C')     { _np.val = '0'; }
   else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
-  else            { if(v.length >= 7) return; _np.val = v+k; }
+  else if(k==='.'){ if(v.indexOf('.')===-1) _np.val = (v||'0')+'.'; }
+  else            { if(v.replace('.','').length >= 7) return; _np.val = v+k; }
   document.getElementById('np-disp').textContent = _np.val;
 }
 function npDone(){
