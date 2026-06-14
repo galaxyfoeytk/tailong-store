@@ -549,9 +549,11 @@ function recalcAll(){
   var wage  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
   var rent  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
   var util  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
-  var fixedDay  = wage + rent/26 + util/26;
-  var avgHour   = hours>0 ? (fixedDay/hours).toFixed(1) : null;
+  // 平時數 = (工資 + (房租+水電)/時數) / 毛利0.5
+  var avgHour   = hours>0 ? ((wage + (rent+util)/hours)/0.5).toFixed(1) : null;
+  // 時數表 = 總營業額 / 時數
   var hourSale  = hours>0 ? (revenue/hours).toFixed(1)  : null;
+  // 每日盈虧 = (時數表 - 平時數) × 時數 × 0.5
   var profitVal = hours>0 ? ((parseFloat(hourSale)-parseFloat(avgHour))*hours*0.5).toFixed(0) : null;
   var hSalesEl = document.getElementById('c-hour-sales');
   var hAvgEl   = document.getElementById('c-avg-hour');
@@ -767,9 +769,8 @@ function sendClosingLineNotify(p){
     var wage2  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
     var rent2  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
     var util2  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
-    var fixD   = wage2+rent2/26+util2/26;
     var hSale  = (n('revenue')/n('hours')).toFixed(1);
-    var avgH   = (fixD/n('hours')).toFixed(1);
+    var avgH   = ((wage2 + (rent2+util2)/n('hours'))/0.5).toFixed(1);
     var prof   = ((parseFloat(hSale)-parseFloat(avgH))*n('hours')*0.5).toFixed(0);
     lines.push('');
     lines.push('⏱ 時數比（'+n('hours')+'時）');
