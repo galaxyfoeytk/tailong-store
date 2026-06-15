@@ -411,6 +411,7 @@ window.onload=function(){
   document.getElementById('f-date').value=todayStr();
   document.getElementById('ice-date').value=todayStr();
   syncFromSheets();
+  syncIceFromSheets();
 };
 
 function buildMonthChips(){
@@ -573,6 +574,30 @@ function loadIceData(){
 }
 function saveIceData(){ try{ localStorage.setItem('ice_v1', JSON.stringify(iceRecords)); }catch(e){} }
 
+// 從 Sheets 同步製冰機記錄（以 Sheets 為主）
+function syncIceFromSheets(){
+  api({action:'iceGetAll'}, function(d, e){
+    if(e||!d||!d.ok||!d.data||!d.data.length) return;
+    var sheetsRecs = d.data.map(function(r){
+      return {
+        id: String(r.id),
+        date: String(r.date).replace(/\//g,'-').slice(0,10),
+        slots: typeof r.slots === 'string' ? JSON.parse(r.slots||'[]') : (r.slots||[]),
+        note: r.note||''
+      };
+    }).filter(function(r){ return r.date.match(/^\d{4}-\d{2}-\d{2}$/); });
+    if(!sheetsRecs.length) return;
+    var sheetsIds={};
+    sheetsRecs.forEach(function(r){ sheetsIds[r.id]=true; });
+    var localOnly = iceRecords.filter(function(r){ return !sheetsIds[String(r.id)]; });
+    iceRecords = sheetsRecs.concat(localOnly);
+    saveIceData();
+    var months=getIceMonths();
+    if(!selIceMonth) selIceMonth=months[months.length-1]||'';
+    buildIceMonthChips(); renderIceList();
+  });
+}
+
 function getIceMonths(){
   var m = {};
   iceRecords.forEach(function(r){ m[r.date.slice(0,7)] = true; });
@@ -596,14 +621,17 @@ function saveIceRecord(){
   if(!date){ showToast('請選擇日期'); return; }
   if(!slots.length){ showToast('請至少填一組開機時間'); return; }
   // 覆蓋同日
+  var existing = iceRecords.find(function(r){ return r.date === date; });
   iceRecords = iceRecords.filter(function(r){ return r.date !== date; });
-  iceRecords.push({ id: Date.now(), date: date, slots: slots, note: note });
+  var newId = existing ? existing.id : String(Date.now());
+  iceRecords.push({ id: newId, date: date, slots: slots, note: note });
   saveIceData();
+  // 同步到 Sheets
+  api({action:'iceSave', id:newId, date:date, slots:JSON.stringify(slots), note:note}, null);
   // 清空表單
   document.getElementById('ice-date').value = todayStr();
   document.getElementById('ice-add-slots').innerHTML = '';
   document.getElementById('ice-note').value = '';
-  // 重整列表
   var months = getIceMonths();
   selIceMonth = date.slice(0,7);
   buildIceMonthChips();
@@ -614,43 +642,97 @@ function saveIceRecord(){
 function renderIceList(){
   var el = document.getElementById('ice-list-content');
   var data = iceRecords.filter(function(r){ return r.date.startsWith(selIceMonth); });
-  data.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  data.sort(function(a,b){ return a.date.localeCompare(b.date); }); // 正序，方便圖表
+
   if(!data.length){ el.innerHTML='<div class="empty">此月份尚無製冰機記錄</div>'; return; }
 
-  // 月統計
+  // ── 計算統計 ──
   var totalMins = 0;
-  data.forEach(function(r){ totalMins += calcIceMins(r.slots||[]); });
+  var daysWithTime = 0;
+  data.forEach(function(r){
+    var m = calcIceMins(r.slots||[]);
+    totalMins += m;
+    if(m > 0) daysWithTime++;
+  });
   var iceDays = data.length;
+  var avgMins = daysWithTime > 0 ? Math.round(totalMins / daysWithTime) : 0;
+  var totalHours = (totalMins / 60).toFixed(1);
+  var avgHours   = (avgMins / 60).toFixed(1);
 
+  // ── 長條圖（每日開機時數）──
+  var maxMins = 0;
+  data.forEach(function(r){ var m=calcIceMins(r.slots||[]); if(m>maxMins) maxMins=m; });
+  var barHtml = '';
+  if(daysWithTime > 0){
+    barHtml = '<div class="chart-wrap" style="margin-bottom:10px">'
+      +'<div class="chart-title">每日開機時數（小時）</div>'
+      +'<div class="bar-chart" id="ice-bar-chart">'
+      + data.map(function(r){
+          var m = calcIceMins(r.slots||[]);
+          var h = (m/60).toFixed(1);
+          var barPct = maxMins > 0 ? Math.max(Math.round((m/maxMins)*100), m>0?4:0) : 0;
+          var cls = m > 480 ? 'high' : m > 0 && m < 60 ? 'low' : '';
+          return '<div class="bar-col">'
+            +'<div class="bar-val">'+(m>0?h:'—')+'</div>'
+            +'<div class="bar '+cls+'" style="height:'+barPct+'px" title="'+fmtDate(r.date)+': '+(m>0?h+'時':'未記錄')+'"></div>'
+            +'<div class="bar-lbl">'+r.date.slice(8)+'日</div>'
+          +'</div>';
+        }).join('')
+      +'</div></div>';
+  }
+
+  // ── 組合 HTML ──
+  var rev = data.slice().reverse(); // 列表倒序（新的在上）
   el.innerHTML =
-    '<div class="stat-row" style="margin-bottom:10px">'
-    +'<div class="stat-card"><div class="stat-lbl">本月開機天數</div><div class="stat-val" style="color:#1565C0">'+iceDays+'</div><div class="stat-sub">天</div></div>'
-    +'<div class="stat-card"><div class="stat-lbl">本月總開機時數</div><div class="stat-val" style="color:#1565C0">'+(totalMins?fmtMins(totalMins):'—')+'</div><div class="stat-sub">&nbsp;</div></div>'
+    // 月統計三欄
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+    +'<div class="stat-card"><div class="stat-lbl">開機天數</div><div class="stat-val" style="color:#1565C0">'+iceDays+'</div><div class="stat-sub">天（本月）</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">本月總時數</div><div class="stat-val" style="color:#1565C0">'+totalHours+'</div><div class="stat-sub">小時</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">平均每次</div><div class="stat-val" style="color:#1565C0">'+(daysWithTime>0?avgHours:'—')+'</div><div class="stat-sub">小時／天</div></div>'
     +'</div>'
-    + data.map(function(r){
-      var mins = calcIceMins(r.slots||[]);
-      var slotStr = (r.slots||[]).map(function(s){
-        return '🕐 '+s.on+(s.off?' → '+s.off:'起（未記錄關機）');
-      }).join('<br>');
-      return '<div class="rec-card">'
-        +'<div class="rc-head" style="background:linear-gradient(135deg,#1565C0,#1976D2)">'
-          +'<span class="rc-date">'+fmtDate(r.date)+'</span>'
-          +'<span class="rc-reading">'+(mins?'共開機 '+fmtMins(mins):'未記錄關機時間')+'</span>'
-        +'</div>'
-        +'<div style="padding:10px 14px;font-size:13px;color:var(--ink2);line-height:1.8">'+slotStr+'</div>'
-        +(r.note?'<div style="padding:0 14px 10px;font-size:12px;color:var(--amber)">📌 '+r.note+'</div>':'')
-        +'<div style="padding:0 14px 10px;display:flex;gap:8px;justify-content:flex-end">'
-          +'<button class="rc-edit" onclick="openIceEdit(\''+r.id+'\')">修改</button>'
-          +'<button class="rc-del" onclick="delIceRec(\''+r.id+'\')">刪除</button>'
-        +'</div>'
-      +'</div>';
-    }).join('');
+    // 長條圖
+    + barHtml
+    // 記錄列表
+    + rev.map(function(r){
+        var mins = calcIceMins(r.slots||[]);
+        var hours = (mins/60).toFixed(2);
+        // 每個時段的開機時數
+        var slotRows = (r.slots||[]).map(function(s){
+          var slotMins = 0;
+          if(s.on && s.off){
+            var on=s.on.split(':').map(Number), off=s.off.split(':').map(Number);
+            slotMins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+            if(slotMins < 0) slotMins = 0;
+          }
+          var slotHours = slotMins > 0 ? '（'+( slotMins/60).toFixed(2)+' 時）' : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);font-size:13px">'
+            +'<span>🕐 '+s.on+(s.off?' → '+s.off:'<span style="color:var(--amber)"> 未記錄關機</span>')+'</span>'
+            +(slotMins>0?'<span style="font-weight:700;color:#1565C0">'+slotHours+'</span>':'<span style="color:var(--amber);font-size:11px">未記錄</span>')
+          +'</div>';
+        }).join('');
+        var headBg = mins > 0
+          ? 'background:linear-gradient(135deg,#1565C0,#1976D2)'
+          : 'background:linear-gradient(135deg,#B85C00,#D97706)'; // 無時數用橘色警示
+        return '<div class="rec-card" style="margin-bottom:8px">'
+          +'<div class="rc-head" style="'+headBg+'">'
+            +'<span class="rc-date">'+fmtDate(r.date)+'</span>'
+            +'<span class="rc-reading">'+(mins>0?'共開機 '+hours+' 時（'+fmtMins(mins)+'）':'⚠️ 未記錄關機時間')+'</span>'
+          +'</div>'
+          +'<div style="padding:8px 14px">'+slotRows+'</div>'
+          +(r.note?'<div style="padding:0 14px 8px;font-size:12px;color:var(--amber)">📌 '+r.note+'</div>':'')
+          +'<div style="padding:0 14px 10px;display:flex;gap:8px;justify-content:flex-end">'
+            +'<button class="rc-edit" onclick="openIceEdit(\''+r.id+'\')">修改</button>'
+            +'<button class="rc-del" onclick="delIceRec(\''+r.id+'\')">刪除</button>'
+          +'</div>'
+        +'</div>';
+      }).join('');
 }
 
 function delIceRec(id){
   if(!confirm('確定刪除？')) return;
   iceRecords = iceRecords.filter(function(r){ return String(r.id) !== String(id); });
   saveIceData();
+  api({action:'iceDelete', id:id}, null);
   buildIceMonthChips(); renderIceList();
   showToast('已刪除');
 }
@@ -681,6 +763,7 @@ function saveIceEdit(){
   if(!slots.length){ showToast('請至少填一組開機時間'); return; }
   r.date = date; r.slots = slots; r.note = note;
   saveIceData();
+  api({action:'iceSave', id:r.id, date:date, slots:JSON.stringify(slots), note:note}, null);
   selIceMonth = date.slice(0,7);
   buildIceMonthChips(); renderIceList();
   closeIceEdit();
