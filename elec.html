@@ -449,15 +449,18 @@ function renderList(){
       usageHtml='<div class="rc-usage" style="font-size:16px;color:var(--ink3)">首筆</div>'
         +'<div class="rc-unit">無前日</div>';
     }
-    // 解包 note 顯示標籤
+    // 解包 note 顯示標籤（整合新系統 + 舊備注）
     var unpacked = unpackNote(r.note);
     var tags = '';
-    if(unpacked.ice && unpacked.ice.length){
-      var iceMins = calcIceMins(unpacked.ice);
-      var iceLabel = unpacked.ice.map(function(s){
+    // 優先用整合函式取製冰機資料（新系統 or 舊備注解析）
+    var iceData = getIceDataForDate(r.date);
+    if(iceData && iceData.slots && iceData.slots.length){
+      var iceMins = calcIceMins(iceData.slots);
+      var iceLabel = iceData.slots.map(function(s){
         return s.on+(s.off?' ~ '+s.off:'起');
       }).join('、');
-      tags += '<span class="rc-tag ice">🧊 '+iceLabel+(iceMins?' ('+fmtMins(iceMins)+')':'')+'</span>';
+      var srcMark = iceData.source==='note' ? '（備注）' : '';
+      tags += '<span class="rc-tag ice">🧊 '+iceLabel+(iceMins?' '+fmtMins(iceMins):'')+srcMark+'</span>';
     }
     if(unpacked.jelly !== null && unpacked.jelly !== undefined){
       tags += '<span class="rc-tag jelly">🫙 前日煮 '+unpacked.jelly+' 桶</span>';
@@ -521,7 +524,7 @@ function getIceSlotsFrom(containerId){
 }
 function calcIceMins(slots){
   var total = 0;
-  slots.forEach(function(s){
+  (slots||[]).forEach(function(s){
     if(!s.on || !s.off) return;
     var on  = s.on.split(':').map(Number);
     var off = s.off.split(':').map(Number);
@@ -534,6 +537,56 @@ function fmtMins(mins){
   if(!mins) return '';
   var h = Math.floor(mins/60), m = mins%60;
   return h > 0 ? h+'時'+(m?m+'分':'') : m+'分';
+}
+
+// ══════════════════════════════
+// 舊格式備注解析（電表備注中的製冰機文字）
+// 支援：0930開製冰機、09:45 開製冰機、10:05 開製冰機、17:00 關製冰機 等
+// ══════════════════════════════
+function parseIceFromNote(noteText){
+  if(!noteText) return [];
+  var parts = String(noteText).split(/[,，、；;]/);
+  var events = [];
+  parts.forEach(function(part){
+    part = part.trim();
+    if(!part) return;
+    var hasIce = /製冰|冰機/i.test(part);
+    if(!hasIce) return;
+    var isOpen  = /開|start/i.test(part);
+    var isClose = /關|stop|end/i.test(part);
+    var timeMatch = part.match(/(\d{1,2})[:：]?(\d{2})/);
+    if(!timeMatch) return;
+    var h = parseInt(timeMatch[1]), m = parseInt(timeMatch[2]);
+    if(h > 23 || m > 59) return;
+    var timeStr = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    events.push({ time:timeStr, isOpen:isOpen, isClose:isClose });
+  });
+  var slots = [];
+  var openTime = null;
+  events.forEach(function(ev){
+    if(ev.isOpen && !ev.isClose){ openTime = ev.time; }
+    else if(ev.isClose && openTime){ slots.push({on:openTime, off:ev.time}); openTime=null; }
+    else if(ev.isOpen){ if(openTime) slots.push({on:openTime, off:''}); openTime=ev.time; }
+    else if(ev.isClose && !openTime){ slots.push({on:'', off:ev.time}); }
+  });
+  if(openTime) slots.push({on:openTime, off:''});
+  return slots;
+}
+
+// 整合查詢某日製冰機資料（優先新系統，沒有則解析舊備注）
+function getIceDataForDate(date){
+  var iceRec = iceRecords.find(function(r){ return r.date===date; });
+  if(iceRec && iceRec.slots && iceRec.slots.length)
+    return { source:'new', slots:iceRec.slots, note:iceRec.note||'' };
+  var elecRec = records.find(function(r){ return r.date===date; });
+  if(elecRec && elecRec.note){
+    var raw = elecRec.note;
+    var noteText = '';
+    try { var obj=JSON.parse(raw); noteText=obj.note||''; } catch(e){ noteText=raw; }
+    var slots = parseIceFromNote(noteText);
+    if(slots.length) return { source:'note', slots:slots, note:noteText };
+  }
+  return null;
 }
 
 // ══════════════════════════════
@@ -881,41 +934,69 @@ function renderStats(){
     }).join('');
   }
 
-  // 製冰機 vs 用電分析（跨資料來源）
-  var iceByDate = {};
-  iceRecords.forEach(function(r){ iceByDate[r.date] = r.slots||[]; });
+  // 製冰機 vs 用電分析（整合新系統 + 舊備注格式）
   var iceUsages=[], noIceUsages=[];
+  // 每日製冰機時數 table（用於詳細列表）
+  var iceMinsTable = {};
   monthData.forEach(function(r){
-    var slots = iceByDate[r.date];
-    if(slots && slots.length) iceUsages.push(r.usage);
-    else noIceUsages.push(r.usage);
+    var iceData = getIceDataForDate(r.date);
+    if(iceData && iceData.slots && iceData.slots.length){
+      var mins = calcIceMins(iceData.slots);
+      iceUsages.push({usage:r.usage, mins:mins, date:r.date, source:iceData.source});
+      iceMinsTable[r.date] = mins;
+    } else {
+      noIceUsages.push(r.usage);
+    }
   });
   var avgArr = function(arr){ return arr.length ? Math.round(arr.reduce(function(s,v){return s+v;},0)/arr.length) : null; };
-  var iceAvg = avgArr(iceUsages), noIceAvg = avgArr(noIceUsages);
+  var iceUsageArr = iceUsages.map(function(x){ return x.usage; });
+  var iceAvg = avgArr(iceUsageArr), noIceAvg = avgArr(noIceUsages);
   var iceDiff = (iceAvg!==null && noIceAvg!==null) ? iceAvg-noIceAvg : null;
+  // 製冰機月總時數
+  var iceTotalMins = 0;
+  Object.keys(iceMinsTable).forEach(function(d){ iceTotalMins += iceMinsTable[d]; });
 
   // 仙草凍桶數 vs 用電分析
   var jellyCorr = [];
   monthData.forEach(function(r){
     var u = unpackNote(r.note);
-    if(u.jelly !== null) jellyCorr.push({jelly:u.jelly, usage:r.usage});
+    if(u.jelly !== null) jellyCorr.push({jelly:u.jelly, usage:r.usage, date:r.date});
   });
 
+  // 製冰機每日詳細列表（按日期正序）
+  var iceDetailHtml = '';
+  if(iceUsages.length){
+    iceUsages.sort(function(a,b){ return a.date.localeCompare(b.date); });
+    iceDetailHtml = '<div style="margin-top:10px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">每日開機時數明細</div>'
+      + iceUsages.map(function(x){
+          var h = x.mins > 0 ? (x.mins/60).toFixed(2)+'h' : '未記錄';
+          var srcTag = x.source==='note'
+            ? '<span style="font-size:10px;background:var(--amberl);color:var(--amber);padding:1px 5px;border-radius:4px;margin-left:4px">備注解析</span>'
+            : '<span style="font-size:10px;background:#E3F2FD;color:#1565C0;padding:1px 5px;border-radius:4px;margin-left:4px">製冰機系統</span>';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);font-size:13px">'
+            +'<span>'+fmtDate(x.date)+srcTag+'</span>'
+            +'<span><b style="color:#1565C0">'+h+'</b><span style="color:var(--ink3);font-size:11px;margin-left:4px">用電 '+x.usage+'度</span></span>'
+          +'</div>';
+        }).join('')
+    +'</div>';
+  }
+
   document.getElementById('notes-list').innerHTML =
-    // 製冰機比較卡
+    // 製冰機統計卡（三欄）
     '<div class="blk-title" style="margin:0 0 8px">🧊 製冰機 vs 用電</div>'
-    +(iceUsages.length || noIceUsages.length ?
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
-      +'<div class="stat-card"><div class="stat-lbl">有開製冰機</div><div class="stat-val" style="color:#1565C0">'+(iceAvg!==null?iceAvg:'—')+'</div><div class="stat-sub">度均 ('+iceUsages.length+'天)</div></div>'
-      +'<div class="stat-card"><div class="stat-lbl">未開製冰機</div><div class="stat-val">'+(noIceAvg!==null?noIceAvg:'—')+'</div><div class="stat-sub">度均 ('+noIceUsages.length+'天)</div></div>'
-      +'</div>'
-      +(iceDiff!==null ? '<div style="text-align:center;font-size:13px;padding:4px 0 10px">製冰機約 <strong style="color:'+(iceDiff>0?'var(--red)':'var(--gm)')+'">'+( iceDiff>0?'+':'')+iceDiff+' 度</strong> ／天</div>' : '')
-    : '<div class="empty" style="padding:10px 0">本月製冰機記錄不足，無法比較</div>')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="stat-card"><div class="stat-lbl">有開製冰機</div><div class="stat-val" style="color:#1565C0">'+(iceAvg!==null?iceAvg:'—')+'</div><div class="stat-sub">度均 ('+iceUsages.length+'天)</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">未開製冰機</div><div class="stat-val">'+(noIceAvg!==null?noIceAvg:'—')+'</div><div class="stat-sub">度均 ('+noIceUsages.length+'天)</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">月總開機</div><div class="stat-val" style="color:#1565C0">'+(iceTotalMins>0?(iceTotalMins/60).toFixed(1):'—')+'</div><div class="stat-sub">小時</div></div>'
+    +'</div>'
+    +(iceDiff!==null ? '<div style="text-align:center;font-size:13px;padding:4px 0 6px">製冰機約 <strong style="color:'+(iceDiff>0?'var(--red)':'var(--gm)')+'">'+( iceDiff>0?'+':'')+iceDiff+' 度</strong> ／天</div>' : '')
+    + iceDetailHtml
     // 仙草凍相關
     +(jellyCorr.length ?
-      '<div class="blk-title" style="margin:8px 0">🫙 仙草凍桶數記錄</div>'
+      '<div class="blk-title" style="margin:12px 0 6px">🫙 仙草凍桶數記錄</div>'
       +'<div style="font-size:12px;color:var(--ink3);margin-bottom:6px">前一天桶數 → 當日用電</div>'
-      + jellyCorr.map(function(j){ return '<div class="note-item"><span class="note-date">'+j.jelly+' 桶</span><span class="note-text">→ 用電 '+j.usage+' 度</span></div>'; }).join('')
+      + jellyCorr.map(function(j){ return '<div class="note-item"><span class="note-date">'+fmtDate(j.date)+'</span><span class="note-text">'+j.jelly+' 桶 → 用電 '+j.usage+' 度</span></div>'; }).join('')
     : '');
 }
 
