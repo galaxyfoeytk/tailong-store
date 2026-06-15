@@ -348,7 +348,10 @@ function syncFromSheets(){
         id: r.id,
         date: String(r.date).replace(/\//g,'-').slice(0,10),
         reading: parseInt(r.reading)||0,
-        note: r.note||''
+        note: r.note||'',
+        jellyCount: r.jellyCount||0,
+        iceMachineHours: parseFloat(r.iceMachineHours)||0,
+        noteText: r.noteText||''
       };
     });
     // 過濾掉日期格式不對的
@@ -449,24 +452,30 @@ function renderList(){
       usageHtml='<div class="rc-usage" style="font-size:16px;color:var(--ink3)">首筆</div>'
         +'<div class="rc-unit">無前日</div>';
     }
-    // 解包 note 顯示標籤（整合新系統 + 舊備注）
+    // 顯示標籤
     var unpacked = unpackNote(r.note);
     var tags = '';
-    // 優先用整合函式取製冰機資料（新系統 or 舊備注解析）
-    var iceData = getIceDataForDate(r.date);
-    if(iceData && iceData.slots && iceData.slots.length){
-      var iceMins = calcIceMins(iceData.slots);
-      var iceLabel = iceData.slots.map(function(s){
-        return s.on+(s.off?' ~ '+s.off:'起');
-      }).join('、');
-      var srcMark = iceData.source==='note' ? '（備注）' : '';
-      tags += '<span class="rc-tag ice">🧊 '+iceLabel+(iceMins?' '+fmtMins(iceMins):'')+srcMark+'</span>';
+    // 1. 製冰機（優先 Sheets 新欄位 → 整合函式解析）
+    if(r.iceMachineHours > 0){
+      tags += '<span class="rc-tag ice">🧊 製冰機 '+r.iceMachineHours+' 時</span>';
+    } else {
+      var iceData = getIceDataForDate(r.date);
+      if(iceData && iceData.slots && iceData.slots.length){
+        var iceMins = calcIceMins(iceData.slots);
+        var iceLabel = iceData.slots.map(function(s){ return s.on+(s.off?' ~ '+s.off:'起'); }).join('、');
+        var srcMark = iceData.source==='note' ? '（備注）' : '';
+        tags += '<span class="rc-tag ice">🧊 '+iceLabel+(iceMins?' '+fmtMins(iceMins):'')+srcMark+'</span>';
+      }
     }
-    if(unpacked.jelly !== null && unpacked.jelly !== undefined){
-      tags += '<span class="rc-tag jelly">🫙 前日煮 '+unpacked.jelly+' 桶</span>';
+    // 2. 仙草凍（優先 Sheets 新欄位 → JSON 備注）
+    var jellyShow = r.jellyCount > 0 ? r.jellyCount : unpacked.jelly;
+    if(jellyShow !== null && jellyShow !== undefined && jellyShow !== 0){
+      tags += '<span class="rc-tag jelly">🫙 前日煮 '+jellyShow+' 桶</span>';
     }
-    if(unpacked.note){
-      tags += '<span class="rc-tag note">📌 '+unpacked.note+'</span>';
+    // 3. 純文字備注
+    var noteShow = r.noteText || unpacked.note;
+    if(noteShow){
+      tags += '<span class="rc-tag note">📌 '+noteShow+'</span>';
     }
     return '<div class="rec-card">'
       +'<div class="rc-head">'
@@ -879,7 +888,15 @@ function doSave(){
   var newId = Date.now();
   records.push({id:newId, date:date, reading:rv, note:note});
   saveData();
-  api({action:'elecSave', date:date, reading:rv, note:note, id:newId}, null);
+  // 取製冰機當天時數（整合新系統 + 舊備注）
+  var _iceData = getIceDataForDate(date);
+  var _iceMins = _iceData ? calcIceMins(_iceData.slots) : 0;
+  var _iceHours = _iceMins > 0 ? Math.round(_iceMins/15)*0.25 : 0;
+  api({action:'elecSave', date:date, reading:rv,
+    jellyCount: jellyVal||0,
+    iceMachineHours: _iceHours,
+    noteText: noteText,
+    note:note, id:newId}, null);
   document.getElementById('f-reading').value='';
   document.getElementById('f-note').value='';
   document.getElementById('f-jelly').value='';
@@ -1050,7 +1067,14 @@ function saveEdit(){
   var note = packNote(jellyVal, noteText);
   r.date=date; r.reading=reading; r.note=note;
   saveData();
-  api({action:'elecSave', date:date, reading:reading, note:note, id:editId}, null);
+  var _iceData2 = getIceDataForDate(date);
+  var _iceMins2 = _iceData2 ? calcIceMins(_iceData2.slots) : 0;
+  var _iceHours2 = _iceMins2 > 0 ? Math.round(_iceMins2/15)*0.25 : 0;
+  api({action:'elecSave', date:date, reading:reading,
+    jellyCount: jellyVal||0,
+    iceMachineHours: _iceHours2,
+    noteText: noteText,
+    note:note, id:editId}, null);
   buildMonthChips();
   selMonth=date.slice(0,7);
   buildMonthChips();
