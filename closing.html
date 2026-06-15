@@ -121,6 +121,27 @@ canvas{width:100%!important}
 .npk-clear{background:var(--redl);color:var(--red);font-size:13px;font-weight:800}
 .np-ok{width:100%;padding:14px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
 .np-ok:active{opacity:.85}
+
+/* 訊息預覽 Modal */
+.msg-modal-backdrop{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center}
+.msg-modal-backdrop.show{display:flex}
+.msg-modal{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88dvh;display:flex;flex-direction:column;box-shadow:0 -6px 32px rgba(0,0,0,.18)}
+.msg-modal-header{padding:16px 18px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.msg-modal-title{font-size:15px;font-weight:900;color:var(--ink)}
+.msg-modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);color:var(--ink3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.msg-modal-tag{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-left:8px}
+.msg-modal-tag.test{background:var(--amberl);color:var(--amber)}
+.msg-modal-tag.real{background:var(--gl);color:var(--g)}
+.msg-modal-body{overflow-y:auto;padding:16px 18px;flex:1}
+.msg-preview{background:#F0F9F4;border:1.5px solid #B8DDCA;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.75;color:var(--ink);white-space:pre-wrap;word-break:break-all;font-family:'Noto Sans TC',sans-serif}
+.msg-modal-footer{padding:14px 18px 28px;border-top:1px solid var(--bd);display:flex;gap:10px;flex-shrink:0}
+.msg-modal-btn{flex:1;padding:13px;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.msg-modal-btn.copy{background:var(--bg);color:var(--ink2);border:1.5px solid var(--bd)}
+.msg-modal-btn.send{background:linear-gradient(135deg,#06C755,#04A645);color:#fff}
+.msg-modal-btn.close-only{background:var(--bg);color:var(--ink2);border:1.5px solid var(--bd)}
+.msg-modal-btn:active{opacity:.82}
+.test-line-btn{width:100%;padding:12px;background:var(--amberl);color:var(--amber);border:1.5px solid #E8C060;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;margin-bottom:8px}
+.test-line-btn:active{opacity:.82}
 </style>
 </head>
 <body>
@@ -274,6 +295,7 @@ canvas{width:100%!important}
         <button onclick="saveClosingConfig()" style="padding:7px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">儲存設定</button>
       </div>
     </details>
+    <button class="test-line-btn" onclick="previewTestNotify()">📋 預覽 / 測試 LINE 訊息</button>
     <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
   <div style="height:20px"></div>
 </div>
@@ -324,6 +346,24 @@ canvas{width:100%!important}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 訊息預覽 Modal -->
+<div class="msg-modal-backdrop" id="msgModal" onclick="closeMsgModal(event)">
+  <div class="msg-modal">
+    <div class="msg-modal-header">
+      <div style="display:flex;align-items:center">
+        <span class="msg-modal-title" id="msgModalTitle">LINE 訊息預覽</span>
+        <span class="msg-modal-tag" id="msgModalTag"></span>
+      </div>
+      <button class="msg-modal-close" onclick="closeMsgModal()">✕</button>
+    </div>
+    <div class="msg-modal-body">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:10px" id="msgModalDesc"></div>
+      <div class="msg-preview" id="msgPreviewText">載入中...</div>
+    </div>
+    <div class="msg-modal-footer" id="msgModalFooter"></div>
+  </div>
+</div>
 
 <!-- 數字小鍵盤 -->
 <div class="np-backdrop" id="np-bd" onclick="npClose()"></div>
@@ -707,8 +747,14 @@ function resendLineNotify(id){
   });
 }
 
-// ── LINE 通知 ────────────────────────────────────────────────
-function sendClosingLineNotify(p){
+// ── 訊息預覽 Modal ──────────────────────────────────────
+function closeMsgModal(e){
+  if(e && e.target !== document.getElementById('msgModal')) return;
+  document.getElementById('msgModal').classList.remove('show');
+}
+
+// 組出 LINE 訊息主體（不含電表/天氣/仙草凍）
+function buildClosingMsgBase(p){
   var n = function(k){ return parseFloat(p[k]||0)||0; };
   var totalCups  = n('sealMachine')+n('creamTop')+n('ecoCup');
   var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool');
@@ -730,13 +776,10 @@ function sendClosingLineNotify(p){
     '總杯數：'+totalCups+' 杯　取寄：'+takeCups+' 杯',
     '均杯單價：'+avgPrice+' 元',
   ];
-
   if(depAmt>0){
     lines.push('寄杯組：原味'+n('depOrig')+'組 風味'+n('depFlav')+'組 超值'+n('depSuper')+'組（$'+depAmt.toLocaleString()+'）');
   }
-
-  lines.push('');
-  lines.push('🧋 銷售明細');
+  lines.push(''); lines.push('🧋 銷售明細');
   lines.push('原味總杯數：'+origTotal+' 杯　風味總杯數：'+flavTotal+' 杯');
   PRODUCTS.forEach(function(prod){
     var bk='buy'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
@@ -744,41 +787,168 @@ function sendClosingLineNotify(p){
     var bv=n(bk), tv=n(tk);
     if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
   });
-
   if(n('deliveryCnt')>0 || n('deliveryAmt')>0 || n('deliveryCups')>0){
     lines.push('');
-    var dLine = '🛵 外送　'+n('deliveryCnt')+'單';
-    if(n('deliveryCups')>0) dLine += '　'+n('deliveryCups')+'杯';
-    if(n('deliveryAmt')>0) dLine += '　$'+Number(n('deliveryAmt')).toLocaleString();
+    var dLine='🛵 外送　'+n('deliveryCnt')+'單';
+    if(n('deliveryCups')>0) dLine+='　'+n('deliveryCups')+'杯';
+    if(n('deliveryAmt')>0) dLine+='　$'+Number(n('deliveryAmt')).toLocaleString();
     lines.push(dLine);
   }
-
-  lines.push('');
-  lines.push('📈 比例分析');
+  lines.push(''); lines.push('📈 比例分析');
   lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
   lines.push('仙草凍/總：'+pct(origTotal+flavTotal,totalCups));
   lines.push('首次來店：'+n('newCustomer')+'張（'+pct(n('newCustomer'),receipt)+'）　回購：'+n('returnCustomer')+'張（'+pct(n('returnCustomer'),receipt)+'）');
   lines.push('風凍回購：'+pct(n('jelloReturn'),receipt)+'　風凍直購：'+pct(n('jelloDirect'),receipt));
-
   if(n('demoCups')>0){
-    lines.push('');
-    lines.push('🥛 試飲　'+p.demoFocus+' '+n('demoCups')+'杯 → 轉換'+n('demoConvert')+'人（'+pct(n('demoConvert'),n('demoCups'))+'）');
+    lines.push(''); lines.push('🥛 試飲　'+p.demoFocus+' '+n('demoCups')+'杯 → 轉換'+n('demoConvert')+'人（'+pct(n('demoConvert'),n('demoCups'))+'）');
   }
-
   if(n('hours')>0){
-    var wage2  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
-    var rent2  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
-    var util2  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
-    var hSale  = (n('revenue')/n('hours')).toFixed(1);
-    var avgH   = ((wage2 + (rent2+util2)/n('hours'))/0.5).toFixed(1);
-    var prof   = ((parseFloat(hSale)-parseFloat(avgH))*n('hours')*0.5).toFixed(0);
-    lines.push('');
-    lines.push('⏱ 時數比（'+n('hours')+'時）');
+    var wage2=parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
+    var rent2=parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
+    var util2=parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
+    var hSale=(n('revenue')/n('hours')).toFixed(1);
+    var avgH=((wage2+(rent2+util2)/n('hours'))/0.5).toFixed(1);
+    var prof=((parseFloat(hSale)-parseFloat(avgH))*n('hours')*0.5).toFixed(0);
+    lines.push(''); lines.push('⏱ 時數比（'+n('hours')+'時）');
     lines.push('時數表：'+hSale+' 元/時　平時數：'+avgH+' 元/時');
     lines.push('每日盈虧：'+(prof>=0?'+':'')+prof+' 元');
   }
+  return lines.join('\n');
+}
 
-  var closingMsg = lines.join('\n');
+// 顯示訊息 modal（帶上非同步查詢的額外資訊）
+function showMsgModal(baseMsg, isTest, date, onSend){
+  var modal = document.getElementById('msgModal');
+  var previewEl = document.getElementById('msgPreviewText');
+  var titleEl = document.getElementById('msgModalTitle');
+  var tagEl = document.getElementById('msgModalTag');
+  var descEl = document.getElementById('msgModalDesc');
+  var footerEl = document.getElementById('msgModalFooter');
+
+  titleEl.textContent = isTest ? '測試訊息預覽' : '今日 LINE 通知';
+  tagEl.textContent = isTest ? '測試' : '實際發送';
+  tagEl.className = 'msg-modal-tag '+(isTest?'test':'real');
+  descEl.textContent = isTest
+    ? '以下為根據目前填寫內容組出的訊息，可選擇傳送測試訊息至群組（不會儲存記錄）'
+    : '收班記錄已儲存，以下訊息已傳送至 LINE 群組';
+
+  previewEl.textContent = baseMsg + '\n\n（正在查詢電表 / 天氣 / 仙草凍...）';
+  modal.classList.add('show');
+
+  // 非同步補充三項查詢
+  var done = {elec:null, weather:null, jelly:null};
+  var _fullMsg = baseMsg;
+
+  function rebuildPreview(){
+    if(done.elec===null||done.weather===null||done.jelly===null) return;
+    var extra=[];
+    if(done.jelly&&done.jelly.ok&&done.jelly.summary){
+      var items=Object.keys(done.jelly.summary);
+      if(items.length){ extra.push(''); extra.push('🫙 今日仙草凍 ─────────────');
+        items.forEach(function(it){ var s=done.jelly.summary[it]; extra.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
+      }
+    }
+    if(done.weather&&done.weather.ok&&done.weather.times&&done.weather.times.length){
+      var wIcon={晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
+      var tLabel={'10':'上午','14':'下午','18':'傍晚'};
+      extra.push(''); extra.push('🌡 今日天氣氣溫 ─────────');
+      done.weather.times.forEach(function(t){
+        var icon=wIcon[t.weather]||''; var label=tLabel[t.time]||t.time+'時';
+        var line=label+'　'+icon+t.weather;
+        if(t.outdoorTemp!==''&&t.outdoorTemp!==undefined) line+='　'+t.outdoorTemp+'°C';
+        extra.push(line);
+      });
+    }
+    if(done.elec&&done.elec.ok&&done.elec.data&&done.elec.data.length){
+      var sorted=done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+      var todayR=sorted.filter(function(r){ return r.date===date; }).pop();
+      if(todayR){
+        var prev=sorted.filter(function(r){ return r.date<date; }).pop();
+        var usage=prev?todayR.reading-prev.reading:null;
+        var curMonth=date.slice(0,7); var monthUsages=[];
+        for(var i=1;i<sorted.length;i++){ if(sorted[i].date.startsWith(curMonth)){ var u=sorted[i].reading-sorted[i-1].reading; if(u>=0) monthUsages.push(u); } }
+        var monthTotal=monthUsages.reduce(function(s,v){ return s+v; },0);
+        var monthAvg=monthUsages.length?Math.round(monthTotal/monthUsages.length):0;
+        extra.push(''); extra.push('⚡ 電表記錄 ─────────────');
+        extra.push('本日讀數：'+todayR.reading+' 度');
+        if(usage!==null&&usage>=0) extra.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
+        extra.push('本月累積：'+monthTotal+' 度'); extra.push('每日平均：'+monthAvg+' 度');
+        if(todayR.note) extra.push('備注：'+todayR.note);
+      }
+    }
+    _fullMsg = baseMsg + extra.join('\n');
+    previewEl.textContent = _fullMsg;
+
+    // 更新 footer 按鈕（拿到完整訊息後才能真的發送）
+    buildFooter(_fullMsg);
+  }
+
+  function buildFooter(msg){
+    if(isTest){
+      footerEl.innerHTML = '';
+      var cpBtn = document.createElement('button');
+      cpBtn.className='msg-modal-btn copy'; cpBtn.textContent='📋 複製';
+      cpBtn.onclick=function(){ navigator.clipboard&&navigator.clipboard.writeText(msg); showToast('✓ 已複製'); };
+      var sdBtn = document.createElement('button');
+      sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送測試到群組';
+      sdBtn.onclick=function(){
+        sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
+        api({action:'sendLine', msg:msg}, function(r){
+          if(r&&r.ok){ showToast('✓ 測試訊息已傳送'); closeMsgModal(); }
+          else { showToast('❌ 傳送失敗'); sdBtn.textContent='📲 傳送測試到群組'; sdBtn.disabled=false; }
+        });
+      };
+      footerEl.appendChild(cpBtn); footerEl.appendChild(sdBtn);
+    } else {
+      footerEl.innerHTML = '';
+      var cpBtn2 = document.createElement('button');
+      cpBtn2.className='msg-modal-btn copy'; cpBtn2.textContent='📋 複製訊息';
+      cpBtn2.onclick=function(){ navigator.clipboard&&navigator.clipboard.writeText(msg); showToast('✓ 已複製'); };
+      var clBtn = document.createElement('button');
+      clBtn.className='msg-modal-btn close-only'; clBtn.textContent='關閉';
+      clBtn.onclick=function(){ closeMsgModal(); };
+      footerEl.appendChild(cpBtn2); footerEl.appendChild(clBtn);
+    }
+  }
+
+  // 先顯示基本 footer（查詢中）
+  footerEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:4px 0">⏳ 正在查詢額外資料...</div>';
+
+  api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuildPreview(); });
+  api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuildPreview(); });
+  api({action:'jellyGetTodayLogs',date:date}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
+}
+
+// 預覽測試按鈕
+function previewTestNotify(){
+  var date   = document.getElementById('f-date').value;
+  var person = document.getElementById('f-person').value;
+  if(!date)   { showToast('請先填入日期'); return; }
+  if(!person) { showToast('請先選擇人員'); return; }
+  var n = function(id){ return parseFloat(document.getElementById(id).value||0)||0; };
+  var p = {
+    date:date, person:person,
+    deliveryCnt:n('f-delivery-cnt'), deliveryCups:n('f-delivery-cups'), deliveryAmt:n('f-delivery-amt'),
+    hours:n('f-hours'), revenue:n('f-revenue'), receiptCount:n('f-receipt'),
+    sealMachine:n('f-seal'), creamTop:n('f-cream'), ecoCup:n('f-eco'),
+    depOrig:n('f-dep-orig'), depFlav:n('f-dep-flav'), depSuper:n('f-dep-super'),
+    demoFocus:document.getElementById('f-demo-focus').value,
+    demoCups:n('f-demo-cups'), demoConvert:n('f-demo-convert'),
+    buyOriginal:n('f-buy-original'), takeOriginal:n('f-take-original'),
+    buyAromatic:n('f-buy-aromatic'), takeAromatic:n('f-take-aromatic'),
+    buyNingxia:n('f-buy-ningxia'), takeNingxia:n('f-take-ningxia'),
+    buyYouth:n('f-buy-youth'), takeYouth:n('f-take-youth'),
+    buyCool:n('f-buy-cool'), takeCool:n('f-take-cool'),
+    newCustomer:n('f-new'), returnCustomer:n('f-return'),
+    jelloReturn:n('f-jello-return'), jelloDirect:n('f-jello-direct'),
+  };
+  var base = buildClosingMsgBase(p);
+  showMsgModal(base, true, date);
+}
+
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendClosingLineNotify(p){
+  var closingMsg = buildClosingMsgBase(p);
 
   // 同時查：電表 + 今日天氣氣溫（來自溫度系統）+ 仙草凍桶數
   var done = {elec: null, weather: null, jelly: null};
@@ -844,7 +1014,11 @@ function sendClosingLineNotify(p){
 
     var fullMsg = closingMsg + extraLines.join('\n');
     api({action:'sendLine', msg:fullMsg}, function(r){
-      if(r&&r.ok) showToast('✓ 已傳送 LINE 通知');
+      if(r&&r.ok){
+        showToast('✓ 已傳送 LINE 通知');
+        // 顯示今日通知預覽框
+        showMsgModal(closingMsg, false, p.date);
+      }
     });
   }
 
