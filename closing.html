@@ -835,19 +835,51 @@ function showMsgModal(baseMsg, isTest, date, onSend){
   previewEl.textContent = baseMsg + '\n\n（正在查詢電表 / 天氣 / 仙草凍...）';
   modal.classList.add('show');
 
-  // 非同步補充三項查詢
+  // 前一天日期（仙草凍查前一天）
+  var yDate = new Date(date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yesterday = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+
+  // 從 localStorage 讀製冰機記錄（ice_v1）
+  function getIceRecordForDate(d){
+    try {
+      var raw = localStorage.getItem('ice_v1');
+      if(!raw) return null;
+      var arr = JSON.parse(raw);
+      return arr.find(function(r){ return r.date === d; }) || null;
+    } catch(e){ return null; }
+  }
+
+  // 計算製冰機總開機小時數（四捨五入到 0.25 小時）
+  function calcIceHours(slots){
+    var total = 0;
+    (slots||[]).forEach(function(s){
+      if(!s.on || !s.off) return;
+      var on  = s.on.split(':').map(Number);
+      var off = s.off.split(':').map(Number);
+      var mins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+      if(mins > 0) total += mins;
+    });
+    return total > 0 ? Math.round(total / 15) * 0.25 : 0;
+  }
+
   var done = {elec:null, weather:null, jelly:null};
   var _fullMsg = baseMsg;
 
   function rebuildPreview(){
     if(done.elec===null||done.weather===null||done.jelly===null) return;
     var extra=[];
+
+    // 🫙 仙草凍（前一天完成桶數）
     if(done.jelly&&done.jelly.ok&&done.jelly.summary){
       var items=Object.keys(done.jelly.summary);
-      if(items.length){ extra.push(''); extra.push('🫙 今日仙草凍 ─────────────');
+      if(items.length){
+        extra.push(''); extra.push('🫙 昨日仙草凍（'+yesterday+'）─────');
         items.forEach(function(it){ var s=done.jelly.summary[it]; extra.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
       }
     }
+
+    // 🌡 天氣氣溫
     if(done.weather&&done.weather.ok&&done.weather.times&&done.weather.times.length){
       var wIcon={晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
       var tLabel={'10':'上午','14':'下午','18':'傍晚'};
@@ -859,6 +891,8 @@ function showMsgModal(baseMsg, isTest, date, onSend){
         extra.push(line);
       });
     }
+
+    // ⚡ 電表記錄
     if(done.elec&&done.elec.ok&&done.elec.data&&done.elec.data.length){
       var sorted=done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
       var todayR=sorted.filter(function(r){ return r.date===date; }).pop();
@@ -873,13 +907,30 @@ function showMsgModal(baseMsg, isTest, date, onSend){
         extra.push('本日讀數：'+todayR.reading+' 度');
         if(usage!==null&&usage>=0) extra.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
         extra.push('本月累積：'+monthTotal+' 度'); extra.push('每日平均：'+monthAvg+' 度');
-        if(todayR.note) extra.push('備注：'+todayR.note);
+        // 解析電表 note（JSON 格式）
+        if(todayR.note){
+          try {
+            var en = JSON.parse(todayR.note);
+            if(en.jelly !== undefined && en.jelly !== null) extra.push('備注：前日仙草凍 '+en.jelly+' 桶');
+            if(en.note) extra.push('備注：'+en.note);
+          } catch(e2){ if(todayR.note) extra.push('備注：'+todayR.note); }
+        }
       }
     }
+
+    // 🧊 製冰機時數（從 localStorage ice_v1 讀當天記錄）
+    var iceRec = getIceRecordForDate(date);
+    if(iceRec && iceRec.slots && iceRec.slots.length){
+      var iceHours = calcIceHours(iceRec.slots);
+      var slotStr = iceRec.slots.map(function(s){ return s.on+(s.off?' ~ '+s.off:'起'); }).join('、');
+      extra.push(''); extra.push('🧊 製冰機記錄 ─────────');
+      extra.push('時段：'+slotStr);
+      if(iceHours > 0) extra.push('開機時數：'+iceHours+' 時');
+      if(iceRec.note) extra.push('備注：'+iceRec.note);
+    }
+
     _fullMsg = baseMsg + extra.join('\n');
     previewEl.textContent = _fullMsg;
-
-    // 更新 footer 按鈕（拿到完整訊息後才能真的發送）
     buildFooter(_fullMsg);
   }
 
@@ -911,14 +962,13 @@ function showMsgModal(baseMsg, isTest, date, onSend){
     }
   }
 
-  // 先顯示基本 footer（查詢中）
   footerEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:4px 0">⏳ 正在查詢額外資料...</div>';
 
   api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuildPreview(); });
   api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuildPreview(); });
-  api({action:'jellyGetTodayLogs',date:date}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
+  // 仙草凍查前一天
+  api({action:'jellyGetTodayLogs',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
 }
-
 // 預覽測試按鈕
 function previewTestNotify(){
   var date   = document.getElementById('f-date').value;
@@ -950,19 +1000,46 @@ function previewTestNotify(){
 function sendClosingLineNotify(p){
   var closingMsg = buildClosingMsgBase(p);
 
-  // 同時查：電表 + 今日天氣氣溫（來自溫度系統）+ 仙草凍桶數
+  // 前一天日期（仙草凍查前一天）
+  var yDate = new Date(p.date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yesterday = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+
+  // 製冰機時數計算
+  function calcIceHours(slots){
+    var total = 0;
+    (slots||[]).forEach(function(s){
+      if(!s.on || !s.off) return;
+      var on  = s.on.split(':').map(Number);
+      var off = s.off.split(':').map(Number);
+      var mins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+      if(mins > 0) total += mins;
+    });
+    return total > 0 ? Math.round(total / 15) * 0.25 : 0;
+  }
+
+  // 從 localStorage 讀製冰機記錄
+  function getIceRecordForDate(d){
+    try {
+      var raw = localStorage.getItem('ice_v1');
+      if(!raw) return null;
+      var arr = JSON.parse(raw);
+      return arr.find(function(r){ return r.date === d; }) || null;
+    } catch(e){ return null; }
+  }
+
   var done = {elec: null, weather: null, jelly: null};
   function tryMergeAndSend(){
     if(done.elec === null || done.weather === null || done.jelly === null) return;
 
     var extraLines = [];
 
-    // 仙草凍當日桶數
+    // 🫙 仙草凍（前一天）
     if(done.jelly && done.jelly.ok && done.jelly.summary){
       var items = Object.keys(done.jelly.summary);
       if(items.length > 0){
         extraLines.push('');
-        extraLines.push('🫙 今日仙草凍 ─────────────');
+        extraLines.push('🫙 昨日仙草凍（'+yesterday+'）─────');
         items.forEach(function(item){
           var s = done.jelly.summary[item];
           extraLines.push(item+'　'+s.count+' 桶（'+s.barrels.join('、')+'）');
@@ -970,7 +1047,7 @@ function sendClosingLineNotify(p){
       }
     }
 
-    // 天氣氣溫（來自溫度系統，顯示三個時段）
+    // 🌡 天氣氣溫
     if(done.weather && done.weather.ok && done.weather.times && done.weather.times.length){
       var wIcon = {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
       var timeLabel = {'10':'上午','14':'下午','18':'傍晚'};
@@ -985,7 +1062,7 @@ function sendClosingLineNotify(p){
       });
     }
 
-    // 電表
+    // ⚡ 電表
     if(done.elec && done.elec.ok && done.elec.data && done.elec.data.length){
       var sorted = done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
       var today = sorted.filter(function(r){ return r.date===p.date; }).pop();
@@ -1008,26 +1085,43 @@ function sendClosingLineNotify(p){
         if(usage !== null && usage >= 0) extraLines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
         extraLines.push('本月累積：'+monthTotal+' 度');
         extraLines.push('每日平均：'+monthAvg+' 度');
-        if(today.note) extraLines.push('備注：'+today.note);
+        // 解析電表 note
+        if(today.note){
+          try {
+            var en = JSON.parse(today.note);
+            if(en.jelly !== undefined && en.jelly !== null) extraLines.push('備注：前日仙草凍 '+en.jelly+' 桶');
+            if(en.note) extraLines.push('備注：'+en.note);
+          } catch(e2){ if(today.note) extraLines.push('備注：'+today.note); }
+        }
       }
+    }
+
+    // 🧊 製冰機時數（當天）
+    var iceRec = getIceRecordForDate(p.date);
+    if(iceRec && iceRec.slots && iceRec.slots.length){
+      var iceHours = calcIceHours(iceRec.slots);
+      var slotStr = iceRec.slots.map(function(s){ return s.on+(s.off?' ~ '+s.off:'起'); }).join('、');
+      extraLines.push('');
+      extraLines.push('🧊 製冰機記錄 ─────────');
+      extraLines.push('時段：'+slotStr);
+      if(iceHours > 0) extraLines.push('開機時數：'+iceHours+' 時');
+      if(iceRec.note) extraLines.push('備注：'+iceRec.note);
     }
 
     var fullMsg = closingMsg + extraLines.join('\n');
     api({action:'sendLine', msg:fullMsg}, function(r){
       if(r&&r.ok){
         showToast('✓ 已傳送 LINE 通知');
-        // 顯示今日通知預覽框
         showMsgModal(closingMsg, false, p.date);
       }
     });
   }
 
-  // 同時發起三個查詢
   api({action:'elecGetAll'}, function(d){ done.elec = d||{ok:false}; tryMergeAndSend(); });
   api({action:'getTodayWeather', date:p.date}, function(d){ done.weather = d||{ok:false}; tryMergeAndSend(); });
-  api({action:'jellyGetTodayLogs', date:p.date}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
+  // 仙草凍查前一天
+  api({action:'jellyGetTodayLogs', date:yesterday}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
 }
-
 // ── 頁簽 ─────────────────────────────────────────
 function switchTab(tab){
   ['form','hist','chart'].forEach(function(t){
