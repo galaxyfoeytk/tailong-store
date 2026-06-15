@@ -798,9 +798,7 @@ function sendClosingLineNotify(p){
           extraLines.push(item+'　'+s.count+' 桶（'+s.barrels.join('、')+'）');
         });
       }
-    } // 等兩個都回來
-
-    var extraLines = [];
+    }
 
     // 天氣氣溫（來自溫度系統，顯示三個時段）
     if(done.weather && done.weather.ok && done.weather.times && done.weather.times.length){
