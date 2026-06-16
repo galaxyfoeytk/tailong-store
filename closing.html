@@ -799,7 +799,7 @@ function showResendModal(baseMsg, date){
     if(done.jelly&&done.jelly.ok&&done.jelly.summary){
       var items=Object.keys(done.jelly.summary);
       if(items.length){
-        _jellyLines.push(''); _jellyLines.push('🫙 昨日仙草凍（'+yesterday+'）─────');
+        _jellyLines.push(''); _jellyLines.push('🫙 昨日煮好（'+yesterday+'）─────');
         items.forEach(function(it){ var s=done.jelly.summary[it]; _jellyLines.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
       }
     }
@@ -906,7 +906,7 @@ function showResendModal(baseMsg, date){
 
   api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuild(); });
   api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuild(); });
-  api({action:'jellyGetTodayLogs',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuild(); });
+  api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuild(); });
 }
 
 
@@ -1127,7 +1127,7 @@ function showMsgModal(baseMsg, isTest, date, onSend){
     if(done.jelly&&done.jelly.ok&&done.jelly.summary){
       var items=Object.keys(done.jelly.summary);
       if(items.length){
-        _jellyLines2.push(''); _jellyLines2.push('🫙 昨日仙草凍（'+yesterday+'）─────');
+        _jellyLines2.push(''); _jellyLines2.push('🫙 昨日煮好（'+yesterday+'）─────');
         items.forEach(function(it){ var s=done.jelly.summary[it]; _jellyLines2.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
       }
     }
@@ -1206,7 +1206,7 @@ function showMsgModal(baseMsg, isTest, date, onSend){
   api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuildPreview(); });
   api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuildPreview(); });
   // 仙草凍查前一天
-  api({action:'jellyGetTodayLogs',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
+  api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
 }
 // 預覽測試按鈕
 function previewTestNotify(){
@@ -1278,7 +1278,7 @@ function sendClosingLineNotify(p){
     if(done.jelly && done.jelly.ok && done.jelly.summary){
       var items = Object.keys(done.jelly.summary);
       if(items.length > 0){
-        _jellyLines3.push(''); _jellyLines3.push('🫙 昨日仙草凍（'+yesterday+'）─────');
+        _jellyLines3.push(''); _jellyLines3.push('🫙 昨日煮好（'+yesterday+'）─────');
         items.forEach(function(item){ var s=done.jelly.summary[item]; _jellyLines3.push(item+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
       }
     }
@@ -1338,8 +1338,8 @@ function sendClosingLineNotify(p){
 
   api({action:'elecGetAll'}, function(d){ done.elec = d||{ok:false}; tryMergeAndSend(); });
   api({action:'getTodayWeather', date:p.date}, function(d){ done.weather = d||{ok:false}; tryMergeAndSend(); });
-  // 仙草凍查前一天
-  api({action:'jellyGetTodayLogs', date:yesterday}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
+  // 仙草凍查前一天（煮好的桶數）
+  api({action:'jellyGetCookedByDate', date:yesterday}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
 }
 // ── 頁簽 ─────────────────────────────────────────
 function switchTab(tab){
