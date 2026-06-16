@@ -829,60 +829,9 @@ function showResendModal(baseMsg, date){
         for(var i=1;i<sorted.length;i++){ if(sorted[i].date.startsWith(curMonth)){ var u=sorted[i].reading-sorted[i-1].reading; if(u>=0) monthUsages.push(u); } }
         var monthTotal=monthUsages.reduce(function(s,v){ return s+v; },0);
         var monthAvg=monthUsages.length?Math.round(monthTotal/monthUsages.length):0;
-        extra.push(''); extra.push('⚡ 電表記錄 ─────────────');
-        extra.push('本日讀數：'+todayR.reading+' 度');
-        if(usage!==null&&usage>=0) extra.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
-        extra.push('本月累積：'+monthTotal+' 度'); extra.push('每日平均：'+monthAvg+' 度');
-        // 解析電表備注：優先讀新欄位，沒有則解析舊JSON/純文字
-        var _jelly = todayR.jellyCount || 0;
-        var _iceHoursSheet = todayR.iceMachineHours || 0;
-        var _noteText = todayR.noteText || '';
-        if(!_jelly || !_noteText){
-          if(todayR.note){
-            try {
-              var en=JSON.parse(todayR.note);
-              if(!_jelly && en.jelly!=null) _jelly=parseInt(en.jelly)||0;
-              if(!_noteText && en.note) _noteText=en.note;
-            } catch(e2){
-              // 純文字備注：解析桶數和製冰機
-              var rawNote = todayR.note;
-              if(!_jelly){ var bm=rawNote.match(/(\d+)\s*桶/); if(bm) _jelly=parseInt(bm[1])||0; }
-              if(!_noteText && !/製冰|冰機/i.test(rawNote)) _noteText=rawNote;
-            }
-          }
-        }
-        if(_jelly>0) extra.push('前日仙草凍：'+_jelly+' 桶');
-        if(_noteText) extra.push('備注：'+_noteText);
+        todayR._usage=usage; todayR._monthTotal=monthTotal; todayR._monthAvg=monthAvg;
+        extractElecExtra(todayR, extra, getIceRecordForDate, date);
       }
-    }
-    // 製冰機：優先電表新欄位，沒有則查localStorage
-    var _iceHoursFinal = 0;
-    var _iceSlotStr = '';
-    if(done.elec&&done.elec.ok&&done.elec.data){
-      var _er = done.elec.data.slice().sort(function(a,b){return a.date.localeCompare(b.date);})
-        .filter(function(r){ return r.date===date; }).pop();
-      if(_er && _er.iceMachineHours > 0){
-        _iceHoursFinal = _er.iceMachineHours;
-      } else if(_er && _er.noteText){
-        // 從備注欄解析製冰機時段
-        var _slots = parseIceNoteInClosing(_er.noteText || _er.note || '');
-        if(_slots.length){ _iceHoursFinal=calcIceHoursFromSlots(_slots); _iceSlotStr=_slots.map(function(s){return s.on+(s.off?' ~ '+s.off:'起');}).join('、'); }
-      } else if(_er && _er.note){
-        var _slots2 = parseIceNoteInClosing(_er.note);
-        if(_slots2.length){ _iceHoursFinal=calcIceHoursFromSlots(_slots2); _iceSlotStr=_slots2.map(function(s){return s.on+(s.off?' ~ '+s.off:'起');}).join('、'); }
-      }
-    }
-    if(!_iceHoursFinal){
-      var iceRec=getIceRecordForDate(date);
-      if(iceRec&&iceRec.slots&&iceRec.slots.length){
-        _iceHoursFinal=calcIceHours(iceRec.slots);
-        _iceSlotStr=iceRec.slots.map(function(s){return s.on+(s.off?' ~ '+s.off:'起');}).join('、');
-      }
-    }
-    if(_iceHoursFinal>0||_iceSlotStr){
-      extra.push(''); extra.push('🧊 製冰機記錄 ─────────');
-      if(_iceSlotStr) extra.push('時段：'+_iceSlotStr);
-      if(_iceHoursFinal>0) extra.push('開機時數：'+_iceHoursFinal+' 時');
     }
 
     _fullMsg = baseMsg + extra.join('\n');
@@ -944,27 +893,19 @@ function calcIceHoursFromSlots(slots){
 }
 // 從電表記錄解析仙草凍、製冰機、備注，回傳 extraLines 陣列
 function extractElecExtra(elecRec, lines, iceRecordFn, dateStr){
-  // 讀數、用電
   lines.push(''); lines.push('⚡ 電表記錄 ─────────────');
   lines.push('本日讀數：'+elecRec.reading+' 度');
-  // 解析仙草凍
-  var jelly = elecRec.jellyCount||0;
-  var noteText = elecRec.noteText||'';
-  if(!jelly||!noteText){
-    var rawNote = elecRec.note||'';
-    try {
-      var obj = JSON.parse(rawNote);
-      if(!jelly && obj.jelly!=null) jelly=parseInt(obj.jelly)||0;
-      if(!noteText && obj.note) noteText=obj.note;
-    } catch(e){
-      // 純文字
-      if(!jelly){ var bm=rawNote.match(/(\d+)\s*桶/); if(bm) jelly=parseInt(bm[1])||0; }
-      if(!noteText && !/製冰|冰機/i.test(rawNote)) noteText=rawNote;
-    }
-  }
-  if(jelly>0) lines.push('前日仙草凍：'+jelly+' 桶');
-  if(noteText) lines.push('備注：'+noteText);
+  // 昨日用電、本月累積、每日平均（由外層計算後暫存在 _usage 等欄位）
+  if(elecRec._usage!=null && elecRec._usage>=0) lines.push('昨日用電：'+elecRec._usage+' 度'+(elecRec._usage>500?' ⚠️偏高':''));
+  if(elecRec._monthTotal!=null) lines.push('本月累積：'+elecRec._monthTotal+' 度');
+  if(elecRec._monthAvg!=null) lines.push('每日平均：'+elecRec._monthAvg+' 度');
   // 製冰機（優先電表新欄位→解析舊備注→localStorage）
+  var noteText = elecRec.noteText||'';
+  if(!noteText && elecRec.note){
+    var rawNote2 = elecRec.note;
+    try { var obj2=JSON.parse(rawNote2); if(obj2.note) noteText=obj2.note; } catch(e){ if(!/製冰|冰機/i.test(rawNote2) && !/\d+\s*桶/.test(rawNote2)) noteText=rawNote2; }
+  }
+  if(noteText) lines.push('備注：'+noteText);
   var iceH=parseFloat(elecRec.iceMachineHours)||0;
   var iceSlot='';
   if(!iceH){
@@ -1161,9 +1102,8 @@ function showMsgModal(baseMsg, isTest, date, onSend){
         for(var i=1;i<sorted.length;i++){ if(sorted[i].date.startsWith(curMonth)){ var u=sorted[i].reading-sorted[i-1].reading; if(u>=0) monthUsages.push(u); } }
         var monthTotal=monthUsages.reduce(function(s,v){ return s+v; },0);
         var monthAvg=monthUsages.length?Math.round(monthTotal/monthUsages.length):0;
-        if(usage!==null&&usage>=0) extra.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
-        extra.push('本月累積：'+monthTotal+' 度'); extra.push('每日平均：'+monthAvg+' 度');
-        // 使用共用函式解析電表備注 + 製冰機
+        // 把 usage/monthTotal/monthAvg 先暫存到 todayR，讓 extractElecExtra 統一組裝
+        todayR._usage=usage; todayR._monthTotal=monthTotal; todayR._monthAvg=monthAvg;
         extractElecExtra(todayR, extra, getIceRecordForDate, date);
       }
     }
@@ -1320,9 +1260,7 @@ function sendClosingLineNotify(p){
         }
         var monthTotal = monthUsages.reduce(function(s,v){ return s+v; }, 0);
         var monthAvg   = monthUsages.length ? Math.round(monthTotal/monthUsages.length) : 0;
-        if(usage !== null && usage >= 0) extraLines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
-        extraLines.push('本月累積：'+monthTotal+' 度');
-        extraLines.push('每日平均：'+monthAvg+' 度');
+        today._usage=usage; today._monthTotal=monthTotal; today._monthAvg=monthAvg;
         extractElecExtra(today, extraLines, getIceRecordForDate, p.date);
       }
     }
