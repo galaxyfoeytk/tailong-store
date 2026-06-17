@@ -521,6 +521,12 @@ function apiCall(params, cb){
   var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
   fetch(API_URL+'?'+qs).then(function(r){return r.json();}).then(function(d){cb&&cb(d);}).catch(function(e){console.warn('API error',e);});
 }
+function apiCallPost(params, cb){
+  if(!API_URL) return;
+  var body=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));}).join('&');
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+    .then(function(r){return r.json();}).then(function(d){cb&&cb(d);}).catch(function(e){console.warn('API error',e);});
+}
 
 function pushSaveRec(r){
   // units 已存在 r.units，直接用，不需要再查 items
@@ -575,8 +581,46 @@ function syncFromSheets(){
   if(!API_URL){showToast('請先設定 API_URL');return;}
   setSync('同步中…');
   apiCall({action:'stockGetAll'}, function(d){
-    if(d&&d.ok){ records=d.data; save(); renderList(); buildListFilters(); setSync('已同步 ✓'); showToast('✓ 同步完成'); }
-    else { setSync('同步失敗'); showToast('⚠ 同步失敗'); }
+    if(!d||!d.ok){ setSync('同步失敗'); showToast('⚠ 同步失敗'); return; }
+    // 轉換格式：修正日期、重建 unitQtys
+    var converted = (d.data||[]).map(function(r){
+      // 修正日期：ISO 格式 → YYYY-MM-DD
+      var dateStr = '';
+      if(r.date){
+        var ds = String(r.date);
+        if(ds.indexOf('T') > 0) ds = ds.slice(0,10); // ISO截斷
+        dateStr = ds.replace(/\//g,'-').slice(0,10);
+      }
+      // 重建 unitQtys（從 uSv/uSn/uMv/uMn/uLv/uLn 合併）
+      var unitQtys = {};
+      if(r.uSn && r.uSv!=='' && r.uSv!=null) unitQtys[String(r.uSn)] = parseFloat(r.uSv)||0;
+      if(r.uMn && r.uMv!=='' && r.uMv!=null) unitQtys[String(r.uMn)] = parseFloat(r.uMv)||0;
+      if(r.uLn && r.uLv!=='' && r.uLv!=null) unitQtys[String(r.uLn)] = parseFloat(r.uLv)||0;
+      // 也嘗試用 unitQtys 字串（若後端已組好）
+      if(r.unitQtys && typeof r.unitQtys === 'object') unitQtys = r.unitQtys;
+      return {
+        id: String(r.id),
+        date: dateStr,
+        person: r.person||'',
+        cat: r.cat||'',
+        catName: r.catName||'',
+        itemId: r.itemId||null,
+        itemName: r.itemName||'',
+        unitQtys: unitQtys,
+        uSv: r.uSv, uSn: r.uSn,
+        uMv: r.uMv, uMn: r.uMn,
+        uLv: r.uLv, uLn: r.uLn,
+        qtyTotal: r.qtyTotal||'',
+        src: r.src||'',
+        expense: r.expense||false,
+        amt: r.amt||0,
+        invoice: r.invoice||false,
+        note: r.note||''
+      };
+    }).filter(function(r){ return r.date.match(/^\d{4}-\d{2}-\d{2}$/); });
+    records = converted;
+    save(); renderList(); buildListFilters();
+    setSync('已同步 ✓'); showToast('✓ 同步完成');
   });
 }
 function setSync(msg){ var el=document.getElementById('sync-lbl'); if(el) el.textContent=msg; }
@@ -985,9 +1029,18 @@ function renderList(){
     var it=items.find(function(x){return x.id===r.itemId;});
     var seen={};var orderedUnits=[];
     if(it) it.units.forEach(function(u){if(u.n&&!seen[u.n]){seen[u.n]=true;orderedUnits.push(u);}});
-    if(!orderedUnits.length) Object.keys(r.unitQtys).forEach(function(k){orderedUnits.push({n:k,q:1});});
-    var filledUnits=orderedUnits.filter(function(u){return r.unitQtys[u.n]&&parseFloat(r.unitQtys[u.n])>0;});
-    var uStr=filledUnits.map(function(u){return r.unitQtys[u.n]+u.n;}).join(' + ');
+    // 若找不到 item，從 uLn/uMn/uSn 依序重建（大→中→小）
+    if(!orderedUnits.length){
+      if(r.uLn&&!seen[r.uLn]){seen[r.uLn]=true;orderedUnits.push({n:r.uLn,q:1});}
+      if(r.uMn&&!seen[r.uMn]){seen[r.uMn]=true;orderedUnits.push({n:r.uMn,q:1});}
+      if(r.uSn&&!seen[r.uSn]){seen[r.uSn]=true;orderedUnits.push({n:r.uSn,q:1});}
+    }
+    if(!orderedUnits.length) Object.keys(r.unitQtys||{}).forEach(function(k){orderedUnits.push({n:k,q:1});});
+    var filledUnits=orderedUnits.filter(function(u){return r.unitQtys&&r.unitQtys[u.n]&&parseFloat(r.unitQtys[u.n])>0;});
+    // 若 unitQtys 為空但有 qtyTotal，直接顯示
+    var uStr = filledUnits.length
+      ? filledUnits.map(function(u){return r.unitQtys[u.n]+u.n;}).join(' + ')
+      : (r.qtyTotal||'—');
     var totalSmall=0;var smallUnit='';
     if(it&&it.units.length>0){
       smallUnit=it.units[it.units.length-1].n;
@@ -1291,8 +1344,9 @@ function sendStockLineNotify(rec){
     if(mentionIds.length > 0 && stockNotifyNames.length > 0){
       msg += '\n' + stockNotifyNames.map(function(n){ return '@'+n; }).join(' ');
     }
-    apiCall({action:'sendLine', msg:msg}, function(r){
+    apiCallPost({action:'sendLine', msg:msg}, function(r){
       if(r&&r.ok) showToast('✓ 已傳送 LINE 通知');
+      else showToast('❌ LINE 傳送失敗');
     });
   });
 }
