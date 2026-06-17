@@ -668,6 +668,25 @@ function loadData(){
     sources=['倉庫','廠商A','廠商B','人員採買'];
     records=[];
   }
+  // 一次性修正：舊 ISO 日期格式 + 重建 unitQtys
+  var dirty = false;
+  records = records.map(function(r){
+    // 修正日期
+    if(r.date && r.date.indexOf('T') > 0){
+      r.date = r.date.slice(0,10);
+      dirty = true;
+    }
+    // 重建 unitQtys（若為空但有 uSn/uMn/uLn）
+    if(!r.unitQtys || Object.keys(r.unitQtys).length === 0){
+      var uq = {};
+      if(r.uLn && r.uLv!=null && r.uLv!=='') uq[String(r.uLn)] = parseFloat(r.uLv)||0;
+      if(r.uMn && r.uMv!=null && r.uMv!=='') uq[String(r.uMn)] = parseFloat(r.uMv)||0;
+      if(r.uSn && r.uSv!=null && r.uSv!=='') uq[String(r.uSn)] = parseFloat(r.uSv)||0;
+      if(Object.keys(uq).length){ r.unitQtys = uq; dirty = true; }
+    }
+    return r;
+  });
+  if(dirty) save();
 }
 function save(){
   try{localStorage.setItem('stock_v2',JSON.stringify({persons,items,sources,records}));}catch(e){}
