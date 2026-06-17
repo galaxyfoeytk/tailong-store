@@ -845,7 +845,7 @@ function showResendModal(baseMsg, date){
     sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送到群組';
     sdBtn.onclick=function(){
       sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
-      api({action:'sendLine', msg:_fullMsg}, function(r){
+      apiPost({action:'sendLine', msg:_fullMsg}, function(r){
         if(r&&r.ok){ showToast('✓ 已重新傳送 LINE 通知'); closeMsgModal(); }
         else { showToast('❌ 傳送失敗'); sdBtn.textContent='📲 傳送到群組'; sdBtn.disabled=false; }
       });
@@ -1123,7 +1123,7 @@ function showMsgModal(baseMsg, isTest, date, onSend){
       sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送測試到群組';
       sdBtn.onclick=function(){
         sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
-        api({action:'sendLine', msg:msg}, function(r){
+        apiPost({action:'sendLine', msg:msg}, function(r){
           if(r&&r.ok){ showToast('✓ 測試訊息已傳送'); closeMsgModal(); }
           else { showToast('❌ 傳送失敗'); sdBtn.textContent='📲 傳送測試到群組'; sdBtn.disabled=false; }
         });
@@ -1266,9 +1266,12 @@ function sendClosingLineNotify(p){
     }
 
     var fullMsg = closingMsg + extraLines.join('\n');
-    api({action:'sendLine', msg:fullMsg}, function(r){
+    apiPost({action:'sendLine', msg:fullMsg}, function(r){
       if(r&&r.ok){
         showToast('✓ 已傳送 LINE 通知');
+        showMsgModal(closingMsg, false, p.date);
+      } else {
+        showToast('❌ LINE 傳送失敗：'+(r&&r.error?r.error:'未知錯誤'));
         showMsgModal(closingMsg, false, p.date);
       }
     });
