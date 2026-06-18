@@ -845,9 +845,9 @@ function showResendModal(baseMsg, date){
     sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送到群組';
     sdBtn.onclick=function(){
       sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
-      apiPost({action:'sendLine', msg:_fullMsg}, function(r){
+      apiPost({action:'sendLine', msg:_fullMsg}, function(r, err){
         if(r&&r.ok){ showToast('✓ 已重新傳送 LINE 通知'); closeMsgModal(); }
-        else { showToast('❌ 傳送失敗'); sdBtn.textContent='📲 傳送到群組'; sdBtn.disabled=false; }
+        else { showToast('❌ 傳送失敗：'+(err||(r&&r.error)||'未知錯誤')); sdBtn.textContent='📲 傳送到群組'; sdBtn.disabled=false; }
       });
     };
     footerEl.appendChild(cpBtn); footerEl.appendChild(sdBtn);
@@ -1123,9 +1123,9 @@ function showMsgModal(baseMsg, isTest, date, onSend){
       sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送測試到群組';
       sdBtn.onclick=function(){
         sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
-        apiPost({action:'sendLine', msg:msg}, function(r){
+        apiPost({action:'sendLine', msg:msg}, function(r, err){
           if(r&&r.ok){ showToast('✓ 測試訊息已傳送'); closeMsgModal(); }
-          else { showToast('❌ 傳送失敗'); sdBtn.textContent='📲 傳送測試到群組'; sdBtn.disabled=false; }
+          else { showToast('❌ 傳送失敗：'+(err||(r&&r.error)||'未知錯誤')); sdBtn.textContent='📲 傳送測試到群組'; sdBtn.disabled=false; }
         });
       };
       footerEl.appendChild(cpBtn); footerEl.appendChild(sdBtn);
@@ -1266,12 +1266,12 @@ function sendClosingLineNotify(p){
     }
 
     var fullMsg = closingMsg + extraLines.join('\n');
-    apiPost({action:'sendLine', msg:fullMsg}, function(r){
+    apiPost({action:'sendLine', msg:fullMsg}, function(r, err){
       if(r&&r.ok){
         showToast('✓ 已傳送 LINE 通知');
         showMsgModal(closingMsg, false, p.date);
       } else {
-        showToast('❌ LINE 傳送失敗：'+(r&&r.error?r.error:'未知錯誤'));
+        showToast('❌ LINE 傳送失敗：'+(err||(r&&r.error)||'未知錯誤'));
         showMsgModal(closingMsg, false, p.date);
       }
     });
@@ -1558,9 +1558,20 @@ function apiPost(params, cb){
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     body: body
   })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ if(cb) cb(d,null); })
-    .catch(function(e){ if(cb) cb(null,e); });
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      try{
+        var d = JSON.parse(txt);
+        if(cb) cb(d, null);
+      } catch(e){
+        console.error('apiPost 回應非JSON:', txt);
+        if(cb) cb(null, 'API回應非JSON：'+txt.slice(0,200));
+      }
+    })
+    .catch(function(e){
+      console.error('apiPost 連線失敗:', e);
+      if(cb) cb(null, '連線失敗：'+e.toString());
+    });
 }
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 function goHome(){ if(window.top&&window.top.showPage){ window.top.showPage('home'); } else { window.top.location.href='index.html'; } }
