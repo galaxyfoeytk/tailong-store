@@ -1550,30 +1550,43 @@ function api(params, cb){
     .catch(function(e){ cb(null, '連線失敗：'+e.toString()); });
 }
 function apiPost(params, cb){
+  console.log('[apiPost] 發送請求', params.action, 'URL:', API_URL);
   var body = Object.keys(params).map(function(k){
     return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
   }).join('&');
+  console.log('[apiPost] body長度:', body.length);
   fetch(API_URL, {
     method: 'POST',
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     body: body
   })
-    .then(function(r){ return r.text(); })
+    .then(function(r){
+      console.log('[apiPost] HTTP狀態:', r.status, r.statusText);
+      return r.text();
+    })
     .then(function(txt){
+      console.log('[apiPost] 回應內容:', txt.slice(0,300));
       try{
         var d = JSON.parse(txt);
         if(cb) cb(d, null);
       } catch(e){
-        console.error('apiPost 回應非JSON:', txt);
+        console.error('[apiPost] JSON解析失敗:', e, '原始內容:', txt);
         if(cb) cb(null, 'API回應非JSON：'+txt.slice(0,200));
       }
     })
     .catch(function(e){
-      console.error('apiPost 連線失敗:', e);
+      console.error('[apiPost] fetch失敗:', e);
       if(cb) cb(null, '連線失敗：'+e.toString());
     });
 }
-function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+function showToast(m){
+  console.log('[showToast]', m);
+  var t=document.getElementById('toast');
+  t.textContent=m; t.style.display='block';
+  clearTimeout(t._t);
+  var dur = String(m).indexOf('❌')===0 ? 6000 : 2800;
+  t._t=setTimeout(function(){ t.style.display='none'; },dur);
+}
 function goHome(){ if(window.top&&window.top.showPage){ window.top.showPage('home'); } else { window.top.location.href='index.html'; } }
 </script>
 <!-- Chart.js -->
