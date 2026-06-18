@@ -995,9 +995,8 @@ function doSave(){
     invoice:S.invoice,note:S.note
   };
   records.unshift(rec); save(); pushSaveRec(rec);
-  sendStockLineNotify(rec);
   resetForm();
-  showToast('✓ 已儲存：'+rec.itemName);
+  showToast('✓ 已儲存：'+rec.itemName+'（將於收班時一併通知）');
 }
 
 function resetForm(){

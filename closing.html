@@ -787,11 +787,11 @@ function showResendModal(baseMsg, date){
     }); return t>0?Math.round(t/15)*0.25:0;
   }
 
-  var done = {elec:null, weather:null, jelly:null};
+  var done = {elec:null, weather:null, jelly:null, stock:null};
   var _fullMsg = baseMsg;
 
   function rebuild(){
-    if(done.elec===null||done.weather===null||done.jelly===null) return;
+    if(done.elec===null||done.weather===null||done.jelly===null||done.stock===null) return;
     var extra=[];
 
     // 仙草凍：先查仙草凍系統，沒有則查前一天電表備注
@@ -833,6 +833,10 @@ function showResendModal(baseMsg, date){
         extractElecExtra(todayR, extra, getIceRecordForDate, date);
       }
     }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extra.push(l); });
+    }
 
     _fullMsg = baseMsg + extra.join('\n');
     previewEl.textContent = _fullMsg;
@@ -856,6 +860,7 @@ function showResendModal(baseMsg, date){
   api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuild(); });
   api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuild(); });
   api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuild(); });
+  api({action:'stockGetByDate',date:date}, function(d){ done.stock=d||{ok:false}; rebuild(); });
 }
 
 
@@ -935,6 +940,31 @@ function extractJellyFromElec(elecData, yesterday){
     catch(e){ var bm2=rawNote.match(/(\d+)\s*桶/); if(bm2) jelly=parseInt(bm2[1])||0; }
   }
   return jelly;
+}
+
+// 把當天進貨記錄組成通知用的明細文字陣列
+function buildStockExtraLines(stockData){
+  if(!stockData || !stockData.length) return [];
+  var lines = [];
+  lines.push('');
+  lines.push('📦 今日進貨明細 ─────────');
+  stockData.forEach(function(r){
+    var head = (r.catName?'['+r.catName+'] ':'') + (r.itemName||'');
+    lines.push(head);
+    var qtys = [];
+    if(r.uLv && parseFloat(r.uLv)>0) qtys.push(parseFloat(r.uLv)+(r.uLn||''));
+    if(r.uMv && parseFloat(r.uMv)>0) qtys.push(parseFloat(r.uMv)+(r.uMn||''));
+    if(r.uSv && parseFloat(r.uSv)>0) qtys.push(parseFloat(r.uSv)+(r.uSn||''));
+    var detail = [];
+    if(qtys.length) detail.push(qtys.join('+'));
+    if(r.src) detail.push('來源:'+r.src);
+    if(r.expense && r.amt>0) detail.push('$'+Number(r.amt).toLocaleString()+(r.invoice?'✅':''));
+    if(detail.length) lines.push('　'+detail.join('　'));
+    if(r.note) lines.push('　備注：'+r.note);
+  });
+  var totalAmt = stockData.reduce(function(s,r){ return s + (r.expense?(parseFloat(r.amt)||0):0); }, 0);
+  if(totalAmt>0) lines.push('小計：$'+totalAmt.toLocaleString());
+  return lines;
 }
 
 
@@ -1055,11 +1085,11 @@ function showMsgModal(baseMsg, isTest, date, onSend){
     return total > 0 ? Math.round(total / 15) * 0.25 : 0;
   }
 
-  var done = {elec:null, weather:null, jelly:null};
+  var done = {elec:null, weather:null, jelly:null, stock:null};
   var _fullMsg = baseMsg;
 
   function rebuildPreview(){
-    if(done.elec===null||done.weather===null||done.jelly===null) return;
+    if(done.elec===null||done.weather===null||done.jelly===null||done.stock===null) return;
     var extra=[];
 
     // 🫙 仙草凍（前一天完成桶數）
@@ -1107,6 +1137,10 @@ function showMsgModal(baseMsg, isTest, date, onSend){
         extractElecExtra(todayR, extra, getIceRecordForDate, date);
       }
     }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extra.push(l); });
+    }
 
     _fullMsg = baseMsg + extra.join('\n');
     previewEl.textContent = _fullMsg;
@@ -1147,6 +1181,7 @@ function showMsgModal(baseMsg, isTest, date, onSend){
   api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuildPreview(); });
   // 仙草凍查前一天
   api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
+  api({action:'stockGetByDate',date:date}, function(d){ done.stock=d||{ok:false}; rebuildPreview(); });
 }
 // 預覽測試按鈕
 function previewTestNotify(){
@@ -1207,9 +1242,9 @@ function sendClosingLineNotify(p){
     } catch(e){ return null; }
   }
 
-  var done = {elec: null, weather: null, jelly: null};
+  var done = {elec: null, weather: null, jelly: null, stock: null};
   function tryMergeAndSend(){
-    if(done.elec === null || done.weather === null || done.jelly === null) return;
+    if(done.elec === null || done.weather === null || done.jelly === null || done.stock === null) return;
 
     var extraLines = [];
 
@@ -1264,6 +1299,10 @@ function sendClosingLineNotify(p){
         extractElecExtra(today, extraLines, getIceRecordForDate, p.date);
       }
     }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extraLines.push(l); });
+    }
 
     var fullMsg = closingMsg + extraLines.join('\n');
     apiPost({action:'sendLine', msg:fullMsg}, function(r, err){
@@ -1281,6 +1320,7 @@ function sendClosingLineNotify(p){
   api({action:'getTodayWeather', date:p.date}, function(d){ done.weather = d||{ok:false}; tryMergeAndSend(); });
   // 仙草凍查前一天（煮好的桶數）
   api({action:'jellyGetCookedByDate', date:yesterday}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
+  api({action:'stockGetByDate', date:p.date}, function(d){ done.stock = d||{ok:false}; tryMergeAndSend(); });
 }
 // ── 頁簽 ─────────────────────────────────────────
 function switchTab(tab){
