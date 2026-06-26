@@ -690,9 +690,7 @@ function loadData(){
 }
 function save(){
   try{localStorage.setItem('stock_v2',JSON.stringify({persons,items,sources,records}));}catch(e){}
-  // 人員統一交給 addEmp/deleteEmp 管理，這裡不重複寫入
-  cfgSet('stock:items', items);
-  cfgSet('stock:sources', sources);
+  // 人員/品項/來源各自由新增刪除時直接推 Sheets，這裡只存本機快取
 }
 
 // ── Overlay
@@ -725,19 +723,22 @@ window.onload=function(){
         buildStep1(); buildPersonMgmt();
       }
     });
-    cfgGet('stock:items', function(v){
-      if(v&&Array.isArray(v)&&v.length>0){
-        items=v;
-        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.items=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
-        buildStep1();
+    // 同步品項設定
+    api({action:'stockItemGetAll'}, function(d){
+      if(d&&d.ok&&d.data&&d.data.length>0){
+        items=d.data;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.items=items;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+        buildStep1(); buildItemMgmt();
       }
       setSync('☁️ 已同步');
       setTimeout(function(){ setSync(''); },3000);
     });
-    cfgGet('stock:sources', function(v){
-      if(v&&Array.isArray(v)&&v.length>0){
-        sources=v;
-        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.sources=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+    // 同步來源設定
+    api({action:'stockSourceGetAll'}, function(d){
+      if(d&&d.ok&&d.data&&d.data.length>0){
+        sources=d.data;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.sources=sources;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+        buildSourceMgmt();
       }
     });
   }
@@ -1352,20 +1353,31 @@ function addItem(){
   var desc=units.length===1?u1:units.map(function(u){return u.n;}).join('→');
   if(_editingItemId!==null){
     // 編輯模式：更新現有品項
+    var editId=_editingItemId;
     items=items.map(function(it){
-      if(it.id!==_editingItemId) return it;
+      if(it.id!==editId) return it;
       return {id:it.id, cat:it.cat, name:name, units:units};
     });
     save(); buildItemMgmt(); resetItemForm();
     showToast('✓ 已更新：'+name+' （'+desc+'）');
+    // 同步到 Sheets
+    apiCallPost({action:'stockItemSave', id:editId, cat:items.find(function(x){return x.id===editId;})?items.find(function(x){return x.id===editId;}).cat:mgmtCat, name:name, units:JSON.stringify(units)}, function(){});
   } else {
     // 新增模式
-    var it={id:Date.now(),cat:mgmtCat,name:name,units:units};
+    var newId=Date.now();
+    var it={id:newId,cat:mgmtCat,name:name,units:units};
     items.push(it); save(); buildItemMgmt(); resetItemForm();
     showToast('✓ 已新增：'+name+' （'+desc+'）');
+    // 同步到 Sheets
+    apiCallPost({action:'stockItemSave', id:newId, cat:mgmtCat, name:name, units:JSON.stringify(units)}, function(){});
   }
 }
-function delItem(id){if(!confirm('確定刪除？'))return;items=items.filter(function(it){return it.id!==id;});save();buildItemMgmt();showToast('已刪除');}
+function delItem(id){
+  if(!confirm('確定刪除？'))return;
+  items=items.filter(function(it){return it.id!==id;});
+  save(); buildItemMgmt(); showToast('已刪除');
+  apiCallPost({action:'stockItemDelete', id:id}, function(){});
+}
 
 function buildSourceMgmt(){
   var el=document.getElementById('ml-source');
@@ -1374,8 +1386,21 @@ function buildSourceMgmt(){
       +'<button class="mgmt-del" onclick="delSource('+i+')">刪除</button></div>';
   }).join(''):'<div class="empty" style="padding:10px">尚無來源</div>';
 }
-function addSource(){var v=document.getElementById('ai-source').value.trim();if(!v){showToast('請輸入名稱');return;}if(sources.indexOf(v)!==-1){showToast('已存在');return;}sources.push(v);save();buildSourceMgmt();document.getElementById('ai-source').value='';showToast('✓ 已新增：'+v);}
-function delSource(i){if(!confirm('確定刪除？'))return;sources.splice(i,1);save();buildSourceMgmt();showToast('已刪除');}
+function addSource(){
+  var v=document.getElementById('ai-source').value.trim();
+  if(!v){showToast('請輸入名稱');return;}
+  if(sources.indexOf(v)!==-1){showToast('已存在');return;}
+  sources.push(v); save(); buildSourceMgmt();
+  document.getElementById('ai-source').value='';
+  showToast('✓ 已新增：'+v);
+  apiCallPost({action:'stockSourceSave', name:v}, function(){});
+}
+function delSource(i){
+  if(!confirm('確定刪除？'))return;
+  var name=sources[i];
+  sources.splice(i,1); save(); buildSourceMgmt(); showToast('已刪除');
+  apiCallPost({action:'stockSourceDelete', name:name}, function(){});
+}
 
 // ══ 頁籤
 function showPage(p){
