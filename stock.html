@@ -822,17 +822,19 @@ function buildStep3(){
   var arr=items.filter(function(it){return it.cat===S.cat;});
   if(!arr.length){el.innerHTML='<div class="empty" style="padding:14px">此分類尚無品項，請至右上角 🗂 新增</div>';return;}
   el.innerHTML=arr.map(function(it){
-    var on=S.item&&S.item.id===it.id;
+    var on=S.item&&String(S.item.id)===String(it.id);
     var uStr=it.units.filter(function(u){return u.n;}).map(function(u){return u.n;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(' → ');
-    return '<div class="item-row'+(on?' on':'')+'" onclick="pickItem('+it.id+')">'
+    return '<div class="item-row'+(on?' on':'')+'" onclick="pickItem(\''+String(it.id)+'\')">'
       +'<div class="ir-left"><div class="ir-name">'+it.name+'</div><div class="ir-units">'+uStr+'</div></div>'
       +'<div class="ir-check">'+(on?'✓':'')+'</div></div>';
   }).join('');
 }
 function pickItem(id){
-  S.item=items.find(function(it){return it.id===id;})||null;
+  S.item=items.find(function(it){return String(it.id)===String(id);})||null;
+  if(!S.item){showToast('找不到品項，請重新同步'); return;}
   S.unitQtys={};
   setStepDone(3,S.item.name);
+  buildStep4();
 }
 
 // ══ Step 4: 數量（點單位開鍵盤）
