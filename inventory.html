@@ -684,20 +684,15 @@ function pullFromCloud(force){
       buildPersonGrid();
     }
   });
-  cfgGet('inv:items', function(v){
-    if(_syncLocked) return; // 存檔中，丟棄此次結果
-    if(v && Array.isArray(v) && v.length > 0){
-      // 用時間戳判斷是否需要更新
-      var cloudTs = v._ts || 0;
-      if(force || cloudTs > _syncVer || items.length === 0){
-        // 過濾掉 _ts 這個附加欄位，不影響品項資料
-        var cleanItems = v.filter(function(item){ return item && item.id; });
-        items = cleanItems;
-        _syncVer = cloudTs || _syncVer;
-        localStorage.setItem('inv3_items', JSON.stringify(items));
-        localStorage.setItem('inv3_ver', String(_syncVer));
-        renderCfgBody(); // 重新渲染設定介面
-      }
+  api({action:'invItemGetAll'}, function(d){
+    if(_syncLocked) return;
+    if(d && d.ok && d.data && d.data.length > 0){
+      // 獨立分頁回傳的資料永遠是最新的，直接覆蓋本機
+      items = d.data;
+      localStorage.setItem('inv3_items', JSON.stringify(items));
+      renderCfgBody();
+    } else if(d && d.ok && d.data && d.data.length === 0 && !force){
+      // Sheets 是空的但不是強制拉（代表尚未部署新版 AS），維持本機資料
     }
     setSyncStatus('ok');
     buildPersonGrid();
@@ -719,10 +714,10 @@ function saveItems(){
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(function(){
     _syncLocked = true;
-    var ts = Date.now(); // 用時間戳當版本號，確保輪詢能偵測到變化
+    var ts = Date.now();
     var snapshot = JSON.parse(JSON.stringify(items));
-    snapshot._ts = ts; // 附加時間戳
-    cfgSet('inv:items', snapshot, function(d){
+    // 用獨立分頁存，避免 cfgSet 的大小限制和版本覆蓋問題
+    apiPost({action:'invItemSaveAll', items:JSON.stringify(snapshot)}, function(d){
       _syncLocked = false;
       if(d && d.ok){
         _syncVer = ts;
