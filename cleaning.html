@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>清潔管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --b:#1A3A5C;--bl:#E8F0F8;--g:#2E7D32;--gl:#E8F5E9;--gm:#4CAF50;
+  --red:#C62828;--redl:#FFEBEE;--redm:#EF5350;
+  --amber:#E65100;--amberl:#FFF3E0;
+  --ink:#1a1a1a;--ink2:#444;--ink3:#888;
+  --bd:#e0e0e0;--bg:#f7f7f7;--white:#fff;
+  --r:12px;--r2:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.topbar{background:linear-gradient(135deg,#142E4A,#1E4A78);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.logo-badge{background:rgba(255,255,255,.15);border-radius:6px;padding:4px 8px;font-size:11px;color:rgba(255,255,255,.8)}
+.topbar h1{font-size:16px;font-weight:700;color:#fff}
+.tib{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tib:active{background:rgba(255,255,255,.3)}
+.tabs{display:flex;border-bottom:2px solid var(--bd);background:var(--white);flex-shrink:0}
+.tab{flex:1;padding:11px 4px;text-align:center;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s}
+.tab.on{color:var(--b);border-bottom-color:var(--b)}
+.main{flex:1;overflow-y:auto;padding:12px}
+
+/* 狀態列 */
+.status-bar{background:var(--white);border-radius:var(--r2);border:1px solid var(--bd);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.status-info{font-size:13px;color:var(--ink2)}
+.prog-wrap{height:5px;background:var(--bd);border-radius:3px;margin-top:4px;overflow:hidden;width:100%}
+.prog-fill{height:100%;background:var(--gm);border-radius:3px;transition:width .3s}
+
+/* 分類標題 */
+.area-head{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;padding:0 2px}
+
+/* 清潔項目卡片 */
+.clean-card{background:var(--white);border:1.5px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden;transition:border-color .15s,background .15s}
+.clean-card.done{border-color:var(--gm);background:var(--gl)}
+.clean-card.skip{border-color:var(--bd);background:#fafafa;opacity:.65}
+.card-main{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;cursor:pointer}
+.card-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd);background:var(--white);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;transition:all .15s;margin-top:1px}
+.clean-card.done .card-check{background:var(--gm);border-color:var(--gm);color:#fff}
+.card-body{flex:1;min-width:0}
+.card-task{font-size:14px;font-weight:600;line-height:1.4;color:var(--ink)}
+.card-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.tag-area{font-size:11px;background:var(--bl);color:var(--b);border-radius:4px;padding:2px 6px;font-weight:600}
+.tag-tool{font-size:11px;color:var(--ink3)}
+.note-badge{font-size:11px;color:var(--amber);font-weight:600}
+
+/* 備注輸入 */
+.note-row{padding:0 13px 11px 49px;display:none}
+.clean-card.done .note-row{display:block}
+.note-inp{width:100%;padding:7px 10px;border:1px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--bg);color:var(--ink);resize:none}
+.note-inp:focus{outline:none;border-color:var(--b)}
+.note-label{font-size:11px;color:var(--ink3);margin-bottom:4px}
+
+/* 提交按鈕 */
+.submit-wrap{padding:14px 0 4px;position:sticky;bottom:0;background:var(--bg)}
+.submit-btn{width:100%;padding:14px;border-radius:var(--r);border:none;background:var(--b);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;opacity:.45;transition:opacity .15s}
+.submit-btn.ready{opacity:1}
+.submit-btn:active{opacity:.8}
+
+/* 歷史記錄 */
+.hist-rec{background:var(--white);border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden}
+.hist-head{padding:10px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hist-date{font-size:14px;font-weight:700}
+.hist-meta{font-size:12px;color:var(--ink3)}
+.hist-rate{font-size:13px;font-weight:700}
+.hist-rate.full{color:var(--g)}
+.hist-rate.partial{color:var(--amber)}
+.hist-body{padding:0 13px 10px;display:none;border-top:1px solid var(--bd);margin-top:2px;padding-top:8px}
+.hist-body.open{display:block}
+.hist-item{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:13px;border-bottom:1px solid var(--bg)}
+.hist-item:last-child{border-bottom:none}
+.hist-icon{font-size:12px;flex-shrink:0;margin-top:2px}
+.hist-task{flex:1;color:var(--ink2)}
+.hist-note{font-size:11px;color:var(--amber);margin-top:2px}
+
+/* 設定 */
+.cfg-item{background:var(--white);border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:6px}
+.cfg-item-head{display:flex;align-items:flex-start;gap:8px;padding:10px 12px}
+.cfg-item-info{flex:1;min-width:0}
+.cfg-item-name{font-size:14px;font-weight:600}
+.cfg-item-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.cfg-btn{border:none;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cfg-btn.del{background:var(--redl);color:var(--red)}
+
+/* 新增項目表單 */
+.add-form{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-top:10px}
+.form-lbl{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.06em;margin-bottom:4px}
+.form-inp{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;color:var(--ink);background:var(--white);margin-bottom:8px}
+.form-inp:focus{outline:none;border-color:var(--b)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form-check{display:flex;align-items:center;gap:6px;font-size:13px;margin:4px 0 8px}
+.form-sel{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;color:var(--ink);background:var(--white);margin-bottom:8px}
+.add-btn{width:100%;padding:12px;border-radius:var(--r2);border:none;background:var(--b);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:var(--r) var(--r) 0 0;width:100%;max-height:90dvh;overflow-y:auto;padding:16px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+
+/* toast */
+#toast{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,.92);color:#fff;padding:9px 18px;border-radius:20px;font-size:14px;z-index:999;white-space:nowrap;max-width:88vw;text-overflow:ellipsis;overflow:hidden}
+
+/* 空白提示 */
+.empty{text-align:center;padding:40px 20px;color:var(--ink3);font-size:14px}
+
+/* 選人 */
+.person-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.pb{padding:9px 16px;border-radius:20px;border:1.5px solid var(--bd);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2)}
+.pb.on{background:var(--b);border-color:var(--b);color:#fff}
+
+/* 週/月提示 */
+.mode-notice{background:var(--amberl);border:1px solid var(--amber);border-radius:var(--r2);padding:10px 13px;font-size:13px;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="logo-badge">瀧飲山潮・學士店</div>
+      <h1>清潔管理</h1>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="tib" onclick="openOv('person')" title="選擇人員">👤</button>
+    <button class="tib" onclick="showTab('hist')" title="歷史記錄">📋</button>
+    <button class="tib" onclick="showTab('cfg')" title="設定">⚙️</button>
+    <button class="tib" onclick="syncItems()" title="同步">🔄</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-daily"   onclick="showTab('daily')">🧹 日清潔</button>
+  <button class="tab"    id="tab-weekly"  onclick="showTab('weekly')">📅 週清潔</button>
+  <button class="tab"    id="tab-monthly" onclick="showTab('monthly')">🗓 月清潔</button>
+  <button class="tab"    id="tab-hist"    onclick="showTab('hist')">📋 記錄</button>
+  <button class="tab"    id="tab-cfg"     onclick="showTab('cfg')">⚙️ 設定</button>
+</div>
+
+<div class="main" id="main-daily">
+  <div class="status-bar">
+    <div class="status-info">
+      <div id="daily-status-txt">請先選擇人員</div>
+      <div class="prog-wrap"><div class="prog-fill" id="daily-prog" style="width:0%"></div></div>
+    </div>
+    <div id="daily-pct" style="font-size:18px;font-weight:900;color:var(--b)">0%</div>
+  </div>
+  <div id="daily-body"></div>
+  <div class="submit-wrap">
+    <button class="submit-btn" id="daily-submit" onclick="submitCleaning('daily')">✓ 提交日清潔記錄</button>
+  </div>
+</div>
+
+<div class="main" id="main-weekly" style="display:none">
+  <div class="mode-notice">⚠️ 週清潔建議每週固定執行一次，請確認今日為本週清潔日</div>
+  <div class="status-bar">
+    <div class="status-info">
+      <div id="weekly-status-txt">請先選擇人員</div>
+      <div class="prog-wrap"><div class="prog-fill" id="weekly-prog" style="width:0%"></div></div>
+    </div>
+    <div id="weekly-pct" style="font-size:18px;font-weight:900;color:var(--b)">0%</div>
+  </div>
+  <div id="weekly-body"></div>
+  <div class="submit-wrap">
+    <button class="submit-btn" id="weekly-submit" onclick="submitCleaning('weekly')">✓ 提交週清潔記錄</button>
+  </div>
+</div>
+
+<div class="main" id="main-monthly" style="display:none">
+  <div class="mode-notice">⚠️ 月清潔請於每月初執行，部分項目有季節條件（如夏季冷氣濾網）</div>
+  <div class="status-bar">
+    <div class="status-info">
+      <div id="monthly-status-txt">請先選擇人員</div>
+      <div class="prog-wrap"><div class="prog-fill" id="monthly-prog" style="width:0%"></div></div>
+    </div>
+    <div id="monthly-pct" style="font-size:18px;font-weight:900;color:var(--b)">0%</div>
+  </div>
+  <div id="monthly-body"></div>
+  <div class="submit-wrap">
+    <button class="submit-btn" id="monthly-submit" onclick="submitCleaning('monthly')">✓ 提交月清潔記錄</button>
+  </div>
+</div>
+
+<div class="main" id="main-hist" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <select id="hist-mode-sel" onchange="loadHist()" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;background:var(--white)">
+      <option value="">全部週期</option>
+      <option value="daily">日清潔</option>
+      <option value="weekly">週清潔</option>
+      <option value="monthly">月清潔</option>
+    </select>
+    <input type="month" id="hist-month" onchange="loadHist()" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;background:var(--white)">
+  </div>
+  <div id="hist-body"><div class="empty">載入中…</div></div>
+</div>
+
+<div class="main" id="main-cfg" style="display:none">
+  <div style="margin-bottom:10px">
+    <select id="cfg-mode-sel" onchange="renderCfg()" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;background:var(--white)">
+      <option value="daily">日清潔項目</option>
+      <option value="weekly">週清潔項目</option>
+      <option value="monthly">月清潔項目</option>
+    </select>
+  </div>
+  <div id="cfg-body"></div>
+  <div class="add-form">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--b)">＋ 新增清潔項目</div>
+    <div class="form-row">
+      <div>
+        <div class="form-lbl">區域 *</div>
+        <input class="form-inp" id="ni-area" placeholder="如：臥式冰箱">
+      </div>
+      <div>
+        <div class="form-lbl">使用器具</div>
+        <input class="form-inp" id="ni-tool" placeholder="如：抹布">
+      </div>
+    </div>
+    <div class="form-lbl">清潔內容 *</div>
+    <textarea class="form-inp" id="ni-task" rows="2" placeholder="詳細描述清潔步驟"></textarea>
+    <div class="form-check">
+      <input type="checkbox" id="ni-needNote">
+      <label for="ni-needNote" style="cursor:pointer">需要備注（有異常狀況時填寫）</label>
+    </div>
+    <div id="ni-notetip-wrap" style="display:none">
+      <div class="form-lbl">備注提示文字</div>
+      <input class="form-inp" id="ni-notetip" placeholder="如：有髒污請描述">
+    </div>
+    <button class="add-btn" onclick="addCleanItem()">新增項目</button>
+  </div>
+</div>
+
+<!-- 選擇人員 overlay -->
+<div class="ov" id="ov-person">
+  <div class="sh">
+    <div class="sh-title">選擇執行人員 <button onclick="closeOv('person')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button></div>
+    <div class="person-grid" id="person-grid"></div>
+    <button onclick="closeOv('person')" style="width:100%;padding:12px;border-radius:var(--r2);border:none;background:var(--b);color:#fff;font-size:14px;font-weight:700;cursor:pointer">確認</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+// ── 狀態 ─────────────────────────────────────────────────────
+var allItems = [];   // 從 Sheets 讀取的所有清潔項目
+var persons  = [];   // 人員名單
+var selPerson = localStorage.getItem('clean_person') || '';
+var curTab   = 'daily';
+
+// 每個 mode 的勾選狀態 { itemId: {done:bool, note:string} }
+var checks = { daily:{}, weekly:{}, monthly:{} };
+
+// ── API ──────────────────────────────────────────────────────
+function api(params, cb){
+  var qs = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e);});
+}
+function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e);});
+}
+
+// ── 初始化 ───────────────────────────────────────────────────
+window.onload = function(){
+  var m = new Date();
+  document.getElementById('hist-month').value = m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0');
+  syncItems();
+  loadPersons();
+  document.getElementById('ni-needNote').addEventListener('change', function(){
+    document.getElementById('ni-notetip-wrap').style.display = this.checked ? 'block' : 'none';
+  });
+};
+
+function syncItems(){
+  api({action:'cleanItemGetAll'}, function(d){
+    if(d&&d.ok){ allItems=d.data; renderAll(); showToast('✓ 清潔項目已同步'); }
+    else { loadLocalItems(); }
+  });
+}
+
+function loadLocalItems(){
+  try{
+    var s = localStorage.getItem('clean_items');
+    if(s) allItems = JSON.parse(s);
+  }catch(e){}
+  renderAll();
+}
+
+function saveLocalItems(){
+  try{ localStorage.setItem('clean_items', JSON.stringify(allItems)); }catch(e){}
+}
+
+function loadPersons(){
+  api({action:'getEmps'}, function(d){
+    if(d&&d.ok&&d.data) persons=d.data;
+    else persons=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+    buildPersonGrid();
+  });
+}
+
+// ── Tab 切換 ─────────────────────────────────────────────────
+function showTab(t){
+  ['daily','weekly','monthly','hist','cfg'].forEach(function(n){
+    document.getElementById('main-'+n).style.display = n===t?'':'none';
+    var tab = document.getElementById('tab-'+n);
+    if(tab) tab.classList.toggle('on', n===t);
+  });
+  curTab = t;
+  if(t==='hist') loadHist();
+  if(t==='cfg') renderCfg();
+}
+
+// ── 渲染清潔項目 ─────────────────────────────────────────────
+function getItemsByMode(mode){
+  return allItems.filter(function(i){return i.mode===mode;});
+}
+
+function renderAll(){
+  saveLocalItems();
+  ['daily','weekly','monthly'].forEach(function(mode){
+    renderMode(mode);
+  });
+}
+
+function renderMode(mode){
+  var items = getItemsByMode(mode);
+  var done  = items.filter(function(i){ return checks[mode][i.id]&&checks[mode][i.id].done; }).length;
+  var pct   = items.length ? Math.round(done/items.length*100) : 0;
+
+  document.getElementById(mode+'-prog').style.width = pct+'%';
+  document.getElementById(mode+'-pct').textContent  = pct+'%';
+  document.getElementById(mode+'-status-txt').textContent =
+    selPerson ? (selPerson+' · '+done+'/'+items.length+' 項已完成') : '請先選擇人員';
+
+  var btn = document.getElementById(mode+'-submit');
+  btn.classList.toggle('ready', done===items.length && items.length>0 && !!selPerson);
+
+  // 依區域分組
+  var areaOrder=[], areaMap={};
+  items.forEach(function(item){
+    if(!areaMap[item.area]){ areaMap[item.area]=[]; areaOrder.push(item.area); }
+    areaMap[item.area].push(item);
+  });
+
+  var html='';
+  areaOrder.forEach(function(area){
+    html+='<div class="area-head">'+area+'</div>';
+    areaMap[area].forEach(function(item){
+      var st = checks[mode][item.id]||{done:false,note:''};
+      var cardCls = st.done ? 'clean-card done' : 'clean-card';
+      var checkIcon = st.done ? '✓' : '';
+      html+='<div class="'+cardCls+'" id="card-'+mode+'-'+item.id+'">'
+        +'<div class="card-main" onclick="toggleItem(\\''+mode+'\\',\\''+item.id+'\\')">'
+          +'<div class="card-check">'+checkIcon+'</div>'
+          +'<div class="card-body">'
+            +'<div class="card-task">'+esc(item.task)+'</div>'
+            +'<div class="card-meta">'
+              +(item.tool?'<span class="tag-tool">🔧 '+esc(item.tool)+'</span>':'')
+              +(item.needNote?'<span class="note-badge">📝 需備注</span>':'')
+            +'</div>'
+          +'</div>'
+        +'</div>'
+        +(item.needNote||st.done?
+          '<div class="note-row" id="note-row-'+mode+'-'+item.id+'" '+(st.done?'':'style="display:none"')+'>'
+            +'<div class="note-label">'+(item.needNote?'備注'+(item.noteTip?'（'+item.noteTip+'）':'')+'：':'備注（選填）：')+'</div>'
+            +'<textarea class="note-inp" rows="2" placeholder="'+(item.noteTip||'請填寫異常狀況或備注')+'" '
+              +'onchange="setNote(\\''+mode+'\\',\\''+item.id+'\\',this.value)" '
+              +'onclick="event.stopPropagation()">'+(st.note||'')+'</textarea>'
+          +'</div>'
+        :'')
+      +'</div>';
+    });
+  });
+
+  if(!items.length) html='<div class="empty">此週期尚無清潔項目<br>請至⚙️設定新增</div>';
+  document.getElementById(mode+'-body').innerHTML=html;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+function toggleItem(mode, id){
+  if(!selPerson){ showToast('請先點擊👤選擇人員'); openOv('person'); return; }
+  if(!checks[mode][id]) checks[mode][id]={done:false,note:''};
+  checks[mode][id].done = !checks[mode][id].done;
+  renderMode(mode);
+}
+
+function setNote(mode, id, val){
+  if(!checks[mode][id]) checks[mode][id]={done:true,note:''};
+  checks[mode][id].note = val;
+}
+
+// ── 提交 ────────────────────────────────────────────────────
+function submitCleaning(mode){
+  if(!selPerson){ showToast('請先選擇人員'); return; }
+  var items = getItemsByMode(mode);
+  var done = items.filter(function(i){return checks[mode][i.id]&&checks[mode][i.id].done;}).length;
+  if(done<items.length){ showToast('請先完成所有項目（'+done+'/'+items.length+'）'); return; }
+
+  var today = new Date();
+  var dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var recId = String(Date.now());
+
+  var payload = items.map(function(item){
+    var st = checks[mode][item.id]||{done:false,note:''};
+    return {itemId:item.id, area:item.area, task:item.task, done:st.done, note:st.note||''};
+  });
+
+  apiPost({
+    action:'cleanRecordSave',
+    recId: recId,
+    date: dateStr,
+    mode: mode,
+    person: selPerson,
+    items: JSON.stringify(payload)
+  }, function(d){
+    if(d&&d.ok){
+      showToast('✓ '+modeLabel(mode)+'記錄已儲存！');
+      // 清除此 mode 的勾選，準備下一次
+      checks[mode]={};
+      renderMode(mode);
+    } else {
+      showToast('❌ 儲存失敗，請重試');
+    }
+  });
+}
+
+function modeLabel(m){ return m==='daily'?'日清潔':m==='weekly'?'週清潔':'月清潔'; }
+
+// ── 人員管理 ─────────────────────────────────────────────────
+function buildPersonGrid(){
+  var el = document.getElementById('person-grid');
+  el.innerHTML = persons.map(function(p){
+    return '<button class="pb'+(p===selPerson?' on':'')+'" onclick="pickPerson(\\''+p+'\\')">'  +p+'</button>';
+  }).join('');
+}
+function pickPerson(p){
+  selPerson=p;
+  localStorage.setItem('clean_person',p);
+  buildPersonGrid();
+  ['daily','weekly','monthly'].forEach(function(m){ renderMode(m); });
+}
+
+// ── 歷史記錄 ─────────────────────────────────────────────────
+function loadHist(){
+  var mode = document.getElementById('hist-mode-sel').value;
+  var month = document.getElementById('hist-month').value;
+  var startDate='', endDate='';
+  if(month){
+    var parts = month.split('-');
+    var y=parseInt(parts[0]), mo=parseInt(parts[1]);
+    startDate = month+'-01';
+    var lastDay = new Date(y, mo, 0).getDate();
+    endDate = month+'-'+String(lastDay).padStart(2,'0');
+  }
+  document.getElementById('hist-body').innerHTML='<div class="empty">載入中…</div>';
+  api({action:'cleanRecordGetAll', mode:mode, startDate:startDate, endDate:endDate}, function(d){
+    if(!d||!d.ok||!d.data.length){
+      document.getElementById('hist-body').innerHTML='<div class="empty">此期間無清潔記錄</div>';
+      return;
+    }
+    var html='';
+    d.data.forEach(function(rec, idx){
+      var total = rec.items.length;
+      var doneN = rec.items.filter(function(i){return i.done;}).length;
+      var pct   = total?Math.round(doneN/total*100):0;
+      var rateCls = pct===100?'full':'partial';
+      html+='<div class="hist-rec">'
+        +'<div class="hist-head" onclick="toggleHist('+idx+')">'
+          +'<div>'
+            +'<div class="hist-date">'+rec.date+' '+modeLabel(rec.mode)+'</div>'
+            +'<div class="hist-meta">'+rec.person+' · '+rec.submittedAt.slice(11,16)+'</div>'
+          +'</div>'
+          +'<div class="hist-rate '+rateCls+'">'+doneN+'/'+total+' ('+pct+'%)</div>'
+        +'</div>'
+        +'<div class="hist-body" id="hb-'+idx+'">';
+      rec.items.forEach(function(item){
+        html+='<div class="hist-item">'
+          +'<span class="hist-icon">'+(item.done?'✅':'⬜')+'</span>'
+          +'<div><div class="hist-task">'+esc(item.task)+'</div>'
+          +(item.note?'<div class="hist-note">📝 '+esc(item.note)+'</div>':'')
+          +'</div></div>';
+      });
+      html+='</div></div>';
+    });
+    document.getElementById('hist-body').innerHTML=html;
+  });
+}
+
+function toggleHist(idx){
+  var el=document.getElementById('hb-'+idx);
+  if(el) el.classList.toggle('open');
+}
+
+// ── 設定 ─────────────────────────────────────────────────────
+function renderCfg(){
+  var mode = document.getElementById('cfg-mode-sel').value;
+  var items = getItemsByMode(mode);
+  if(!items.length){
+    document.getElementById('cfg-body').innerHTML='<div class="empty">此週期尚無項目</div>';
+    return;
+  }
+  var areaOrder=[], areaMap={};
+  items.forEach(function(item){
+    if(!areaMap[item.area]){ areaMap[item.area]=[]; areaOrder.push(item.area); }
+    areaMap[item.area].push(item);
+  });
+  var html='';
+  areaOrder.forEach(function(area){
+    html+='<div class="area-head">'+area+'</div>';
+    areaMap[area].forEach(function(item){
+      html+='<div class="cfg-item">'
+        +'<div class="cfg-item-head">'
+          +'<div class="cfg-item-info">'
+            +'<div class="cfg-item-name">'+esc(item.task)+'</div>'
+            +'<div class="cfg-item-meta">'+(item.tool?'🔧 '+esc(item.tool)+'　':'')+(item.needNote?'📝 需備注':'')+'</div>'
+          +'</div>'
+          +'<button class="cfg-btn del" onclick="delCleanItem(\\''+item.id+'\\')">刪除</button>'
+        +'</div>'
+      +'</div>';
+    });
+  });
+  document.getElementById('cfg-body').innerHTML=html;
+}
+
+function addCleanItem(){
+  var area = document.getElementById('ni-area').value.trim();
+  var task = document.getElementById('ni-task').value.trim();
+  if(!area||!task){ showToast('請填寫區域和清潔內容'); return; }
+  var mode = document.getElementById('cfg-mode-sel').value;
+  var tool = document.getElementById('ni-tool').value.trim();
+  var needNote = document.getElementById('ni-needNote').checked;
+  var noteTip  = document.getElementById('ni-notetip').value.trim();
+  var maxOrder = getItemsByMode(mode).reduce(function(m,i){return Math.max(m,i.order);},0);
+
+  apiPost({
+    action:'cleanItemSave', mode:mode, area:area, tool:tool, task:task,
+    needNote:needNote?'true':'false', noteTip:noteTip, order:maxOrder+1
+  }, function(d){
+    if(d&&d.ok){
+      showToast('✓ 已新增：'+task.slice(0,12)+'…');
+      ['ni-area','ni-tool','ni-task','ni-notetip'].forEach(function(id){document.getElementById(id).value='';});
+      document.getElementById('ni-needNote').checked=false;
+      document.getElementById('ni-notetip-wrap').style.display='none';
+      syncItems();
+    } else { showToast('新增失敗'); }
+  });
+}
+
+function delCleanItem(id){
+  if(!confirm('確定刪除此清潔項目？')) return;
+  apiPost({action:'cleanItemDelete', id:id}, function(d){
+    if(d&&d.ok){ showToast('已刪除'); syncItems(); }
+    else showToast('刪除失敗');
+  });
+}
+
+// ── Overlay ──────────────────────────────────────────────────
+function openOv(id){ document.getElementById('ov-'+id).classList.add('show'); }
+function closeOv(id){ document.getElementById('ov-'+id).classList.remove('show'); }
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.ov.show').forEach(function(ov){if(e.target===ov)ov.classList.remove('show');});
+});
+
+// ── Toast ────────────────────────────────────────────────────
+function showToast(m){
+  var t=document.getElementById('toast');
+  t.textContent=m; t.style.display='block';
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){t.style.display='none';},2800);
+}
+</script>
+</body>
+</html>

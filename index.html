@@ -279,6 +279,7 @@ tbody tr:hover td{background:#FAFCFF}
         <button class="nav-item" id="nav-checklist" onclick="showPage('checklist')"><span class="nav-icon">✅</span>開班 Checklist</button>
         <button class="nav-item" id="nav-closing" onclick="showPage('closing')"><span class="nav-icon">🏪</span>收班記錄</button>
         <button class="nav-item" id="nav-inventory" onclick="showPage('inventory')"><span class="nav-icon">🗂️</span>盤補貨系統</button>
+        <button class="nav-item" id="nav-cleaning" onclick="showPage('cleaning')"><span class="nav-icon">🧹</span>清潔管理</button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-lbl">系統管理</div>
@@ -408,6 +409,9 @@ tbody tr:hover td{background:#FAFCFF}
       </div>
       <div class="page" id="page-inventory" style="padding:0;margin:-14px">
         <iframe class="system-frame" id="frame-inventory" src="" title="盤補貨系統"></iframe>
+      </div>
+      <div class="page" id="page-cleaning">
+        <iframe class="system-frame" id="frame-cleaning" src="" title="清潔管理"></iframe>
       </div>
 
       <!-- 交接版 -->
@@ -732,7 +736,7 @@ function showPage(p){
   curPage=p;
   closeSidebar();
   // 第一次進入時才載入 iframe
-  var frames=['temp','jelly','stock','elec','checklist','closing','inventory'];
+  var frames=['temp','jelly','stock','elec','checklist','closing','inventory','cleaning'];
   if(frames.indexOf(p)>-1 && !framesLoaded[p]){
     document.getElementById('frame-'+p).src=p+'.html';
     framesLoaded[p]=true;
