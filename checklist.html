@@ -415,7 +415,7 @@ function saveData(){
   // 同時寫 localStorage 和雲端
   var payload={persons:persons,openSteps:openSteps,closeSteps:closeSteps,checkHistory:checkHistory};
   try{localStorage.setItem('checklist_v2',JSON.stringify(payload));}catch(e){}
-  cfgSet('cl:persons', persons);
+  // 人員統一交給 addEmp/deleteEmp 管理
   cfgSet('cl:checkHistory', checkHistory.slice(0,60)); // 最多存60筆
 }
 
@@ -433,10 +433,11 @@ function syncFromCloud(){
       _cloudReady=true; setSyncStatus(true); buildPersonGrid(); renderHist();
     }
   }
-  cfgGet('cl:persons', function(v){
-    if(v&&Array.isArray(v)&&v.length>0){
-      persons=v;
-      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.persons=v;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
+  // 人員統一從「人員名單」分頁讀取
+  api({action:'getEmps'}, function(d){
+    if(d&&d.ok&&d.data&&d.data.length>0){
+      persons=d.data;
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.persons=persons;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
     }
     loaded.persons=true; checkDone();
   });
@@ -715,11 +716,27 @@ function addPerson(){
   var v=document.getElementById('ai-person').value.trim();
   if(!v){showToast('請輸入姓名');return;}
   if(persons.indexOf(v)!==-1){showToast('已存在');return;}
-  persons.push(v); saveData(); buildPersonMgmt(); buildPersonGrid();
-  document.getElementById('ai-person').value='';
-  showToast('✓ 已新增：'+v);
+  api({action:'addEmp',name:v},function(d){
+    if(d&&d.ok){
+      persons.push(v);
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.persons=persons;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
+      buildPersonMgmt(); buildPersonGrid();
+      document.getElementById('ai-person').value='';
+      showToast('✓ 已新增：'+v);
+    } else { showToast('新增失敗：'+(d&&d.error||'未知錯誤')); }
+  });
 }
-function delPerson(i){ if(!confirm('確定刪除？'))return; persons.splice(i,1); saveData(); buildPersonMgmt(); buildPersonGrid(); }
+function delPerson(i){
+  if(!confirm('確定刪除？'))return;
+  var name=persons[i];
+  api({action:'deleteEmp',name:name},function(d){
+    if(d&&d.ok){
+      persons.splice(i,1);
+      try{var s=JSON.parse(localStorage.getItem('checklist_v2')||'{}');s.persons=persons;localStorage.setItem('checklist_v2',JSON.stringify(s));}catch(e){}
+      buildPersonMgmt(); buildPersonGrid(); showToast('已刪除');
+    } else { showToast('刪除失敗：'+(d&&d.error||'未知錯誤')); }
+  });
+}
 
 function buildStepMgmt(){
   var steps=mgmtType==='open'?openSteps:closeSteps;

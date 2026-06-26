@@ -565,7 +565,7 @@ var DEFAULT_ITEMS=[
   {id:'tea_camel',  name:'茶花烏龍',  cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:10,lm:0, wu:'g',  sw:50, daily:{min:0,target:0},  weekly:{min:1,target:3}},
 ];
 
-var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文']; // 初始預設值，啟動時從Sheets覆蓋
 var items=[],counts={},selPerson='',curMode='daily',curItemId='',records=[],cfgMode='daily';
 
 // ── 通用雲端 cfg helper ──────────────────
@@ -669,6 +669,13 @@ function loadLocal(){
 // force=true：不管版本號都覆蓋；force=false：只有雲端版本較新才覆蓋
 function pullFromCloud(force){
   setSyncStatus('syncing');
+  // 同步人員名單（統一來源）
+  api({action:'getEmps'}, function(d){
+    if(d&&d.ok&&d.data&&d.data.length>0){
+      PERSONS=d.data;
+      buildPersonGrid();
+    }
+  });
   cfgGet('inv:items', function(v){
     if(_syncLocked) return; // 存檔中，丟棄此次結果
     if(v && Array.isArray(v) && v.length > 0){

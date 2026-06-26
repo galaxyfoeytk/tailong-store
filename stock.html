@@ -473,7 +473,7 @@ tbody tr:last-child td{border-bottom:none}
       <div id="unit-preview-text"></div>
     </div>
 
-    <button class="sh-ok" onclick="addItem()">新增品項</button>
+    <button class="sh-ok" id="add-item-btn" onclick="addItem()">新增品項</button>
   </div>
 </div>
 
@@ -690,8 +690,7 @@ function loadData(){
 }
 function save(){
   try{localStorage.setItem('stock_v2',JSON.stringify({persons,items,sources,records}));}catch(e){}
-  // 同步設定到雲端
-  cfgSet('stock:persons', persons);
+  // 人員統一交給 addEmp/deleteEmp 管理，這裡不重複寫入
   cfgSet('stock:items', items);
   cfgSet('stock:sources', sources);
 }
@@ -718,12 +717,12 @@ window.onload=function(){
         buildListFilters();
       }
     });
-    // 同步設定（人員/品項/來源）
-    cfgGet('stock:persons', function(v){
-      if(v&&Array.isArray(v)&&v.length>0){
-        persons=v;
-        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.persons=v;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
-        buildStep1();
+    // 同步人員（統一來源：人員名單分頁）
+    api({action:'getEmps'}, function(d){
+      if(d&&d.ok&&d.data&&d.data.length>0){
+        persons=d.data;
+        try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.persons=persons;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+        buildStep1(); buildPersonMgmt();
       }
     });
     cfgGet('stock:items', function(v){
@@ -1202,8 +1201,31 @@ function buildPersonMgmt(){
       +'<button class="mgmt-del" onclick="delPerson('+i+')">刪除</button></div>';
   }).join(''):'<div class="empty" style="padding:10px">尚無人員</div>';
 }
-function addPerson(){var v=document.getElementById('ai-person').value.trim();if(!v){showToast('請輸入姓名');return;}if(persons.indexOf(v)!==-1){showToast('已存在');return;}persons.push(v);save();buildPersonMgmt();buildStep1();document.getElementById('ai-person').value='';showToast('✓ 已新增：'+v);}
-function delPerson(i){if(!confirm('確定刪除？'))return;persons.splice(i,1);save();buildPersonMgmt();buildStep1();showToast('已刪除');}
+function addPerson(){
+  var v=document.getElementById('ai-person').value.trim();
+  if(!v){showToast('請輸入姓名');return;}
+  if(persons.indexOf(v)!==-1){showToast('已存在');return;}
+  api({action:'addEmp',name:v},function(d){
+    if(d&&d.ok){
+      persons.push(v);
+      try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.persons=persons;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+      buildPersonMgmt();buildStep1();
+      document.getElementById('ai-person').value='';
+      showToast('✓ 已新增：'+v);
+    } else { showToast('新增失敗：'+(d&&d.error||'未知錯誤')); }
+  });
+}
+function delPerson(i){
+  if(!confirm('確定刪除？'))return;
+  var name=persons[i];
+  api({action:'deleteEmp',name:name},function(d){
+    if(d&&d.ok){
+      persons.splice(i,1);
+      try{var s=JSON.parse(localStorage.getItem('stock_v2')||'{}');s.persons=persons;localStorage.setItem('stock_v2',JSON.stringify(s));}catch(e){}
+      buildPersonMgmt();buildStep1();showToast('已刪除');
+    } else { showToast('刪除失敗：'+(d&&d.error||'未知錯誤')); }
+  });
+}
 
 var mgmtCat=CATS[0].id;
 function buildMgmtCatChips(){
@@ -1217,9 +1239,41 @@ function buildItemMgmt(){
   var arr=items.filter(function(it){return it.cat===mgmtCat;});
   el.innerHTML=arr.length?arr.map(function(it){
     var uStr=it.units.filter(function(u){return u.n;}).map(function(u,i){return u.n+(u.q>1?'('+u.q+')':'');}).join(' → ');
-    return '<div class="mgmt-row"><div><div class="mgmt-name">'+it.name+'</div><div class="mgmt-sub">'+uStr+'</div></div>'
+    return '<div class="mgmt-row"><div style="flex:1;min-width:0"><div class="mgmt-name">'+it.name+'</div><div class="mgmt-sub">'+uStr+'</div></div>'
+      +'<button class="mgmt-del" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C;margin-right:4px" onclick="editItem('+it.id+')">編輯</button>'
       +'<button class="mgmt-del" onclick="delItem('+it.id+')">刪除</button></div>';
   }).join(''):'<div class="empty" style="padding:10px">此分類尚無品項</div>';
+}
+var _editingItemId = null;
+function editItem(id){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  _editingItemId=id;
+  document.getElementById('ai-item-name').value=it.name;
+  _layerCount=it.units.length;
+  ['ul-2','ul-3'].forEach(function(uid){document.getElementById(uid).style.display='none';});
+  document.getElementById('add-layer-btn').style.display='block';
+  if(it.units[0]) document.getElementById('ai-u1').value=it.units[0].n||'';
+  if(it.units[1]){
+    document.getElementById('ul-2').style.display='block';
+    document.getElementById('ai-u2').value=it.units[1].n||'';
+    document.getElementById('ai-q2').value=it.units[1].q||'';
+    document.getElementById('u2-per-label').textContent=it.units[0].n||'小單位';
+    _layerCount=2;
+  }
+  if(it.units[2]){
+    document.getElementById('ul-3').style.display='block';
+    document.getElementById('ai-u3').value=it.units[2].n||'';
+    document.getElementById('ai-q3').value=it.units[2].q||'';
+    document.getElementById('u3-per-label').textContent=it.units[1]?(it.units[1].n||'中單位'):'中單位';
+    document.getElementById('add-layer-btn').style.display='none';
+    _layerCount=3;
+  }
+  updateUnitPreview();
+  var btn=document.getElementById('add-item-btn');
+  if(btn) btn.textContent='✏️ 儲存修改';
+  document.getElementById('ai-item-name').scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('ai-item-name').focus();
 }
 var _layerCount=1;
 function addLayer(){
@@ -1262,6 +1316,7 @@ function updateUnitPreview(){
   else{box.style.display='none';}
 }
 function resetItemForm(){
+  _editingItemId=null;
   _layerCount=1;
   ['ai-item-name','ai-u1','ai-u2','ai-u3'].forEach(function(id){document.getElementById(id).value='';});
   ['ai-q2','ai-q3'].forEach(function(id){document.getElementById(id).value='';});
@@ -1269,6 +1324,8 @@ function resetItemForm(){
   document.getElementById('ul-3').style.display='none';
   document.getElementById('add-layer-btn').style.display='block';
   document.getElementById('unit-preview-box').style.display='none';
+  var btn=document.getElementById('add-item-btn');
+  if(btn) btn.textContent='新增品項';
 }
 function addItem(){
   var name=document.getElementById('ai-item-name').value.trim();
@@ -1292,10 +1349,21 @@ function addItem(){
     if(!u3c){showToast('請填寫最大單位名稱');return;}
     units=[{n:u1,q:1},{n:u2c,q:q2c},{n:u3c,q:q3c}];
   }
-  var it={id:Date.now(),cat:mgmtCat,name:name,units:units};
-  items.push(it);save();buildItemMgmt();resetItemForm();
   var desc=units.length===1?u1:units.map(function(u){return u.n;}).join('→');
-  showToast('✓ 已新增：'+name+' （'+desc+'）');
+  if(_editingItemId!==null){
+    // 編輯模式：更新現有品項
+    items=items.map(function(it){
+      if(it.id!==_editingItemId) return it;
+      return {id:it.id, cat:it.cat, name:name, units:units};
+    });
+    save(); buildItemMgmt(); resetItemForm();
+    showToast('✓ 已更新：'+name+' （'+desc+'）');
+  } else {
+    // 新增模式
+    var it={id:Date.now(),cat:mgmtCat,name:name,units:units};
+    items.push(it); save(); buildItemMgmt(); resetItemForm();
+    showToast('✓ 已新增：'+name+' （'+desc+'）');
+  }
 }
 function delItem(id){if(!confirm('確定刪除？'))return;items=items.filter(function(it){return it.id!==id;});save();buildItemMgmt();showToast('已刪除');}
 
