@@ -402,7 +402,6 @@ function renderMode(mode){
   var btn = document.getElementById(mode+'-submit');
   btn.classList.toggle('ready', done===items.length && items.length>0 && !!selPerson);
 
-  // 依區域分組
   var areaOrder=[], areaMap={};
   items.forEach(function(item){
     if(!areaMap[item.area]){ areaMap[item.area]=[]; areaOrder.push(item.area); }
@@ -416,8 +415,9 @@ function renderMode(mode){
       var st = checks[mode][item.id]||{done:false,note:''};
       var cardCls = st.done ? 'clean-card done' : 'clean-card';
       var checkIcon = st.done ? '✓' : '';
-      html+='<div class="'+cardCls+'" id="card-'+mode+'-'+item.id+'">'
-        +'<div class="card-main" onclick="toggleItem(\\''+mode+'\\',\\''+item.id+'\\')">'
+      var showNote = st.done; // 勾選後才顯示備注欄
+      html+='<div class="'+cardCls+'" id="card-'+mode+'-'+item.id+'" data-mode="'+mode+'" data-id="'+item.id+'">'
+        +'<div class="card-main" data-toggle="1">'
           +'<div class="card-check">'+checkIcon+'</div>'
           +'<div class="card-body">'
             +'<div class="card-task">'+esc(item.task)+'</div>'
@@ -427,12 +427,10 @@ function renderMode(mode){
             +'</div>'
           +'</div>'
         +'</div>'
-        +(item.needNote||st.done?
-          '<div class="note-row" id="note-row-'+mode+'-'+item.id+'" '+(st.done?'':'style="display:none"')+'>'
+        +(item.needNote||showNote?
+          '<div class="note-row" id="note-row-'+mode+'-'+item.id+'"'+(showNote?'':' style="display:none"')+'>'
             +'<div class="note-label">'+(item.needNote?'備注'+(item.noteTip?'（'+item.noteTip+'）':'')+'：':'備注（選填）：')+'</div>'
-            +'<textarea class="note-inp" rows="2" placeholder="'+(item.noteTip||'請填寫異常狀況或備注')+'" '
-              +'onchange="setNote(\\''+mode+'\\',\\''+item.id+'\\',this.value)" '
-              +'onclick="event.stopPropagation()">'+(st.note||'')+'</textarea>'
+            +'<textarea class="note-inp" rows="2" placeholder="'+(item.noteTip||'請填寫異常狀況或備注')+'" data-mode="'+mode+'" data-id="'+item.id+'" data-note="1">'+(st.note||'')+'</textarea>'
           +'</div>'
         :'')
       +'</div>';
@@ -440,7 +438,22 @@ function renderMode(mode){
   });
 
   if(!items.length) html='<div class="empty">此週期尚無清潔項目<br>請至⚙️設定新增</div>';
-  document.getElementById(mode+'-body').innerHTML=html;
+  var bodyEl = document.getElementById(mode+'-body');
+  bodyEl.innerHTML = html;
+
+  // 事件委派：點擊 card-main 觸發 toggleItem，完全不依賴 onclick 字串
+  // 事件委派：onclick 和 onchange 都直接設在 bodyEl，每次 render 覆蓋，不重複疊加
+  bodyEl.onclick = function(e){
+    if(e.target.closest('textarea')) return; // textarea 不觸發 toggle
+    var card = e.target.closest('[data-mode][data-id]');
+    if(!card) return;
+    toggleItem(card.getAttribute('data-mode'), card.getAttribute('data-id'));
+  };
+  bodyEl.onchange = function(e){
+    var ta = e.target;
+    if(ta.tagName!=='TEXTAREA'||!ta.getAttribute('data-note')) return;
+    setNote(ta.getAttribute('data-mode'), ta.getAttribute('data-id'), ta.value);
+  };
 }
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
@@ -498,8 +511,12 @@ function modeLabel(m){ return m==='daily'?'日清潔':m==='weekly'?'週清潔':'
 function buildPersonGrid(){
   var el = document.getElementById('person-grid');
   el.innerHTML = persons.map(function(p){
-    return '<button class="pb'+(p===selPerson?' on':'')+'" onclick="pickPerson(\\''+p+'\\')">'  +p+'</button>';
+    return '<button class="pb'+(p===selPerson?' on':'')+'" data-person="'+p.replace(/"/g,'&quot;')+'">'+p+'</button>';
   }).join('');
+  el.onclick = function(e){
+    var btn = e.target.closest('button[data-person]');
+    if(btn) pickPerson(btn.getAttribute('data-person'));
+  };
 }
 function pickPerson(p){
   selPerson=p;
@@ -582,12 +599,13 @@ function renderCfg(){
             +'<div class="cfg-item-name">'+esc(item.task)+'</div>'
             +'<div class="cfg-item-meta">'+(item.tool?'🔧 '+esc(item.tool)+'　':'')+(item.needNote?'📝 需備注':'')+'</div>'
           +'</div>'
-          +'<button class="cfg-btn del" onclick="delCleanItem(\\''+item.id+'\\')">刪除</button>'
+          +'<button class="cfg-btn del" data-delid="'+item.id+'">刪除</button>'
         +'</div>'
       +'</div>';
     });
   });
   document.getElementById('cfg-body').innerHTML=html;
+  document.getElementById('cfg-body').onclick=function(e){var btn=e.target.closest('[data-delid]');if(btn)delCleanItem(btn.getAttribute('data-delid'));};
 }
 
 function addCleanItem(){
