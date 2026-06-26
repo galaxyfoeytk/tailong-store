@@ -76,6 +76,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .item-card.filled-ok{border-color:var(--gm);background:var(--gl)}
 .item-card.filled-low{border-color:var(--red);background:var(--redl)}
 .item-card.filled-zero{border-color:var(--amber);background:var(--amberl)}
+.item-card-daily{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:11px 13px;margin-bottom:6px;transition:border-color .12s,background .12s}
+.item-card-daily.ok{border-color:var(--gm);background:var(--gl)}
+.item-card-daily.need{border-color:var(--red);background:var(--redl)}
+.daily-btns{display:flex;gap:8px;margin-top:8px}
+.daily-btn{flex:1;padding:9px 0;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);transition:all .12s}
+.daily-btn.ok.active{background:var(--g);border-color:var(--g);color:#fff}
+.daily-btn.need.active{background:var(--red);border-color:var(--red);color:#fff}
+.ic-std{font-size:12px;color:var(--ink3);font-weight:500}
 .ic-top{display:flex;align-items:center;justify-content:space-between}
 .ic-name{font-size:14px;font-weight:600}
 .ic-total{font-size:16px;font-weight:900;color:var(--ink3)}
@@ -783,55 +791,83 @@ function renderCountPage(){
   var fb=document.getElementById('finish-btn');
   fb.disabled=done<modeItems.length;
   fb.style.opacity=done>=modeItems.length?1:0.4;
-  fb.textContent=curMode==='daily'?'✓ 完成，查看需補貨':curMode==='weekly'?'✓ 完成，查看需叫貨':'✓ 完成月盤點';
+  fb.textContent=curMode==='daily'?'✓ 完成，查看補貨清單':curMode==='weekly'?'✓ 完成，查看需叫貨':'✓ 完成月盤點';
   fb.className='finish-btn fb-'+(curMode==='daily'?'daily':curMode==='weekly'?'weekly':'monthly');
 
   var cats=[...new Set(modeItems.map(function(i){return i.cat;}))];
   var html='';
-  cats.forEach(function(cat){
-    var ci=modeItems.filter(function(i){return i.cat===cat;});
-    html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
-    ci.forEach(function(item){
-      var c=counts[item.id];
-      var filled=c!==undefined;
-      var total=filled?calcTotal(item,c):null;
-      var status='';
-      var cls='';
-      if(filled&&curMode!=='monthly'){
-        var cfg=item[curMode];
-        if(cfg){
-          var minInSmall=unitToSmall(item,cfg.min,cfg.minUnit||'s');
-          if(total<minInSmall){cls='filled-low';status='⚠ 不足';}
-          else if(total===0){cls='filled-zero';}
-          else{cls='filled-ok';}
-        }
-      } else if(filled){cls='filled-ok';}
-      var totalCls=!filled?'':cls==='filled-low'?'low':cls==='filled-zero'?'zero':'ok';
-      html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+'\')">'
-        +'<div class="ic-top">'
-          +'<span class="ic-name">'+item.name+'</span>'
-          +'<span class="ic-total '+totalCls+'">'+(filled?(total+' '+item.sn):'—')+'</span>'
-        +'</div>';
-      if(filled&&c){
-        var parts=[];
-        if(item.ln&&c.l) parts.push(c.l+item.ln);
-        if(item.mn&&c.m) parts.push(c.m+item.mn);
-        if(c.s!==undefined) parts.push(c.s+item.sn);
-        if(item.wu&&c.w) parts.push(c.w+item.wu);
-        if(parts.length>1) html+='<div class="ic-units-row">'+parts.join(' + ')+'</div>';
-      }
-      if(curMode!=='monthly'&&item[curMode]){
-        var t=item[curMode];
-        var minLbl=t.min+getUnitLabel(item,t.minUnit||'s');
-        var tgtLbl=t.target+getUnitLabel(item,t.targetUnit||'s');
-        html+='<div class="ic-sub"><span class="ic-threshold">低標:'+minLbl+'</span><span>補至:'+tgtLbl+'</span>';
-        if(status) html+='<span style="color:var(--red);font-weight:700">'+status+'</span>';
-        html+='</div>';
-      }
-      html+='</div>';
+
+  if(curMode==='daily'){
+    // 日盤：判斷式，只顯示標準量，兩個按鈕
+    cats.forEach(function(cat){
+      var ci=modeItems.filter(function(i){return i.cat===cat;});
+      html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+      ci.forEach(function(item){
+        var status=counts[item.id]; // undefined=未判斷, 'ok'=充足, 'need'=需補貨
+        var cfg=item.daily||{};
+        var stdLabel=(cfg.std!=null?cfg.std:cfg.min||0)+getUnitLabel(item,cfg.stdUnit||'s');
+        var cardCls=status==='ok'?'item-card-daily ok':status==='need'?'item-card-daily need':'item-card-daily';
+        html+='<div class="'+cardCls+'">'
+          +'<div class="ic-top"><span class="ic-name">'+item.name+'</span>'
+          +'<span class="ic-std">標準 '+stdLabel+'</span></div>'
+          +'<div class="daily-btns">'
+          +'<button class="daily-btn ok'+(status==='ok'?' active':'')+'" onclick="setDailyStatus(\''+item.id+'\',\'ok\')">✅ 充足</button>'
+          +'<button class="daily-btn need'+(status==='need'?' active':'')+'" onclick="setDailyStatus(\''+item.id+'\',\'need\')">⚠ 需補貨</button>'
+          +'</div>'
+          +'</div>';
+      });
     });
-  });
+  } else {
+    // 週盤/月盤：原有數字輸入流程
+    cats.forEach(function(cat){
+      var ci=modeItems.filter(function(i){return i.cat===cat;});
+      html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+      ci.forEach(function(item){
+        var c=counts[item.id];
+        var filled=c!==undefined;
+        var total=filled?calcTotal(item,c):null;
+        var status='';
+        var cls='';
+        if(filled&&curMode!=='monthly'){
+          var cfg=item[curMode];
+          if(cfg){
+            var minInSmall=unitToSmall(item,cfg.min,cfg.minUnit||'s');
+            if(total<minInSmall){cls='filled-low';status='⚠ 不足';}
+            else if(total===0){cls='filled-zero';}
+            else{cls='filled-ok';}
+          }
+        } else if(filled){cls='filled-ok';}
+        var totalCls=!filled?'':cls==='filled-low'?'low':cls==='filled-zero'?'zero':'ok';
+        html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+'\')">'
+          +'<div class="ic-top">'
+            +'<span class="ic-name">'+item.name+'</span>'
+            +'<span class="ic-total '+totalCls+'">'+(filled?(total+' '+item.sn):'—')+'</span>'
+          +'</div>';
+        if(filled&&c){
+          var parts=[];
+          if(item.ln&&c.l) parts.push(c.l+item.ln);
+          if(item.mn&&c.m) parts.push(c.m+item.mn);
+          if(c.s!==undefined) parts.push(c.s+item.sn);
+          if(item.wu&&c.w) parts.push(c.w+item.wu);
+          if(parts.length>1) html+='<div class="ic-units-row">'+parts.join(' + ')+'</div>';
+        }
+        if(curMode!=='monthly'&&item[curMode]){
+          var t=item[curMode];
+          var minLbl=t.min+getUnitLabel(item,t.minUnit||'s');
+          var tgtLbl=t.target+getUnitLabel(item,t.targetUnit||'s');
+          html+='<div class="ic-sub"><span class="ic-threshold">低標:'+minLbl+'</span><span>補至:'+tgtLbl+'</span>';
+          if(status) html+='<span style="color:var(--red);font-weight:700">'+status+'</span>';
+          html+='</div>';
+        }
+        html+='</div>';
+      });
+    });
+  }
   document.getElementById('count-body').innerHTML=html;
+}
+function setDailyStatus(id, status){
+  counts[id]=status;
+  renderCountPage();
 }
 
 function calcTotal(item,c){
@@ -997,41 +1033,76 @@ function finishCount(){
   document.getElementById('result-banner').className='result-banner rb-'+curMode;
 
   var actionItems=[],okItems=[];
-  modeItems.forEach(function(item){
-    var c=counts[item.id]||{s:0,m:0,l:0,w:0};
-    var total=calcTotal(item,c);
-    var wConverted=item.sw>0?((c.w||0)/item.sw):0;
-    var realTotal=total+wConverted;
-    if(curMode==='monthly'){
-      okItems.push({item:item,c:c,total:realTotal});
-    } else {
-      var cfg=item[curMode];
-      var countUnit=cfg?cfg.countUnit||'s':'s';
-      var targetInSmall=cfg?unitToSmall(item,cfg.target,cfg.targetUnit||'s'):0;
-      var needAmtSmall=cfg?(targetInSmall-realTotal):0;
-      if(needAmtSmall>0){
-        // 換算成盤點單位顯示
-        var needInUnit, needUnitLabel;
-        if(countUnit==='l'&&item.lm>0&&item.ms>0){
-          needInUnit=Math.ceil(needAmtSmall/(item.lm*item.ms));
-          needUnitLabel=item.ln||item.sn;
-        } else if(countUnit==='m'&&item.ms>0){
-          needInUnit=Math.ceil(needAmtSmall/item.ms);
-          needUnitLabel=item.mn||item.sn;
-        } else {
-          needInUnit=Math.ceil(needAmtSmall);
-          needUnitLabel=item.sn;
-        }
-        actionItems.push({item:item,c:c,total:realTotal,need:needInUnit,needUnit:needUnitLabel,countUnit:countUnit});
+
+  if(curMode==='daily'){
+    // 日盤：依判斷結果分類
+    modeItems.forEach(function(item){
+      var status=counts[item.id]; // 'ok' or 'need'
+      var cfg=item.daily||{};
+      var refillAmt=cfg.refill!=null?cfg.refill:cfg.target||0;
+      var refillLabel=getUnitLabel(item,cfg.refillUnit||'s');
+      var stdLabel=(cfg.std!=null?cfg.std:cfg.min||0)+getUnitLabel(item,cfg.stdUnit||'s');
+      if(status==='need'){
+        actionItems.push({item:item,need:refillAmt,needUnit:refillLabel,std:stdLabel,status:'need'});
       } else {
-        okItems.push({item:item,c:c,total:realTotal});
+        okItems.push({item:item,std:stdLabel,status:status});
       }
-    }
-  });
+    });
+  } else {
+    modeItems.forEach(function(item){
+      var c=counts[item.id]||{s:0,m:0,l:0,w:0};
+      var total=calcTotal(item,c);
+      var wConverted=item.sw>0?((c.w||0)/item.sw):0;
+      var realTotal=total+wConverted;
+      if(curMode==='monthly'){
+        okItems.push({item:item,c:c,total:realTotal});
+      } else {
+        var cfg=item[curMode];
+        var countUnit=cfg?cfg.countUnit||'s':'s';
+        var targetInSmall=cfg?unitToSmall(item,cfg.target,cfg.targetUnit||'s'):0;
+        var needAmtSmall=cfg?(targetInSmall-realTotal):0;
+        if(needAmtSmall>0){
+          var needInUnit,needUnitLabel;
+          if(countUnit==='l'&&item.lm>0&&item.ms>0){
+            needInUnit=Math.ceil(needAmtSmall/(item.lm*item.ms)); needUnitLabel=item.ln||item.sn;
+          } else if(countUnit==='m'&&item.ms>0){
+            needInUnit=Math.ceil(needAmtSmall/item.ms); needUnitLabel=item.mn||item.sn;
+          } else {
+            needInUnit=Math.ceil(needAmtSmall); needUnitLabel=item.sn;
+          }
+          actionItems.push({item:item,c:c,total:realTotal,need:needInUnit,needUnit:needUnitLabel,countUnit:countUnit});
+        } else {
+          okItems.push({item:item,c:c,total:realTotal});
+        }
+      }
+    });
+  }
 
   var html='';
-  if(curMode==='monthly'){
-    // 月盤：合計現場+倉庫，按分類顯示
+  if(curMode==='daily'){
+    // 日盤結果：補貨清單 + 充足清單
+    if(actionItems.length){
+      html+='<div class="result-section"><div class="rs-head red">⚠ 需補貨 — '+actionItems.length+' 項</div>';
+      actionItems.forEach(function(x){
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+x.item.name+'</div>'
+            +'<div class="rs-detail">標準量 '+x.std+'</div></div>'
+          +'<div class="rs-qty red">補 '+x.need+' '+x.needUnit+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項充足，無需補貨</div></div>';
+    }
+    if(okItems.length){
+      html+='<div class="result-section"><div class="rs-head ok">✓ 充足 — '+okItems.length+' 項</div>';
+      okItems.forEach(function(x){
+        html+='<div class="rs-row"><div class="rs-name">'+x.item.name+'</div>'
+          +'<div class="rs-qty ok">✅ 充足</div></div>';
+      });
+      html+='</div>';
+    }
+  } else if(curMode==='monthly'){
     var cats=[...new Set(items.map(function(i){return i.cat;}))];
     cats.forEach(function(cat){
       var ci=items.filter(function(i){return i.cat===cat;});
@@ -1058,10 +1129,9 @@ function finishCount(){
       html+='</div>';
     });
   } else {
-    // 日盤/週盤：顯示需補/叫清單
-    var actionWord=curMode==='daily'?'需補貨':'需叫貨';
+    // 週盤
     if(actionItems.length){
-      html+='<div class="result-section"><div class="rs-head red">⚠ '+actionWord+' — '+actionItems.length+' 項</div>';
+      html+='<div class="result-section"><div class="rs-head red">⚠ 需叫貨 — '+actionItems.length+' 項</div>';
       actionItems.forEach(function(x){
         var needLabel=x.needUnit||x.item.sn;
         var targetLabel=getUnitLabel(x.item,(x.item[curMode]&&x.item[curMode].targetUnit)||'s');
@@ -1073,7 +1143,7 @@ function finishCount(){
       });
       html+='</div>';
     } else {
-      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需'+actionWord+'</div></div>';
+      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需叫貨</div></div>';
     }
     if(okItems.length){
       html+='<div class="result-section"><div class="rs-head ok">✓ 庫存足夠 — '+okItems.length+' 項</div>';
@@ -1180,8 +1250,22 @@ function pushToSheets(rec, modeItems, actionItems){
         total: totalAll, need: 0
       };
     });
+  } else if(rec.mode === 'daily'){
+    // 日盤：只記錄判斷結果和補貨量
+    data = modeItems.map(function(item){
+      var status = rec.counts[item.id] || '';
+      var cfg = item.daily || {};
+      var refillAmt = cfg.refill!=null ? cfg.refill : cfg.target||0;
+      var refillUnit = getUnitLabel(item, cfg.refillUnit||'s');
+      return {
+        cat: item.cat, item: item.name, unit: item.sn,
+        current: status==='ok'?'充足':'需補貨',
+        need: status==='need' ? refillAmt : 0,
+        needUnit: refillUnit
+      };
+    });
   } else {
-    // 日盤/週盤
+    // 週盤
     data = modeItems.map(function(item){
       var c = rec.counts[item.id] || {s:0,m:0,l:0,w:0};
       var total = calcTotal(item,c);
@@ -1191,7 +1275,6 @@ function pushToSheets(rec, modeItems, actionItems){
       var countUnit=cfg?cfg.countUnit||'s':'s';
       var targetInSmall2 = cfg ? unitToSmall(item,cfg.target,cfg.targetUnit||'s') : 0;
       var needSmall = cfg ? Math.max(0, targetInSmall2 - realTotal) : 0;
-      // 換算成盤點單位
       var needInUnit, needUnitLabel;
       if(countUnit==='l'&&item.lm>0&&item.ms>0){
         needInUnit=Math.ceil(needSmall/(item.lm*item.ms)); needUnitLabel=item.ln||item.sn;
@@ -1578,24 +1661,45 @@ function renderCfgBody(){
             '&nbsp;<b>'+(item.wu||'—')+'</b>'+
           '</div>'+
         '</div>'+
-        // 盤點單位 + 低標/補至（非月盤）
-        (cfgMode!=='monthly'?(function(){
+        // 日盤：標準量+補貨量；週盤：盤點單位+低標+補至
+        (cfgMode==='daily'?(function(){
+          var su=t.stdUnit||'s';
+          var suLabel=su==='l'?(item.ln||item.sn):su==='m'?(item.mn||item.sn):item.sn;
+          var ru=t.refillUnit||'s';
+          var ruLabel=ru==='l'?(item.ln||item.sn):ru==='m'?(item.mn||item.sn):item.sn;
+          function mkUS(fld,cur){
+            return '<select style="font-size:11px;padding:2px 3px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--ink)" onchange="updItemMode(\''+item.id+'\',\'daily\',\''+fld+'\',this.value)">'
+              +'<option value="s"'+(cur==='s'?' selected':'')+'>'+item.sn+'</option>'
+              +(item.mn?'<option value="m"'+(cur==='m'?' selected':'')+'>'+item.mn+'</option>':'')
+              +(item.ln?'<option value="l"'+(cur==='l'?' selected':'')+'>'+item.ln+'</option>':'')
+              +'</select>';
+          }
+          return '<div class="cir-conv" style="margin-top:6px">'
+            +'<span style="font-size:11px;color:var(--ink3);margin-right:4px">標準量：</span>'
+            +'<input class="cc-inp" type="number" min="0" value="'+(t.std!=null?t.std:t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\'daily\',\'std\',this.value)"> '
+            +mkUS('stdUnit',su)
+          +'</div>'
+          +'<div class="cir-conv" style="margin-top:4px">'
+            +'<span style="font-size:11px;color:var(--ink3);margin-right:4px">補貨量：</span>'
+            +'<input class="cc-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\'daily\',\'refill\',this.value)"> '
+            +mkUS('refillUnit',ru)
+          +'</div>';
+        })():cfgMode==='weekly'?(function(){
           var cu=t.countUnit||'s';
           var cuLabel=cu==='l'?(item.ln||item.sn):cu==='m'?(item.mn||item.sn):item.sn;
-          var unitSel='<select style="font-size:11px;padding:2px 3px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--ink)" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'countUnit\',this.value)">'
+          var unitSel='<select style="font-size:11px;padding:2px 3px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--ink)" onchange="updItemMode(\''+item.id+'\',\'weekly\',\'countUnit\',this.value)">'
             +'<option value="s"'+(cu==='s'?' selected':'')+'>'+item.sn+'（最小單位）</option>'
             +(item.mn?'<option value="m"'+(cu==='m'?' selected':'')+'>'+item.mn+'</option>':'')
             +(item.ln?'<option value="l"'+(cu==='l'?' selected':'')+'>'+item.ln+'</option>':'')
             +'</select>';
-          return '<div class="cir-conv" style="margin-top:6px">'+
-            '<span style="font-size:11px;color:var(--ink3);margin-right:4px">盤點單位：</span>'+unitSel+
-          '</div>'+
-          '<div class="cir-conv" style="margin-top:4px">'+
-            '低標: <input class="cc-inp" type="number" min="0" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'min\',this.value)"> '+cuLabel+
-            '　補至: <input class="cc-inp" type="number" min="0" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'target\',this.value)"> '+cuLabel+
-          '</div>';
-        })()
-        :'')+
+          return '<div class="cir-conv" style="margin-top:6px">'
+            +'<span style="font-size:11px;color:var(--ink3);margin-right:4px">盤點單位：</span>'+unitSel
+          +'</div>'
+          +'<div class="cir-conv" style="margin-top:4px">'
+            +'低標: <input class="cc-inp" type="number" min="0" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\'weekly\',\'min\',this.value)"> '+cuLabel
+            +'　補至: <input class="cc-inp" type="number" min="0" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\'weekly\',\'target\',this.value)"> '+cuLabel
+          +'</div>';
+        })():'')+
         // 模式切換
         '<div class="mode-toggles">'+
           '<span style="font-size:11px;color:var(--ink3)">出現在：</span>'+
