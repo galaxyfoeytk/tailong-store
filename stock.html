@@ -1241,13 +1241,13 @@ function buildItemMgmt(){
   el.innerHTML=arr.length?arr.map(function(it){
     var uStr=it.units.filter(function(u){return u.n;}).map(function(u,i){return u.n+(u.q>1?'('+u.q+')':'');}).join(' → ');
     return '<div class="mgmt-row"><div style="flex:1;min-width:0"><div class="mgmt-name">'+it.name+'</div><div class="mgmt-sub">'+uStr+'</div></div>'
-      +'<button class="mgmt-del" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C;margin-right:4px" onclick="editItem('+it.id+')">編輯</button>'
-      +'<button class="mgmt-del" onclick="delItem('+it.id+')">刪除</button></div>';
+      +'<button class="mgmt-del" style="background:#E8F5E9;color:#1A6B3C;border-color:#1A6B3C;margin-right:4px" onclick="editItem(\''+String(it.id)+'\')" >編輯</button>'
+      +'<button class="mgmt-del" onclick="delItem(\''+String(it.id)+'\')" >刪除</button></div>';
   }).join(''):'<div class="empty" style="padding:10px">此分類尚無品項</div>';
 }
 var _editingItemId = null;
 function editItem(id){
-  var it=items.find(function(x){return x.id===id;});
+  var it=items.find(function(x){return String(x.id)===String(id);});
   if(!it) return;
   _editingItemId=id;
   document.getElementById('ai-item-name').value=it.name;
@@ -1355,13 +1355,16 @@ function addItem(){
     // 編輯模式：更新現有品項
     var editId=_editingItemId;
     items=items.map(function(it){
-      if(it.id!==editId) return it;
+      if(String(it.id)!==String(editId)) return it;
       return {id:it.id, cat:it.cat, name:name, units:units};
     });
     save(); buildItemMgmt(); resetItemForm();
     showToast('✓ 已更新：'+name+' （'+desc+'）');
     // 同步到 Sheets
-    apiCallPost({action:'stockItemSave', id:editId, cat:items.find(function(x){return x.id===editId;})?items.find(function(x){return x.id===editId;}).cat:mgmtCat, name:name, units:JSON.stringify(units)}, function(){});
+    var catForEdit = (items.find(function(x){return String(x.id)===String(editId);})||{}).cat || mgmtCat;
+    apiCallPost({action:'stockItemSave', id:editId, cat:catForEdit, name:name, units:JSON.stringify(units)}, function(d){
+      if(d&&d.ok) syncFromSheets(); // 儲存後重新從Sheets拉，確保所有設備資料一致
+    });
   } else {
     // 新增模式
     var newId=Date.now();
@@ -1374,9 +1377,11 @@ function addItem(){
 }
 function delItem(id){
   if(!confirm('確定刪除？'))return;
-  items=items.filter(function(it){return it.id!==id;});
+  items=items.filter(function(it){return String(it.id)!==String(id);});
   save(); buildItemMgmt(); showToast('已刪除');
-  apiCallPost({action:'stockItemDelete', id:id}, function(){});
+  apiCallPost({action:'stockItemDelete', id:id}, function(d){
+    if(d&&d.ok) syncFromSheets();
+  });
 }
 
 function buildSourceMgmt(){

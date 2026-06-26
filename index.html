@@ -583,11 +583,11 @@ var ROLE_NAMES = {
 // 各功能最低可存取的角色（數字越大=限制越少）
 // 代表「角色代碼 <= 此值才可存取」
 var PAGE_PERM = {
-  home:8, handover:6, temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:5, inventory:6, accounts:1
+  home:8, handover:6, temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:5, inventory:6, cleaning:6, accounts:1
 };
 // 各功能是否可寫入（角色代碼 <= 此值才可新增/修改）
 var WRITE_PERM = {
-  temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:6, inventory:6
+  temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:6, inventory:6, cleaning:6
 };
 
 var currentUser = null;
@@ -690,7 +690,7 @@ function canWrite(page){
 }
 
 function buildNav(){
-  ['home','temp','jelly','stock','elec','checklist','closing','inventory','accounts'].forEach(function(p){
+  ['home','temp','jelly','stock','elec','checklist','closing','inventory','cleaning','accounts'].forEach(function(p){
     var el=document.getElementById('nav-'+p);
     if(!el) return;
     if(!canAccess(p)) el.classList.add('locked');
