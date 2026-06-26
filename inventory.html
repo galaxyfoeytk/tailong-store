@@ -687,14 +687,16 @@ function pullFromCloud(force){
   cfgGet('inv:items', function(v){
     if(_syncLocked) return; // 存檔中，丟棄此次結果
     if(v && Array.isArray(v) && v.length > 0){
-      var cloudVer = 0;
-      // 嘗試取版本號（附加在 items 陣列後面的隱藏欄位）
-      if(v._ver) cloudVer = v._ver;
-      if(force || cloudVer > _syncVer || items.length === 0){
-        items = v;
-        _syncVer = cloudVer || _syncVer;
+      // 用時間戳判斷是否需要更新
+      var cloudTs = v._ts || 0;
+      if(force || cloudTs > _syncVer || items.length === 0){
+        // 過濾掉 _ts 這個附加欄位，不影響品項資料
+        var cleanItems = v.filter(function(item){ return item && item.id; });
+        items = cleanItems;
+        _syncVer = cloudTs || _syncVer;
         localStorage.setItem('inv3_items', JSON.stringify(items));
         localStorage.setItem('inv3_ver', String(_syncVer));
+        renderCfgBody(); // 重新渲染設定介面
       }
     }
     setSyncStatus('ok');
@@ -717,10 +719,14 @@ function saveItems(){
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(function(){
     _syncLocked = true;
-    var snapshot = JSON.parse(JSON.stringify(items)); // 存快照防競態
+    var ts = Date.now(); // 用時間戳當版本號，確保輪詢能偵測到變化
+    var snapshot = JSON.parse(JSON.stringify(items));
+    snapshot._ts = ts; // 附加時間戳
     cfgSet('inv:items', snapshot, function(d){
       _syncLocked = false;
       if(d && d.ok){
+        _syncVer = ts;
+        localStorage.setItem('inv3_ver', String(ts));
         setSyncStatus('ok');
       } else {
         setSyncStatus('error');
@@ -2168,31 +2174,40 @@ function openNumOv(itemId){
   var item=items.find(function(i){return i.id===itemId;});
   if(!item) return;
   var c=counts[itemId]||{l:0,m:0,s:0,w:0};
-  // 取得此模式的盤點單位（預設's'=最小單位）
+  // 取得此模式的盤點單位設定
+  // countUnit：盤到哪個單位就只顯示那個（l=大、m=中、s=小）
+  // 若未設定（預設's'），但品項本身有中/大單位，就顯示所有可用單位
   var cfg=curMode!=='monthly'?item[curMode]:null;
   var countUnit=cfg?cfg.countUnit||'s':'s';
   var hints=[];
   if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
   if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
   if(item.wu&&item.sw>0&&countUnit==='s') hints.push('1'+item.sn+'='+item.sw+item.wu);
-  // 只顯示到設定的盤點單位
+  // 決定顯示的欄位
   var fields=[];
-  if(item.ln&&(countUnit==='l')) fields.push('l');
-  if(item.mn&&(countUnit==='m'||countUnit==='l')) fields.push('m');
-  if(countUnit==='s'||countUnit==='m'||countUnit==='l') fields.push('s');
-  // 特殊單位只在盤到最小單位時顯示
-  if(item.wu&&item.sw>0&&countUnit==='s') fields.push('w');
-  // 依盤點單位決定顯示的欄位
-  if(countUnit==='l'){ fields=['l']; }
-  else if(countUnit==='m'){ fields=item.ln?['l','m']:['m']; }
-  // else 預設 's' 顯示所有單位
+  if(countUnit==='l'){
+    // 只盤大單位
+    fields=['l'];
+  } else if(countUnit==='m'){
+    // 只盤到中單位（中+大）
+    if(item.ln&&item.lm>0) fields.push('l');
+    fields.push('m');
+  } else {
+    // 預設's'：顯示所有有設定換算的單位（大→中→小）
+    if(item.ln&&item.lm>0&&item.mn&&item.ms>0) fields.push('l');
+    if(item.mn&&item.ms>0) fields.push('m');
+    fields.push('s');
+    if(item.wu&&item.sw>0) fields.push('w');
+  }
+  // 焦點欄位：預設從最大可用單位開始
+  var focusField = fields.length ? fields[0] : 's';
   npOpen({
     mode:'count', itemId:itemId, isMonthly:false,
-    field:countUnit, val:String(c[countUnit]||0),
+    field:focusField, val:String(c[focusField]||0),
     fields:fields,
     vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
     label:item.name,
-    hint:hints.join('　'), unit:getUnitLabel(item,countUnit)
+    hint:hints.join('　'), unit:getUnitLabel(item,focusField)
   });
 }
 // 攔截 openNumOvMonthly
