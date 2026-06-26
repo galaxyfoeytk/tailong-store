@@ -291,18 +291,67 @@ window.onload = function(){
 
 function syncItems(){
   api({action:'cleanItemGetAll'}, function(d){
-    if(d&&d.ok){ allItems=d.data; renderAll(); showToast('✓ 清潔項目已同步'); }
-    else { loadLocalItems(); }
+    if(d&&d.ok&&d.data&&d.data.length>0){
+      allItems=d.data;
+      saveLocalItems();
+      renderAll();
+      showToast('✓ 清潔項目已同步（'+allItems.length+'項）');
+    } else {
+      loadLocalItems();
+    }
   });
 }
 
 function loadLocalItems(){
   try{
     var s = localStorage.getItem('clean_items');
-    if(s) allItems = JSON.parse(s);
+    if(s){ allItems = JSON.parse(s); renderAll(); return; }
   }catch(e){}
+  // 沒有本地資料時載入預設項目
+  allItems = DEFAULT_CLEAN_ITEMS.slice();
   renderAll();
 }
+
+var DEFAULT_CLEAN_ITEMS = [
+  // 日清潔
+  {id:'d01',mode:'daily',area:'臥式冰箱',tool:'',task:'清潔前確保周圍無試喝杯、無煮仙草，容器開口倒蓋朝下，冰箱內部仙草凍鍋蓋蓋上',needNote:false,order:1,noteTip:''},
+  {id:'d02',mode:'daily',area:'臥式冰箱',tool:'雞毛撣子',task:'上方層架器具移開，拂去灰塵',needNote:false,order:2,noteTip:''},
+  {id:'d03',mode:'daily',area:'臥式冰箱',tool:'抹布',task:'層架下方牆面髒污擦拭',needNote:true,order:3,noteTip:'有髒污請描述'},
+  {id:'d04',mode:'daily',area:'臥式冰箱',tool:'抹布',task:'冰箱門滑軌灰塵髒污擦拭',needNote:true,order:4,noteTip:'有髒污請描述'},
+  {id:'d05',mode:'daily',area:'臥式冰箱',tool:'抹布',task:'冰箱本體外觀擦拭',needNote:false,order:5,noteTip:''},
+  {id:'d06',mode:'daily',area:'櫃臺',tool:'雞毛撣子/抹布',task:'拂去櫃臺玻璃灰塵、及下方造景灰塵',needNote:false,order:6,noteTip:''},
+  {id:'d07',mode:'daily',area:'櫃臺',tool:'',task:'每日盤補時整理下方櫃內耗材',needNote:false,order:7,noteTip:''},
+  {id:'d08',mode:'daily',area:'櫃臺',tool:'雞毛撣子/抹布',task:'桌面、錢櫃灰塵髒污擦拭清潔',needNote:false,order:8,noteTip:''},
+  {id:'d09',mode:'daily',area:'矮櫃冰箱',tool:'抹布',task:'桌面擦拭及整櫃外觀擦拭',needNote:false,order:9,noteTip:''},
+  {id:'d10',mode:'daily',area:'矮櫃冰箱',tool:'抹布',task:'冰箱門上杯袋汁水檢查清潔',needNote:true,order:10,noteTip:'有汁水污漬請描述'},
+  {id:'d11',mode:'daily',area:'封口機/蒸氣加熱機',tool:'抹布',task:'機器外觀擦拭',needNote:false,order:11,noteTip:''},
+  {id:'d12',mode:'daily',area:'冰塊櫃',tool:'抹布',task:'整櫃外觀擦拭',needNote:false,order:12,noteTip:''},
+  {id:'d13',mode:'daily',area:'冰塊櫃',tool:'抹布',task:'滑軌髒污清潔擦拭',needNote:true,order:13,noteTip:'有髒污請描述'},
+  {id:'d14',mode:'daily',area:'智能機',tool:'抹布',task:'補物料時注意底下滑軌有沒有茶水滴漏，若發現有茶漬則要整條滑軌擦拭',needNote:true,order:14,noteTip:'有茶漬請描述'},
+  {id:'d15',mode:'daily',area:'地面',tool:'掃把/拖把',task:'垃圾桶移開，內場角落掃地拖地清潔',needNote:false,order:15,noteTip:''},
+  {id:'d16',mode:'daily',area:'外場走廊',tool:'抹布/噴槍',task:'旋轉燈柱及擺拍造景抹布擦拭，浮雕英文用噴槍噴除沾黏灰塵',needNote:false,order:16,noteTip:''},
+  {id:'d17',mode:'daily',area:'外場走廊',tool:'掃把/拖把',task:'走廊地板落葉沙塵垃圾掃除乾淨，髒污黏著地板用拖把拖起來',needNote:false,order:17,noteTip:''},
+  // 週清潔
+  {id:'w01',mode:'weekly',area:'臥式冰箱',tool:'',task:'清潔前冰箱內仙草務必加蓋，或者拿離冰箱清潔',needNote:false,order:1,noteTip:''},
+  {id:'w02',mode:'weekly',area:'臥式冰箱',tool:'抹布',task:'拉門整門擦拭，著重於仙草殘留及縫隙灰塵',needNote:true,order:2,noteTip:'有殘留請描述'},
+  {id:'w03',mode:'weekly',area:'智能機',tool:'抹布',task:'冰箱內層架清潔及門上積水擦拭',needNote:true,order:3,noteTip:'有積水異常請描述'},
+  {id:'w04',mode:'weekly',area:'電視機',tool:'雞毛撣子',task:'注意電視機附近有無試飲杯及包材等，淨空後才可拍去灰塵',needNote:false,order:4,noteTip:''},
+  {id:'w05',mode:'weekly',area:'陶罐',tool:'雞毛撣子/抹布',task:'掃去灰塵，有明顯水漬則用抹布擦拭',needNote:true,order:5,noteTip:'有水漬請描述'},
+  {id:'w06',mode:'weekly',area:'電磁爐及層架',tool:'抹布',task:'補完糖盒及粉盒順手擦拭層架及電磁爐下方檯面擦拭',needNote:false,order:6,noteTip:''},
+  {id:'w07',mode:'weekly',area:'櫃臺',tool:'雞毛撣子',task:'櫃臺上看板及檯面掃去灰塵',needNote:false,order:7,noteTip:''},
+  {id:'w08',mode:'weekly',area:'走廊',tool:'雞毛撣子',task:'走廊大看板及紅龍柱掃去灰塵',needNote:false,order:8,noteTip:''},
+  {id:'w09',mode:'weekly',area:'走廊',tool:'雞毛撣子/抹布',task:'走廊椅子掃去灰塵，若有明顯髒污則需擦拭乾淨',needNote:true,order:9,noteTip:'有髒污請描述'},
+  {id:'w10',mode:'weekly',area:'透明冰箱及四門冰箱',tool:'抹布',task:'牛奶補貨前檢查冰箱內是否有殘留仙草原汁或奶蓋污漬，有則需擦拭',needNote:true,order:10,noteTip:'有污漬請描述'},
+  {id:'w11',mode:'weekly',area:'透明冰箱及四門冰箱',tool:'抹布',task:'透明冰箱門及四門冰箱門擦拭',needNote:false,order:11,noteTip:''},
+  {id:'w12',mode:'weekly',area:'透明冰箱及四門冰箱',tool:'抹布',task:'補仙草或移仙草時檢查四門冰箱內是否有明顯仙草漬或明顯髒污，有則擦拭',needNote:true,order:12,noteTip:'有髒污請描述'},
+  {id:'w13',mode:'weekly',area:'冰塊櫃',tool:'抹布',task:'冰箱拉門擦拭，需遠離冰塊及包材',needNote:false,order:13,noteTip:''},
+  {id:'w14',mode:'weekly',area:'內場地板',tool:'掃把/拖把',task:'冰箱、設備桌面下方空間角落清潔掃拖',needNote:false,order:14,noteTip:''},
+  // 月清潔
+  {id:'m01',mode:'monthly',area:'冷氣機',tool:'水槽',task:'夏季（4～9月）冷氣濾網刷洗清潔（需確認已裝回濾網）',needNote:false,order:1,noteTip:''},
+  {id:'m02',mode:'monthly',area:'走廊',tool:'抹布/雞毛撣子',task:'走廊大燈箱灰塵掃除清潔',needNote:false,order:2,noteTip:''},
+  {id:'m03',mode:'monthly',area:'全店',tool:'抹布',task:'各區域牆面高處不易觸及的灰塵擦拭',needNote:false,order:3,noteTip:''},
+  {id:'m04',mode:'monthly',area:'廁所',tool:'清潔劑/抹布',task:'馬桶、洗手台、鏡子深度清潔（包含縫隙）',needNote:true,order:4,noteTip:'有異常請描述'},
+];
 
 function saveLocalItems(){
   try{ localStorage.setItem('clean_items', JSON.stringify(allItems)); }catch(e){}
