@@ -1006,10 +1006,23 @@ function finishCount(){
       okItems.push({item:item,c:c,total:realTotal});
     } else {
       var cfg=item[curMode];
+      var countUnit=cfg?cfg.countUnit||'s':'s';
       var targetInSmall=cfg?unitToSmall(item,cfg.target,cfg.targetUnit||'s'):0;
-      var needAmt=cfg?(targetInSmall-realTotal):0;
-      if(needAmt>0){
-        actionItems.push({item:item,c:c,total:realTotal,need:Math.ceil(needAmt)});
+      var needAmtSmall=cfg?(targetInSmall-realTotal):0;
+      if(needAmtSmall>0){
+        // 換算成盤點單位顯示
+        var needInUnit, needUnitLabel;
+        if(countUnit==='l'&&item.lm>0&&item.ms>0){
+          needInUnit=Math.ceil(needAmtSmall/(item.lm*item.ms));
+          needUnitLabel=item.ln||item.sn;
+        } else if(countUnit==='m'&&item.ms>0){
+          needInUnit=Math.ceil(needAmtSmall/item.ms);
+          needUnitLabel=item.mn||item.sn;
+        } else {
+          needInUnit=Math.ceil(needAmtSmall);
+          needUnitLabel=item.sn;
+        }
+        actionItems.push({item:item,c:c,total:realTotal,need:needInUnit,needUnit:needUnitLabel,countUnit:countUnit});
       } else {
         okItems.push({item:item,c:c,total:realTotal});
       }
@@ -1050,10 +1063,12 @@ function finishCount(){
     if(actionItems.length){
       html+='<div class="result-section"><div class="rs-head red">⚠ '+actionWord+' — '+actionItems.length+' 項</div>';
       actionItems.forEach(function(x){
+        var needLabel=x.needUnit||x.item.sn;
+        var targetLabel=getUnitLabel(x.item,(x.item[curMode]&&x.item[curMode].targetUnit)||'s');
         html+='<div class="rs-row">'
           +'<div><div class="rs-name">'+x.item.name+'</div>'
-            +'<div class="rs-detail">現有 '+Math.round(x.total*100)/100+x.item.sn+' · 需達 '+x.item[curMode].target+x.item.sn+'</div></div>'
-          +'<div class="rs-qty red">+'+x.need+' '+x.item.sn+'</div>'
+            +'<div class="rs-detail">現有 '+Math.round(x.total*100)/100+x.item.sn+' · 需達 '+x.item[curMode].target+targetLabel+'</div></div>'
+          +'<div class="rs-qty red">補 '+x.need+' '+needLabel+'</div>'
         +'</div>';
       });
       html+='</div>';
@@ -1173,12 +1188,23 @@ function pushToSheets(rec, modeItems, actionItems){
       var wConverted = item.sw>0?((c.w||0)/item.sw):0;
       var realTotal = total + wConverted;
       var cfg = item[rec.mode];
+      var countUnit=cfg?cfg.countUnit||'s':'s';
       var targetInSmall2 = cfg ? unitToSmall(item,cfg.target,cfg.targetUnit||'s') : 0;
-      var need = cfg ? Math.max(0, targetInSmall2 - realTotal) : 0;
+      var needSmall = cfg ? Math.max(0, targetInSmall2 - realTotal) : 0;
+      // 換算成盤點單位
+      var needInUnit, needUnitLabel;
+      if(countUnit==='l'&&item.lm>0&&item.ms>0){
+        needInUnit=Math.ceil(needSmall/(item.lm*item.ms)); needUnitLabel=item.ln||item.sn;
+      } else if(countUnit==='m'&&item.ms>0){
+        needInUnit=Math.ceil(needSmall/item.ms); needUnitLabel=item.mn||item.sn;
+      } else {
+        needInUnit=Math.ceil(needSmall); needUnitLabel=item.sn;
+      }
       return {
         cat: item.cat, item: item.name, unit: item.sn,
         qty_l: c.l||0, qty_m: c.m||0, qty_s: c.s||0, qty_w: c.w||0,
-        total: Math.round(realTotal*100)/100, need: Math.ceil(need)
+        current: Math.round(realTotal*100)/100,
+        need: needSmall>0?needInUnit:0, needUnit: needUnitLabel
       };
     });
   }
@@ -1552,12 +1578,23 @@ function renderCfgBody(){
             '&nbsp;<b>'+(item.wu||'—')+'</b>'+
           '</div>'+
         '</div>'+
-        // 低標/補至（非月盤）
-        (cfgMode!=='monthly'?
-          '<div class="cir-conv" style="margin-top:6px">'+
-            '低標: <input class="cc-inp" type="number" min="0" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'min\',this.value)"> '+item.sn+
-            '　補至: <input class="cc-inp" type="number" min="0" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'target\',this.value)"> '+item.sn+
-          '</div>'
+        // 盤點單位 + 低標/補至（非月盤）
+        (cfgMode!=='monthly'?(function(){
+          var cu=t.countUnit||'s';
+          var cuLabel=cu==='l'?(item.ln||item.sn):cu==='m'?(item.mn||item.sn):item.sn;
+          var unitSel='<select style="font-size:11px;padding:2px 3px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--ink)" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'countUnit\',this.value)">'
+            +'<option value="s"'+(cu==='s'?' selected':'')+'>'+item.sn+'（最小單位）</option>'
+            +(item.mn?'<option value="m"'+(cu==='m'?' selected':'')+'>'+item.mn+'</option>':'')
+            +(item.ln?'<option value="l"'+(cu==='l'?' selected':'')+'>'+item.ln+'</option>':'')
+            +'</select>';
+          return '<div class="cir-conv" style="margin-top:6px">'+
+            '<span style="font-size:11px;color:var(--ink3);margin-right:4px">盤點單位：</span>'+unitSel+
+          '</div>'+
+          '<div class="cir-conv" style="margin-top:4px">'+
+            '低標: <input class="cc-inp" type="number" min="0" value="'+(t.min||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'min\',this.value)"> '+cuLabel+
+            '　補至: <input class="cc-inp" type="number" min="0" value="'+(t.target||0)+'" onchange="updItemMode(\''+item.id+'\',\''+cfgMode+'\',\'target\',this.value)"> '+cuLabel+
+          '</div>';
+        })()
         :'')+
         // 模式切換
         '<div class="mode-toggles">'+
@@ -2027,23 +2064,31 @@ function openNumOv(itemId){
   var item=items.find(function(i){return i.id===itemId;});
   if(!item) return;
   var c=counts[itemId]||{l:0,m:0,s:0,w:0};
+  // 取得此模式的盤點單位（預設's'=最小單位）
+  var cfg=curMode!=='monthly'?item[curMode]:null;
+  var countUnit=cfg?cfg.countUnit||'s':'s';
   var hints=[];
   if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
   if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
-  if(item.wu&&item.sw>0) hints.push('1'+item.sn+'='+item.sw+item.wu);
-  if(curMode!=='monthly'&&item[curMode]) hints.push('低標:'+item[curMode].min+' 補至:'+item[curMode].target);
+  if(item.wu&&item.sw>0&&countUnit==='s') hints.push('1'+item.sn+'='+item.sw+item.wu);
+  // 只顯示到設定的盤點單位
   var fields=[];
-  if(item.ln) fields.push('l');
-  if(item.mn) fields.push('m');
-  fields.push('s');
-  if(item.wu&&item.sw>0) fields.push('w');
+  if(item.ln&&(countUnit==='l')) fields.push('l');
+  if(item.mn&&(countUnit==='m'||countUnit==='l')) fields.push('m');
+  if(countUnit==='s'||countUnit==='m'||countUnit==='l') fields.push('s');
+  // 特殊單位只在盤到最小單位時顯示
+  if(item.wu&&item.sw>0&&countUnit==='s') fields.push('w');
+  // 依盤點單位決定顯示的欄位
+  if(countUnit==='l'){ fields=['l']; }
+  else if(countUnit==='m'){ fields=item.ln?['l','m']:['m']; }
+  // else 預設 's' 顯示所有單位
   npOpen({
     mode:'count', itemId:itemId, isMonthly:false,
-    field:'s', val:String(c.s||0),
+    field:countUnit, val:String(c[countUnit]||0),
     fields:fields,
     vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
     label:item.name,
-    hint:hints.join('　'), unit:item.sn
+    hint:hints.join('　'), unit:getUnitLabel(item,countUnit)
   });
 }
 // 攔截 openNumOvMonthly
