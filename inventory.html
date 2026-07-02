@@ -1357,8 +1357,7 @@ function previewInvLine(ri){
   // 組出訊息預覽
   var tempRec = r;
   var lines = buildInvLineMsg(tempRec, modeItems, actionItems);
-  var msg = lines.join('
-');
+  var msg = lines.join('\n');
   document.getElementById('line-preview-text').textContent = msg;
   _pendingInvLineSend = function(){
     api({action:'sendLine', msg:msg}, function(d){
