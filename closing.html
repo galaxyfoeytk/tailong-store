@@ -663,6 +663,24 @@ function submitForm(){
   // 已通過驗證，重置後繼續送出
   _todayChecksLoaded=false; _todayElecChecked=false; _todayWeatherChecked=false;
 
+  // ── 防呆：查詢當日是否已有收班記錄 ──
+  var btn = document.querySelector('.submit-btn');
+  btn.textContent = '⏳ 確認中...'; btn.disabled = true;
+  api({action:'closingGetAll', startDate:date, endDate:date}, function(dupCheck){
+    btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
+    if(dupCheck && dupCheck.ok && dupCheck.data && dupCheck.data.length > 0){
+      var existing = dupCheck.data[0];
+      var msg = '⚠️ ' + date + ' 已有一筆收班記錄\n'
+        + '人員：' + (existing.person||'—') + '　'
+        + '營業額：' + (existing.revenue||0).toLocaleString() + ' 元\n\n'
+        + '確定要再新增一筆？（舊記錄不會被刪除）';
+      if(!confirm(msg)) return;
+    }
+    doActualSubmit(date, person);
+  });
+}
+
+function doActualSubmit(date, person){
   var btn = document.querySelector('.submit-btn');
   btn.textContent = '⏳ 送出中...'; btn.disabled = true;
 
