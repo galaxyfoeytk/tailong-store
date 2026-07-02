@@ -1344,7 +1344,70 @@ function editMonthlyFromHist(ri){
   openOv('monthly-edit');
 }
 
-// saveMonthlyEditOv 已在上方定義（月盤總表用的同一個），直接共用
+// ── 月盤儲存 ──────────────────────────────────────────────────
+function saveMonthlyEditOv(){
+  var recId    = window._editingMonthlyRecId;
+  var modeItems = window._editingMonthlyItems;
+  var date     = window._editingMonthlyDate;
+  var person   = window._editingMonthlyPerson;
+  if(!recId||!modeItems){ showToast('找不到編輯狀態'); return; }
+
+  // 讀取所有 input（支援兩種格式的 data 屬性）
+  var itemMap = {};
+  document.querySelectorAll('[data-edit-item],[data-rec-item]').forEach(function(inp){
+    var key = inp.getAttribute('data-edit-item') || inp.getAttribute('data-rec-item');
+    if(!key) return;
+    var itemName = inp.getAttribute('data-item-name') || '';
+    var val = parseFloat(inp.value)||0;
+    var prefix = key.slice(0,2);
+    var itemId  = key.slice(2);
+    // 找品項
+    var item = modeItems.find(function(i){ return String(i.id)===String(itemId); });
+    if(!item) return;
+    var name = item.name;
+    if(!itemMap[name]) itemMap[name]={cat:item.cat, unit:item.sn, qty_scene:0, qty_store:0};
+    if(prefix==='S_') itemMap[name].qty_scene = val;
+    else               itemMap[name].qty_store = val;
+  });
+
+  var data = Object.keys(itemMap).map(function(name){
+    var d = itemMap[name];
+    return {cat:d.cat, item:name, unit:d.unit,
+      qty_scene:d.qty_scene, qty_store:d.qty_store, total:d.qty_scene+d.qty_store};
+  }).filter(function(d){ return d.total>0; });
+
+  var btn = document.getElementById('monthly-edit-save-btn');
+  if(btn){ btn.textContent='儲存中...'; btn.disabled=true; }
+
+  api({action:'invSave', mode:'monthly', id:recId, date:date, person:person, data:JSON.stringify(data)},
+    function(d){
+      if(btn){ btn.textContent='💾 儲存修改'; btn.disabled=false; }
+      if(d&&d.ok){
+        showToast('✓ 月盤記錄已更新');
+        closeOv('monthly-edit');
+        // 更新本機 records
+        var ri = records.findIndex(function(r){ return String(r.id)===String(recId); });
+        if(ri>-1){
+          // 把修改後的 counts 同步回 records
+          data.forEach(function(row){
+            var item = modeItems.find(function(i){ return i.name===row.item; });
+            if(!item) return;
+            records[ri].counts['S_'+item.id] = {s:row.qty_scene,m:0,l:0,w:0};
+            records[ri].counts['W_'+item.id] = {s:row.qty_store,m:0,l:0,w:0};
+          });
+          saveRecords();
+        }
+        // 刷新月盤總表
+        if(document.getElementById('hist-monthly-panel') &&
+           document.getElementById('hist-monthly-panel').style.display !== 'none'){
+          renderMonthSummary();
+        }
+      } else {
+        showToast('⚠️ 儲存失敗');
+      }
+    }
+  );
+}
 
 // ── LINE 預覽 ──────────────────────────────────────────────────
 var _pendingInvLineSend = null; // 儲存待發送的函式
@@ -1422,6 +1485,217 @@ function resendInvLine(ri){
 // ── API ───────────────────────────────────────────────────────
 
 // ── 工具 ─────────────────────────────────────────────────────
+// ── 歷史記錄 ─────────────────────────────────────────────────
+function showHist(){
+  var el = document.getElementById('hist-body');
+  var monthlyRecs = records.filter(function(r){ return r.mode==='monthly'; });
+  var months = {};
+  monthlyRecs.forEach(function(r){ var m=(r.date||'').slice(0,7); if(m) months[m]=true; });
+  var monthSel = document.getElementById('hist-month-sel');
+  if(monthSel){
+    monthSel.innerHTML = Object.keys(months).sort().reverse().map(function(m){
+      return '<option value="'+m+'">'+m+'</option>';
+    }).join('') || '<option value="">(無月盤記錄)</option>';
+  }
+  renderAllHist();
+  openOv('hist');
+}
+
+function switchHistTab(tab){
+  document.getElementById('hist-all-panel').style.display     = tab==='all'?'':'none';
+  document.getElementById('hist-monthly-panel').style.display = tab==='monthly'?'':'none';
+  document.getElementById('htab-all').classList.toggle('on',     tab==='all');
+  document.getElementById('htab-monthly').classList.toggle('on', tab==='monthly');
+  if(tab==='monthly') renderMonthSummary();
+}
+
+// ── 品項設定 ─────────────────────────────────────────────────
+var cfgMode = 'daily';
+
+function openCfg(){
+  renderCfgTabs();
+  renderCfgBody();
+  openOv('cfg');
+}
+
+function renderCfgTabs(){
+  var tabs = document.getElementById('cfg-tabs');
+  if(!tabs) return;
+  tabs.innerHTML = ['daily','weekly','monthly'].map(function(m){
+    var labels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+    return '<button class="cfg-tab'+(cfgMode===m?' on':'')+'" onclick="switchCfgTab(&#39;'+m+'&#39;)">'+labels[m]+'</button>';
+  }).join('');
+}
+
+function switchCfgTab(m){ cfgMode=m; renderCfgTabs(); renderCfgBody(); }
+
+function renderCfgBody(){
+  var list = cfgMode==='monthly' ? items : items.filter(function(i){
+    return i.modes && i.modes.indexOf(cfgMode==='daily'?'D':'W')>-1;
+  });
+  var body = document.getElementById('cfg-body');
+  if(!body) return;
+  if(!list.length){ body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3)">此模式無品項</div>'; return; }
+  body.innerHTML = list.map(function(item){
+    return '<div class="cir-item" id="cir-'+item.id+'" data-item-id="'+item.id+'">'
+      +'<div class="cir-head">'
+        +'<span class="cir-name">'+item.name+'</span>'
+        +'<div style="display:flex;gap:6px">'
+          +'<button class="btn btn-sm" data-up="'+item.id+'">↑</button>'
+          +'<button class="btn btn-sm" data-dn="'+item.id+'">↓</button>'
+          +'<button class="btn btn-d btn-sm" data-del="'+item.id+'">刪除</button>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cir-conv-block">'
+        +'<div class="cir-conv">'
+          +'小：<input class="cf-inp" value="'+item.sn+'" data-upd="'+item.id+'" data-field="sn">'
+          +(item.mn?'　中：<input class="cf-inp" value="'+item.mn+'" data-upd="'+item.id+'" data-field="mn">　1中=<input class="cc-inp" type="number" value="'+item.ms+'" data-upd="'+item.id+'" data-field="ms">小':'')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  // 事件委派
+  body.onclick=function(e){
+    var upBtn=e.target.closest('[data-up]');
+    var dnBtn=e.target.closest('[data-dn]');
+    var delBtn=e.target.closest('[data-del]');
+    if(upBtn) moveItemUp(upBtn.getAttribute('data-up'));
+    if(dnBtn) moveItemDown(dnBtn.getAttribute('data-dn'));
+    if(delBtn && confirm('確定刪除？')) delItem(delBtn.getAttribute('data-del'));
+  };
+  body.onchange=function(e){
+    var inp=e.target.closest('[data-upd]');
+    if(!inp) return;
+    updItemSave(inp.getAttribute('data-upd'), inp.getAttribute('data-field'), inp.value);
+  };
+  body.onblur=function(e){
+    var inp=e.target.closest('[data-upd]');
+    if(!inp) return;
+    updItemSave(inp.getAttribute('data-upd'), inp.getAttribute('data-field'), inp.value);
+  };
+}
+
+function addNewItem(){
+  var name=document.getElementById('ni-name').value.trim();
+  var cat =document.getElementById('ni-cat').value.trim();
+  var sn  =document.getElementById('ni-sn').value.trim();
+  var mn  =document.getElementById('ni-mn').value.trim();
+  var ln  =document.getElementById('ni-ln').value.trim();
+  var ms  =parseFloat(document.getElementById('ni-ms').value)||0;
+  var lm  =parseFloat(document.getElementById('ni-lm').value)||0;
+  var wu  =document.getElementById('ni-wu').value.trim();
+  var sw  =parseFloat(document.getElementById('ni-sw').value)||0;
+  if(!name||!cat||!sn){ showToast('請填寫品項名稱、分類、小單位'); return; }
+  var modes='';
+  if(document.getElementById('ni-daily').checked)   modes+='D';
+  if(document.getElementById('ni-weekly').checked)  modes+='W';
+  var id = String(Date.now());
+  var newItem={id:id,name:name,cat:cat,sn:sn,mn:mn,ln:ln,ms:ms,lm:lm,wu:wu,sw:sw,modes:modes,
+    daily:{min:0,target:0,std:0,refill:0},weekly:{min:0,target:0,countUnit:'s'},monthly:{}};
+  items.push(newItem);
+  saveItems();
+  ['ni-name','ni-cat','ni-sn','ni-mn','ni-ln','ni-ms','ni-lm','ni-wu','ni-sw'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  renderCfgBody();
+  showToast('✓ 已新增：'+name);
+}
+
+// ── 批量設定 ─────────────────────────────────────────────────
+var bulkMode = 'daily';
+var bulkDirty = {};
+
+function openBulk(){
+  bulkMode = 'daily';
+  bulkDirty = {};
+  renderBulkTabs();
+  renderBulkBody();
+  document.getElementById('bulk-ov').classList.add('show');
+}
+
+function closeBulk(){
+  document.getElementById('bulk-ov').classList.remove('show');
+}
+
+function renderBulkTabs(){
+  var tabs = document.getElementById('bulk-tabs');
+  if(!tabs) return;
+  tabs.innerHTML = ['daily','weekly','monthly'].map(function(m){
+    var labels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+    return '<button class="bulk-tab'+(bulkMode===m?' on':'')+'" data-bulk-tab="'+m+'">'+labels[m]+'</button>';
+  }).join('');
+  tabs.onclick=function(e){
+    var btn=e.target.closest('[data-bulk-tab]');
+    if(btn) switchBulkTab(btn.getAttribute('data-bulk-tab'));
+  };
+}
+
+function switchBulkTab(m){ bulkMode=m; renderBulkTabs(); renderBulkBody(); }
+
+function renderBulkBody(){
+  var body=document.getElementById('bulk-body');
+  if(!body) return;
+  var modeItems = bulkMode==='monthly' ? items : items.filter(function(i){
+    return i.modes && i.modes.indexOf(bulkMode==='daily'?'D':'W')>-1;
+  });
+  if(!modeItems.length){ body.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink3)">此模式無品項</div>'; return; }
+
+  var cats=[], catMap={};
+  modeItems.forEach(function(i){ if(!catMap[i.cat]){catMap[i.cat]=[];cats.push(i.cat);} catMap[i.cat].push(i); });
+
+  body.innerHTML = cats.map(function(cat){
+    return '<div class="bulk-cat-head">'+cat+'</div>'
+      +catMap[cat].map(function(item){
+        var t = item[bulkMode]||{};
+        if(bulkMode==='daily'){
+          return '<div class="bulk-row" data-id="'+item.id+'">'
+            +'<div class="bulk-item-name">'+item.name+'</div>'
+            +'<div class="bulk-fields">'
+              +'<label class="bulk-lbl">標準量</label>'
+              +'<input class="bulk-inp" type="number" min="0" value="'+(t.std!=null?t.std:0)+'" data-field="std" data-id="'+item.id+'">'
+              +'<label class="bulk-lbl">補貨量</label>'
+              +'<input class="bulk-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:0)+'" data-field="refill" data-id="'+item.id+'">'
+            +'</div>'
+          +'</div>';
+        } else {
+          return '<div class="bulk-row" data-id="'+item.id+'">'
+            +'<div class="bulk-item-name">'+item.name+'</div>'
+            +'<div class="bulk-fields">'
+              +'<label class="bulk-lbl">低標</label>'
+              +'<input class="bulk-inp" type="number" min="0" value="'+(t.min||0)+'" data-field="min" data-id="'+item.id+'">'
+              +'<label class="bulk-lbl">補至</label>'
+              +'<input class="bulk-inp" type="number" min="0" value="'+(t.target||0)+'" data-field="target" data-id="'+item.id+'">'
+            +'</div>'
+          +'</div>';
+        }
+      }).join('');
+  }).join('');
+}
+
+function bulkAddRow(){
+  var name=prompt('新品項名稱：');
+  if(!name||!name.trim()) return;
+  showToast('請使用「新增」按鈕新增品項');
+  closeBulk();
+  openCfg();
+}
+
+function bulkSave(){
+  var inputs=document.querySelectorAll('#bulk-body .bulk-inp');
+  inputs.forEach(function(inp){
+    var id=inp.getAttribute('data-id');
+    var field=inp.getAttribute('data-field');
+    var val=parseFloat(inp.value)||0;
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(!item) return;
+    if(!item[bulkMode]) item[bulkMode]={};
+    item[bulkMode][field]=val;
+  });
+  saveItems();
+  showToast('✓ 已儲存所有設定');
+  closeBulk();
+}
+
 function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}
 function openOv(id){document.getElementById('ov-'+id).classList.add('show');}
 function closeOv(id){document.getElementById('ov-'+id).classList.remove('show');}
