@@ -1204,39 +1204,11 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
       catMap[cat].forEach(function(item){
         var cS=rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
         var cW=rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
-        // 合計（最小單位）
         var tAll=Math.round(((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))+
                              (calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0)))*100)/100;
-        if(tAll===0) return; // 數量為0不顯示
-        // 組合顯示：優先用大單位
-        var displayStr='';
-        if(item.ln && item.lm>0 && item.ms>0){
-          // 有大/中/小三層
-          var perL = item.lm * item.ms;
-          var lCount = Math.floor(tAll / perL);
-          var rem = Math.round((tAll - lCount*perL)*100)/100;
-          var mCount = Math.floor(rem / item.ms);
-          var sRem = Math.round((rem - mCount*item.ms)*100)/100;
-          var parts=[];
-          if(lCount>0) parts.push(lCount+item.ln);
-          if(mCount>0) parts.push(mCount+item.mn);
-          if(sRem>0)   parts.push(sRem+item.sn);
-          displayStr = parts.join(' ') || '0'+item.sn;
-          displayStr = '共'+displayStr;
-        } else if(item.mn && item.ms>0){
-          // 有中/小兩層
-          var mCount2 = Math.floor(tAll / item.ms);
-          var sRem2 = Math.round((tAll - mCount2*item.ms)*100)/100;
-          var parts2=[];
-          if(mCount2>0) parts2.push(mCount2+item.mn);
-          if(sRem2>0)   parts2.push(sRem2+item.sn);
-          displayStr = parts2.join(' ') || '0'+item.sn;
-          displayStr = '共'+displayStr;
-        } else {
-          // 只有小單位
-          displayStr = '共'+tAll+item.sn;
-        }
-        lines.push(item.name+'　　'+displayStr);
+        if(tAll===0) return;
+        // 只顯示最小單位合計
+        lines.push(item.name+'　'+tAll+item.sn);
       });
     });
 
@@ -1905,223 +1877,218 @@ function renderMonthSummary(){
   var selMonth = document.getElementById('hist-month-sel').value;
   var el = document.getElementById('month-summary-body');
   if(!selMonth){ el.innerHTML='<div class="empty">請選擇月份</div>'; return; }
+  el.innerHTML = '<div class="empty">載入中...</div>';
 
-  // 取出該月所有月盤記錄，依日期排序
-  var recs = records.filter(function(r){
-    return r.mode==='monthly' && (r.date||'').slice(0,7)===selMonth;
-  }).sort(function(a,b){ return (a.date||'').localeCompare(b.date||''); });
+  // 從 Sheets 月盤記錄分頁讀取
+  api({action:'invMonthlyGetAll', ym:selMonth}, function(d){
+    if(!d||!d.ok){ el.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    var allRecs = d.data || [];
 
-  if(!recs.length){ el.innerHTML='<div class="empty">此月份無月盤記錄</div>'; return; }
-
-  // 取上一個月的最後一筆月盤（用來算月用量）
-  var prevMonth = getPrevMonth(selMonth);
-  var prevRecs = records.filter(function(r){
-    return r.mode==='monthly' && (r.date||'').slice(0,7)===prevMonth;
-  }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-  var prevRec = prevRecs[0] || null; // 上月最後一筆
-
-  // 表頭：品項名 | 上月末 | 本月盤1 | 本月盤2 ... | 本月末 | 月用量
-  var colDates = recs.map(function(r){ return r.date; });
-  var hasPrev = !!prevRec;
-
-  // 依分類分組
-  var cats = [];
-  var catMap = {};
-  items.forEach(function(item){
-    if(!catMap[item.cat]){ catMap[item.cat]=[]; cats.push(item.cat); }
-    catMap[item.cat].push(item);
-  });
-
-  // 計算每筆記錄每個品項的合計
-  function getTotal(rec, item){
-    var cS = (rec.counts['S_'+item.id])||{s:0,m:0,l:0,w:0};
-    var cW = (rec.counts['W_'+item.id])||{s:0,m:0,l:0,w:0};
-    var tS = calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
-    var tW = calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
-    return Math.round((tS+tW)*100)/100;
-  }
-
-  // 計算月用量：上月末存量 + 0（進貨暫不計） - 本月末存量
-  // 如果有多次盤點，以第一次為「月初」，最後一次為「月末」
-  var firstRec = recs[0];
-  var lastRec  = recs[recs.length-1];
-
-  // HTML
-  var thHtml = '<tr>'+
-    '<th style="min-width:90px">品項</th>'+
-    (hasPrev ? '<th style="background:#37474F">上月末<div style="font-size:9px;font-weight:400;opacity:.75">'+prevRec.date.slice(5)+'</div></th>' : '')+
-    colDates.map(function(d,i){
-      var isFirst = i===0, isLast = i===colDates.length-1;
-      var style = isLast ? 'background:var(--g)' : isFirst&&colDates.length>1 ? 'background:#2A5A8C' : '';
-      var recId = recs[i].id;
-      return '<th style="'+style+';cursor:pointer" onclick="editMonthlyRec(\''+recId+'\')" title="點擊編輯此次盤點">'+d.slice(5)+
-        (isFirst&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月初</div>':'')+
-        (isLast&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月末</div>':'')+
-        '<div style="font-size:9px;opacity:.7">✏️</div>'+
-      '</th>';
-    }).join('')+
-    '<th class="th-total">月用量<div style="font-size:9px;font-weight:400;opacity:.8">估算</div></th>'+
-  '</tr>';
-
-  var bodyHtml = '';
-  cats.forEach(function(cat){
-    var catItems = catMap[cat];
-    // 跳過完全沒有月盤資料的品項
-    var hasData = catItems.some(function(item){
-      return recs.some(function(r){ return getTotal(r,item)>0; });
+    // 依 id 分組（每筆盤點記錄有多列，一列一個品項）
+    var recMap={}, recOrder=[];
+    allRecs.forEach(function(row){
+      var rid = String(row.id);
+      if(!recMap[rid]){
+        recMap[rid]={id:rid, date:row.date, person:row.person, items:[]};
+        recOrder.push(rid);
+      }
+      recMap[rid].items.push(row);
     });
-    if(!hasData) return;
+    var recs = recOrder.map(function(rid){ return recMap[rid]; })
+      .sort(function(a,b){ return a.date.localeCompare(b.date); });
 
-    bodyHtml += '<tr class="cat-row"><td colspan="'+(2+colDates.length+(hasPrev?1:0))+'">'+cat+'</td></tr>';
-    catItems.forEach(function(item){
-      // 所有盤點都是0就跳過
-      var allZero = recs.every(function(r){ return getTotal(r,item)===0; }) &&
-                    (!hasPrev || getTotal(prevRec,item)===0);
-      if(allZero) return;
+    if(!recs.length){ el.innerHTML='<div class="empty">此月份無月盤記錄</div>'; return; }
 
-      var prevVal = hasPrev ? getTotal(prevRec, item) : null;
-      var firstVal = getTotal(firstRec, item);
-      var lastVal  = getTotal(lastRec, item);
+    // 取上個月最後一筆（用來算月用量）
+    var prevMonth = getPrevMonth(selMonth);
+    api({action:'invMonthlyGetAll', ym:prevMonth}, function(dp){
+      var prevAllRecs = (dp&&dp.ok&&dp.data)||[];
+      // 找最晚那筆
+      var prevMap={}, prevOrder=[];
+      prevAllRecs.forEach(function(row){
+        var rid=String(row.id);
+        if(!prevMap[rid]){prevMap[rid]={id:rid,date:row.date,items:[]};prevOrder.push(rid);}
+        prevMap[rid].items.push(row);
+      });
+      var prevRecs = prevOrder.map(function(rid){return prevMap[rid];})
+        .sort(function(a,b){return b.date.localeCompare(a.date);});
+      var prevRec = prevRecs[0]||null;
 
-      // 月用量估算：如果有上月末，用 上月末 - 本月末；否則用 本月初 - 本月末
-      var baseVal  = prevVal !== null ? prevVal : firstVal;
-      var usage    = Math.max(0, Math.round((baseVal - lastVal)*100)/100);
+      // 所有品項
+      var modeItems = getItemsForMode('monthly');
+      var colDates = recs.map(function(r){return r.date;});
+      var hasPrev = !!prevRec;
+      var firstRec = recs[0], lastRec = recs[recs.length-1];
 
-      bodyHtml += '<tr>'+
-        '<td>'+item.name+'</td>'+
-        (hasPrev ? '<td style="color:var(--ink3)">'+(prevVal||0)+' '+item.sn+'</td>' : '')+
-        recs.map(function(r,i){
-          var v = getTotal(r,item);
-          var isLast = i===recs.length-1;
-          return '<td class="'+(isLast?'total-col':'')+'">'+(v||0)+' '+item.sn+'</td>';
-        }).join('')+
-        '<td class="usage-col">'+(usage||0)+' '+item.sn+'</td>'+
-      '</tr>';
+      // 從 Sheets 資料取品項合計（按品項名稱對應）
+      function getTotal(rec, item){
+        var found = (rec.items||[]).find(function(row){ return row.item===item.name; });
+        return found ? parseFloat(found.total)||0 : 0;
+      }
+      function getPrevTotal(item){
+        if(!prevRec) return null;
+        var found = (prevRec.items||[]).find(function(row){return row.item===item.name;});
+        return found ? parseFloat(found.total)||0 : 0;
+      }
+
+      // 依分類分組
+      var cats=[], catMap2={};
+      modeItems.forEach(function(item){
+        if(!catMap2[item.cat]){catMap2[item.cat]=[];cats.push(item.cat);}
+        catMap2[item.cat].push(item);
+      });
+
+      var thHtml = '<tr>'
+        +'<th style="min-width:90px">品項</th>'
+        +(hasPrev?'<th style="background:#37474F">上月末<div style="font-size:9px;font-weight:400;opacity:.75">'+prevRec.date.slice(5)+'</div></th>':'')
+        +colDates.map(function(d,i){
+          var isFirst=i===0, isLast=i===colDates.length-1;
+          var style=isLast?'background:var(--g)':isFirst&&colDates.length>1?'background:#2A5A8C':'';
+          var rid = recs[i].id;
+          return '<th style="'+style+';cursor:pointer" onclick="editMonthlyRecFromSheets(''+rid+'')" title="點擊編輯">'
+            +d.slice(5)
+            +(isFirst&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月初</div>':'')
+            +(isLast&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月末</div>':'')
+            +'<div style="font-size:9px;opacity:.7">✏️</div>'
+          +'</th>';
+        }).join('')
+        +'<th class="th-total">月用量</th>'
+      +'</tr>';
+
+      var bodyHtml='';
+      cats.forEach(function(cat){
+        var ci = catMap2[cat];
+        var hasData = ci.some(function(item){
+          return recs.some(function(r){return getTotal(r,item)>0;});
+        });
+        if(!hasData) return;
+        bodyHtml+='<tr class="cat-row"><td colspan="'+(2+colDates.length+(hasPrev?1:0))+'">'+cat+'</td></tr>';
+        ci.forEach(function(item){
+          var prevVal = hasPrev ? getPrevTotal(item) : null;
+          var firstVal = getTotal(firstRec, item);
+          var lastVal  = getTotal(lastRec, item);
+          var allZero  = recs.every(function(r){return getTotal(r,item)===0;}) && (prevVal===null||prevVal===0);
+          if(allZero) return;
+          var baseVal = prevVal!==null ? prevVal : firstVal;
+          var usage   = Math.max(0, Math.round((baseVal-lastVal)*100)/100);
+          bodyHtml+='<tr>'
+            +'<td>'+item.name+'</td>'
+            +(hasPrev?'<td style="color:var(--ink3)">'+(prevVal||0)+' '+item.sn+'</td>':'')
+            +recs.map(function(r,i){
+              var v=getTotal(r,item);
+              var isLast=i===recs.length-1;
+              return '<td class="'+(isLast?'total-col':'')+'">'+(v||0)+' '+item.sn+'</td>';
+            }).join('')
+            +'<td class="usage-col">'+(usage||0)+' '+item.sn+'</td>'
+          +'</tr>';
+        });
+      });
+
+      el.innerHTML =
+        '<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">'+selMonth+' 共 '+recs.length+' 次盤點'
+          +(hasPrev?'　上月末：'+prevRec.date:'　（無上月末資料）')+'</div>'
+        +'<div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bd)">'
+          +'<table class="ms-table"><thead>'+thHtml+'</thead><tbody>'+bodyHtml+'</tbody></table>'
+        +'</div>'
+        +'<div style="margin-top:10px;font-size:11px;color:var(--ink3)">💡 月用量 = '
+          +(hasPrev?'上月末':'本月初')+'庫存 − 本月末庫存（不含進貨）</div>';
+
+      // 把 Sheets 資料存到 window 供編輯用
+      window._monthlyRecsFromSheets = recMap;
     });
   });
-
-  el.innerHTML =
-    '<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">'+selMonth+' 共 '+recs.length+' 次盤點'+
-      (hasPrev?'　上月末參考：'+prevRec.date:'　（無上月末資料，月用量以本月初為基準）')+'</div>'+
-    '<div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bd)">'+
-      '<table class="ms-table">'+
-        '<thead>'+thHtml+'</thead>'+
-        '<tbody>'+bodyHtml+'</tbody>'+
-      '</table>'+
-    '</div>'+
-    '<div style="margin-top:10px;font-size:11px;color:var(--ink3);line-height:1.6">'+
-      '💡 月用量估算 = '+(hasPrev?'上月末庫存 − 本月末庫存':'本月初庫存 − 本月末庫存')+
-      '（尚未計入進貨量，僅供參考）'+
-    '</div>';
 }
 
-function editMonthlyRec(recId){
-  var rec = records.find(function(r){ return String(r.id)===String(recId); });
-  if(!rec){ showToast('找不到此記錄'); return; }
+// 從 Sheets 資料編輯月盤記錄
+function editMonthlyRecFromSheets(recId){
+  var recMap = window._monthlyRecsFromSheets||{};
+  var rec = recMap[recId];
+  if(!rec){ showToast('找不到記錄，請重新載入'); return; }
 
-  // 月盤品項
   var modeItems = getItemsForMode('monthly');
   if(!modeItems.length){ showToast('無月盤品項'); return; }
 
-  // 把此筆記錄的 counts 載入為目前的盤點狀態，進入盤點流程
-  curMode = 'monthly';
-  curAreas = getMonthlyAreas ? getMonthlyAreas() : [];
-  counts = JSON.parse(JSON.stringify(rec.counts || {}));
-  selPerson = rec.person || selPerson;
-
-  // 直接打開月盤輸入頁（loc selection 或 num input）
-  // 建立一個覆蓋層讓使用者編輯各品項數量
-  var html = '<div style="padding:14px">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
-      +'<div style="font-size:15px;font-weight:900">編輯月盤記錄</div>'
-      +'<div style="font-size:12px;color:var(--ink3)">'+rec.date+'</div>'
-    +'</div>';
-
-  // 依分類顯示各品項，每個品項可以輸入 現場/倉庫 數量
-  var cats=[]; var catMap={};
+  // 建立輸入表單
+  var cats=[], catMap={};
   modeItems.forEach(function(item){
     if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
     catMap[item.cat].push(item);
   });
 
+  var html='';
   cats.forEach(function(cat){
-    html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px;letter-spacing:.05em">'+cat+'</div>';
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px;letter-spacing:.05em">'+cat+'</div>';
     catMap[cat].forEach(function(item){
-      var cS = (counts['S_'+item.id])||{s:0,m:0,l:0,w:0};
-      var cW = (counts['W_'+item.id])||{s:0,m:0,l:0,w:0};
-      var tS = calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
-      var tW = calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
+      // 從 Sheets 資料找對應品項
+      var found = (rec.items||[]).find(function(row){return row.item===item.name;});
+      var tS = found ? parseFloat(found.qty_scene)||0 : 0;
+      var tW = found ? parseFloat(found.qty_store)||0 : 0;
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
         +'<span style="flex:1;font-size:13px;font-weight:600">'+item.name+'</span>'
         +'<span style="font-size:11px;color:var(--ink3)">現場</span>'
-        +'<input type="number" min="0" step="0.01" value="'+Math.round(tS*100)/100+'" '
+        +'<input type="number" min="0" step="0.01" value="'+tS+'" '
           +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
-          +'data-rec-item="S_'+item.id+'" data-unit="'+item.sn+'">'
+          +'data-edit-item="S_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
         +'<span style="font-size:11px;color:var(--ink3)">倉庫</span>'
-        +'<input type="number" min="0" step="0.01" value="'+Math.round(tW*100)/100+'" '
+        +'<input type="number" min="0" step="0.01" value="'+tW+'" '
           +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
-          +'data-rec-item="W_'+item.id+'" data-unit="'+item.sn+'">'
+          +'data-edit-item="W_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
         +'<span style="font-size:12px;color:var(--ink3)">'+item.sn+'</span>'
       +'</div>';
     });
   });
 
-  html += '</div>';
-
-  // 使用月盤專用 overlay
   document.getElementById('monthly-edit-meta').textContent = rec.date+'　'+rec.person;
   document.getElementById('monthly-edit-body').innerHTML = html;
-  // 儲存時帶入 recId 和 modeItems
   window._editingMonthlyRecId = recId;
   window._editingMonthlyItems = modeItems;
+  window._editingMonthlyDate  = rec.date;
+  window._editingMonthlyPerson= rec.person;
   openOv('monthly-edit');
 }
 
 function saveMonthlyEditOv(){
-  var recId = window._editingMonthlyRecId;
+  var recId   = window._editingMonthlyRecId;
   var modeItems = window._editingMonthlyItems;
-  if(!recId||!modeItems){ showToast('錯誤：找不到編輯狀態'); return; }
-  saveMonthlyEdit(recId, modeItems);
-}
+  var date    = window._editingMonthlyDate;
+  var person  = window._editingMonthlyPerson;
+  if(!recId||!modeItems){ showToast('找不到編輯狀態'); return; }
 
-function saveMonthlyEdit(recId, modeItems){
-  var rec = records.find(function(r){ return String(r.id)===String(recId); });
-  if(!rec){ showToast('找不到記錄'); return; }
-
-  // 讀取所有 input 的值
-  var inputs = document.querySelectorAll('[data-rec-item]');
-  inputs.forEach(function(inp){
-    var key = inp.getAttribute('data-rec-item');
-    var val = parseFloat(inp.value)||0;
-    var prefix = key.slice(0,2); // 'S_' or 'W_'
-    var itemId = key.slice(2);
-    var item = modeItems.find(function(i){ return String(i.id)===String(itemId); });
-    if(!item) return;
-    // 把 total 分解成最小單位存進 counts（簡化：直接存 s 欄位）
-    if(!rec.counts[key]) rec.counts[key]={s:0,m:0,l:0,w:0};
-    rec.counts[key].s = val; // 以最小單位存（等比換算）
-    rec.counts[key].m = 0;
-    rec.counts[key].l = 0;
-    rec.counts[key].w = 0;
+  // 收集輸入值
+  var itemMap={};
+  document.querySelectorAll('[data-edit-item]').forEach(function(inp){
+    var key  = inp.getAttribute('data-edit-item'); // 'S_xxx' or 'W_xxx'
+    var name = inp.getAttribute('data-item-name');
+    var val  = parseFloat(inp.value)||0;
+    if(!itemMap[name]) itemMap[name]={qty_scene:0,qty_store:0};
+    if(key.slice(0,2)==='S_') itemMap[name].qty_scene=val;
+    else                       itemMap[name].qty_store=val;
   });
 
-  saveRecords();
-
-  // 也推送到 Sheets 月盤分頁
+  // 組成送出格式
   var data = modeItems.map(function(item){
-    var cS=(rec.counts['S_'+item.id])||{s:0};
-    var cW=(rec.counts['W_'+item.id])||{s:0};
+    var d = itemMap[item.name]||{qty_scene:0,qty_store:0};
     return {cat:item.cat, item:item.name, unit:item.sn,
-      qty_scene:cS.s||0, qty_store:cW.s||0, total:(cS.s||0)+(cW.s||0)};
-  });
-  api({action:'invSave', mode:'monthly', id:recId, date:rec.date, person:rec.person, data:JSON.stringify(data)},
-    function(d){ showToast(d&&d.ok?'✓ 月盤記錄已更新':'⚠️ 雲端同步失敗，本機已儲存'); }
-  );
+      qty_scene:d.qty_scene, qty_store:d.qty_store, total:d.qty_scene+d.qty_store};
+  }).filter(function(d){ return d.total>0; });
 
-  closeOv('cfg');
-  setTimeout(function(){ renderMonthSummary(); }, 300);
-  showToast('✓ 月盤記錄已修改');
+  var btn = document.getElementById('monthly-edit-save-btn');
+  btn.textContent='儲存中...'; btn.disabled=true;
+
+  api({action:'invSave', mode:'monthly', id:recId, date:date, person:person, data:JSON.stringify(data)},
+    function(d){
+      btn.textContent='💾 儲存修改'; btn.disabled=false;
+      if(d&&d.ok){
+        showToast('✓ 月盤記錄已更新');
+        closeOv('monthly-edit');
+        setTimeout(function(){ renderMonthSummary(); }, 300);
+      } else {
+        showToast('⚠️ 儲存失敗');
+      }
+    }
+  );
 }
+
 
 function getPrevMonth(ym){
   var y=parseInt(ym.slice(0,4)), m=parseInt(ym.slice(5,7));
