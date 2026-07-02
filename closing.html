@@ -521,7 +521,7 @@ function recalcAll(){
   var totalCups = seal + cream + eco;
 
   // 3. 取寄杯數（先算，因為均杯單價需要用到）
-  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool;
+  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool + take.dongmei;
 
   // 寄杯組
   var depOrig  = getNum('f-dep-orig');
@@ -542,7 +542,8 @@ function recalcAll(){
   var flavTotal = (buy.aromatic + take.aromatic) +
                   (buy.ningxia  + take.ningxia)  +
                   (buy.youth    + take.youth)    +
-                  (buy.cool     + take.cool);
+                  (buy.cool     + take.cool)     +
+                  (buy.dongmei  + take.dongmei);
 
   // 6. 仙草凍/總佔比 = (原味總數 + 風味總數) / 總杯數
   var jellyTotal = origTotal + flavTotal;
@@ -1003,12 +1004,12 @@ function closeMsgModal(e){
 function buildClosingMsgBase(p){
   var n = function(k){ return parseFloat(p[k]||0)||0; };
   var totalCups  = n('sealMachine')+n('creamTop')+n('ecoCup');
-  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool');
+  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool')+n('takeDongmei');
   var depAmt     = n('depOrig')*650+n('depFlav')*750+n('depSuper')*1400;
   var dineInCups = totalCups-takeCups;
   var avgPrice   = dineInCups>0 ? Math.round((n('revenue')-depAmt)/dineInCups*10)/10 : 0;
   var origTotal  = n('buyOriginal')+n('takeOriginal');
-  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool');
+  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool')+n('buyDongmei')+n('takeDongmei');
   var receipt    = n('receiptCount');
   function pct(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
 
@@ -1525,7 +1526,7 @@ function calcTotalCups(r){
 }
 // 取寄杯數
 function calcTakeCups(r){
-  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0);
+  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0)+(r.takeDongmei||0);
 }
 // 原味總數
 function calcOrigTotal(r){
@@ -1536,7 +1537,8 @@ function calcFlavTotal(r){
   return (r.buyAromatic||0)+(r.takeAromatic||0)+
          (r.buyNingxia||0) +(r.takeNingxia||0)+
          (r.buyYouth||0)   +(r.takeYouth||0)+
-         (r.buyCool||0)    +(r.takeCool||0);
+         (r.buyCool||0)    +(r.takeCool||0)+
+         (r.buyDongmei||0) +(r.takeDongmei||0);
 }
 
 function delRecord(id){
