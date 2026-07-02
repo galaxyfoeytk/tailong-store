@@ -1191,6 +1191,7 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
 
   if(rec.mode==='monthly'){
     lines.push('');
+    lines.push('📋 月盤點結果 ─────────────');
     // 依分類分組
     var cats=[], catMap={};
     modeItems.forEach(function(item){
@@ -1198,14 +1199,44 @@ function sendLineInventoryNotify(rec, modeItems, actionItems){
       catMap[item.cat].push(item);
     });
     cats.forEach(function(cat){
+      lines.push('');
       lines.push('【'+cat+'】');
       catMap[cat].forEach(function(item){
         var cS=rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
         var cW=rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
-        var tS=Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*10)/10;
-        var tW=Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*10)/10;
-        var tAll=Math.round((tS+tW)*10)/10;
-        lines.push(item.name+'　現場:'+tS+' 倉庫:'+tW+' 合計:'+tAll+item.sn);
+        // 合計（最小單位）
+        var tAll=Math.round(((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))+
+                             (calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0)))*100)/100;
+        if(tAll===0) return; // 數量為0不顯示
+        // 組合顯示：優先用大單位
+        var displayStr='';
+        if(item.ln && item.lm>0 && item.ms>0){
+          // 有大/中/小三層
+          var perL = item.lm * item.ms;
+          var lCount = Math.floor(tAll / perL);
+          var rem = Math.round((tAll - lCount*perL)*100)/100;
+          var mCount = Math.floor(rem / item.ms);
+          var sRem = Math.round((rem - mCount*item.ms)*100)/100;
+          var parts=[];
+          if(lCount>0) parts.push(lCount+item.ln);
+          if(mCount>0) parts.push(mCount+item.mn);
+          if(sRem>0)   parts.push(sRem+item.sn);
+          displayStr = parts.join(' ') || '0'+item.sn;
+          displayStr = '共'+displayStr;
+        } else if(item.mn && item.ms>0){
+          // 有中/小兩層
+          var mCount2 = Math.floor(tAll / item.ms);
+          var sRem2 = Math.round((tAll - mCount2*item.ms)*100)/100;
+          var parts2=[];
+          if(mCount2>0) parts2.push(mCount2+item.mn);
+          if(sRem2>0)   parts2.push(sRem2+item.sn);
+          displayStr = parts2.join(' ') || '0'+item.sn;
+          displayStr = '共'+displayStr;
+        } else {
+          // 只有小單位
+          displayStr = '共'+tAll+item.sn;
+        }
+        lines.push(item.name+'　　'+displayStr);
       });
     });
 
