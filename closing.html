@@ -218,7 +218,7 @@ canvas{width:100%!important}
           <select id="f-demo-focus">
             <option value="">— 選 —</option>
             <option>原味風凍</option><option>芋香風凍</option><option>檸夏風凍</option>
-            <option>輕春風凍</option><option>清涼風凍</option><option>其他</option>
+            <option>輕春風凍</option><option>清涼風凍</option><option>冬玫風凍</option><option>其他</option>
           </select>
         </div>
         <div class="field"><label>試飲杯總數</label><input id="f-demo-cups" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲杯總數')"></div>
@@ -1400,13 +1400,19 @@ function histCard(r, i){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<div id="hd-'+i+'" style="display:none">'+histDetail(r)+'</div>'+
+    '<div id="hd-'+i+'" style="display:none" data-hist-id="'+r.id+'" data-hist-date="'+r.date+'">'+histDetail(r)+'</div>'+
   '</div>';
 }
 
 function toggleHist(i){
   var el = document.getElementById('hd-'+i);
-  el.style.display = el.style.display==='none'?'block':'none';
+  var opening = el.style.display==='none';
+  el.style.display = opening?'block':'none';
+  if(opening){
+    var hid  = el.getAttribute('data-hist-id');
+    var date = el.getAttribute('data-hist-date');
+    if(hid && date) loadHistExtra(hid, date);
+  }
 }
 
 function histDetail(r){
@@ -1465,12 +1471,11 @@ function histDetail(r){
       cust(r.jelloReturn||0,'再喝風凍','var(--gl)','var(--g)')+
       cust(r.jelloDirect||0,'直接買','var(--gl)','var(--g)')+
     '</div>'+
-    // 電表/溫度區（從 API 查詢後動態插入）
+    // 電表/溫度區（自動載入）
     '<div id="hist-extra-'+r.id+'" style="margin-top:8px;padding:8px;background:var(--bg);border-radius:var(--r2);font-size:12px;color:var(--ink3)">'+
-      '<span id="hist-extra-loading-'+r.id+'" style="font-size:12px;color:var(--ink3)">⏳ 載入電表/溫度資料...</span>'+
+      '⏳ 載入電表/溫度中...'+
     '</div>'+
     '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">'+
-      '<button onclick="loadHistExtra(\''+r.id+'\',\''+r.date+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--bl);color:var(--b);font-size:12px;cursor:pointer">🔍 載入電表/溫度</button>'+
       '<button data-resend-id="'+r.id+'" onclick="resendLineNotify(\''+r.id+'\')" style="padding:5px 12px;border:none;border-radius:var(--r2);background:var(--g);color:#fff;font-size:12px;cursor:pointer;font-weight:700">📲 發送 LINE</button>'+
       '<button onclick="delRecord(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--red);font-size:12px;cursor:pointer">🗑 刪除</button>'+
     '</div>'+
@@ -1478,33 +1483,45 @@ function histDetail(r){
 }
 function loadHistExtra(id, date){
   var el = document.getElementById('hist-extra-'+id);
-  var loading = document.getElementById('hist-extra-loading-'+id);
   if(!el) return;
-  // 查電表
-  api({action:'elecGetAll', startDate:date, endDate:date}, function(de){
+  el.innerHTML = '<span style="font-size:12px;color:var(--ink3)">⏳ 載入中...</span>';
+
+  var done = {elec:null, temp:null};
+  function tryRender(){
+    if(done.elec===null || done.temp===null) return;
+    // 電表
     var elecStr = '⚡ 電表：無記錄';
-    if(de&&de.ok&&de.data&&de.data.length>0){
-      var er = de.data[0];
-      elecStr = '⚡ 電表：'+er.reading+' 度'+(er.usage!=null?' (+'+er.usage+'度)':'');
+    if(done.elec && done.elec.ok && done.elec.data){
+      var rec = done.elec.data.find(function(r){ return r.date===date; });
+      if(rec) elecStr = '⚡ 電表：'+rec.reading+' 度';
     }
-    // 查溫度記錄（取同日溫度）
-    api({action:'tempGetAll', startDate:date, endDate:date}, function(dt){
-      var tempLines = [];
-      if(dt&&dt.ok&&dt.data&&dt.data.length>0){
-        dt.data.slice(0,3).forEach(function(t){
-          var label = {前冰:'🟦前冰',仙草凍:'🌿仙草凍'}[t.machine]||t.machine;
-          tempLines.push(label+' '+t.morning+'°→'+t.afternoon+'°→'+t.closing+'°');
-        });
+    // 溫度：getTempData 回傳的是該月所有記錄，用 day 欄位過濾
+    var tempStr = '🌡 溫度：無記錄';
+    if(done.temp && done.temp.ok && done.temp.data && done.temp.data.length>0){
+      var day = date.slice(8); // 取日期的「日」部分，如 '26'
+      var dayRecs = done.temp.data.filter(function(r){
+        return String(r.day).padStart(2,'0') === day.padStart(2,'0');
+      });
+      if(dayRecs.length > 0){
+        var t = dayRecs[0];
+        // temps 陣列：[前冰開班,前冰中午,前冰收班, 仙草凍開班,仙草凍中午,仙草凍收班, ...]
+        var parts = [];
+        if(t.temps[0]||t.temps[1]||t.temps[2]) parts.push('前冰 '+[t.temps[0],t.temps[1],t.temps[2]].filter(Boolean).join('/'));
+        if(t.temps[3]||t.temps[4]||t.temps[5]) parts.push('仙草凍 '+[t.temps[3],t.temps[4],t.temps[5]].filter(Boolean).join('/'));
+        if(parts.length) tempStr = '🌡 '+parts.join('　');
       }
-      var tempStr = tempLines.length ? '🌡 溫度：'+tempLines.join('　') : '🌡 溫度：無記錄';
-      if(el){
-        el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px">'+
-          '<span style="color:var(--b)">'+elecStr+'</span>'+
-          '<span style="color:var(--g)">'+tempStr+'</span>'+
-        '</div>';
-      }
-    });
-  });
+    }
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px">'+
+      '<span style="color:var(--b)">'+elecStr+'</span>'+
+      '<span style="color:var(--g)">'+tempStr+'</span>'+
+    '</div>';
+  }
+
+  // 查電表（全部拉回，在前端過濾當日）
+  api({action:'elecGetAll'}, function(d){ done.elec=d; tryRender(); });
+  // 查溫度（傳年月）
+  var ym = date.slice(0,7); // '2026-07'
+  api({action:'getTempData', ym:ym}, function(d){ done.temp=d; tryRender(); });
 }
 
 function kv(label, val, unit, color){
