@@ -396,6 +396,23 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 </div>
 
 <!-- 品項設定 overlay -->
+<!-- 月盤記錄編輯 overlay -->
+<div class="ov" id="ov-monthly-edit">
+  <div class="sh" style="max-height:92dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:15px;font-weight:900">✏️ 編輯月盤記錄</div>
+      <button onclick="closeOv('monthly-edit')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <div id="monthly-edit-meta" style="font-size:12px;color:var(--ink3);margin-bottom:12px"></div>
+    <div id="monthly-edit-body"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button id="monthly-edit-save-btn" onclick="saveMonthlyEditOv()" style="flex:1;padding:13px;border-radius:var(--r2);border:none;background:var(--b);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💾 儲存修改</button>
+      <button onclick="closeOv('monthly-edit')" style="padding:13px 18px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ov-cfg">
   <div class="sh" style="max-height:90dvh;overflow-y:auto">
     <div class="sh-handle"></div>
@@ -1905,9 +1922,11 @@ function renderMonthSummary(){
     colDates.map(function(d,i){
       var isFirst = i===0, isLast = i===colDates.length-1;
       var style = isLast ? 'background:var(--g)' : isFirst&&colDates.length>1 ? 'background:#2A5A8C' : '';
-      return '<th style="'+style+'">'+d.slice(5)+
+      var recId = recs[i].id;
+      return '<th style="'+style+';cursor:pointer" onclick="editMonthlyRec(\''+recId+'\')" title="點擊編輯此次盤點">'+d.slice(5)+
         (isFirst&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月初</div>':'')+
         (isLast&&colDates.length>1?'<div style="font-size:9px;font-weight:400;opacity:.8">月末</div>':'')+
+        '<div style="font-size:9px;opacity:.7">✏️</div>'+
       '</th>';
     }).join('')+
     '<th class="th-total">月用量<div style="font-size:9px;font-weight:400;opacity:.8">估算</div></th>'+
@@ -1963,6 +1982,114 @@ function renderMonthSummary(){
       '💡 月用量估算 = '+(hasPrev?'上月末庫存 − 本月末庫存':'本月初庫存 − 本月末庫存')+
       '（尚未計入進貨量，僅供參考）'+
     '</div>';
+}
+
+function editMonthlyRec(recId){
+  var rec = records.find(function(r){ return String(r.id)===String(recId); });
+  if(!rec){ showToast('找不到此記錄'); return; }
+
+  // 月盤品項
+  var modeItems = getItemsForMode('monthly');
+  if(!modeItems.length){ showToast('無月盤品項'); return; }
+
+  // 把此筆記錄的 counts 載入為目前的盤點狀態，進入盤點流程
+  curMode = 'monthly';
+  curAreas = getMonthlyAreas ? getMonthlyAreas() : [];
+  counts = JSON.parse(JSON.stringify(rec.counts || {}));
+  selPerson = rec.person || selPerson;
+
+  // 直接打開月盤輸入頁（loc selection 或 num input）
+  // 建立一個覆蓋層讓使用者編輯各品項數量
+  var html = '<div style="padding:14px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:900">編輯月盤記錄</div>'
+      +'<div style="font-size:12px;color:var(--ink3)">'+rec.date+'</div>'
+    +'</div>';
+
+  // 依分類顯示各品項，每個品項可以輸入 現場/倉庫 數量
+  var cats=[]; var catMap={};
+  modeItems.forEach(function(item){
+    if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
+    catMap[item.cat].push(item);
+  });
+
+  cats.forEach(function(cat){
+    html += '<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px;letter-spacing:.05em">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var cS = (counts['S_'+item.id])||{s:0,m:0,l:0,w:0};
+      var cW = (counts['W_'+item.id])||{s:0,m:0,l:0,w:0};
+      var tS = calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
+      var tW = calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+item.name+'</span>'
+        +'<span style="font-size:11px;color:var(--ink3)">現場</span>'
+        +'<input type="number" min="0" step="0.01" value="'+Math.round(tS*100)/100+'" '
+          +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
+          +'data-rec-item="S_'+item.id+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:11px;color:var(--ink3)">倉庫</span>'
+        +'<input type="number" min="0" step="0.01" value="'+Math.round(tW*100)/100+'" '
+          +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
+          +'data-rec-item="W_'+item.id+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:12px;color:var(--ink3)">'+item.sn+'</span>'
+      +'</div>';
+    });
+  });
+
+  html += '</div>';
+
+  // 使用月盤專用 overlay
+  document.getElementById('monthly-edit-meta').textContent = rec.date+'　'+rec.person;
+  document.getElementById('monthly-edit-body').innerHTML = html;
+  // 儲存時帶入 recId 和 modeItems
+  window._editingMonthlyRecId = recId;
+  window._editingMonthlyItems = modeItems;
+  openOv('monthly-edit');
+}
+
+function saveMonthlyEditOv(){
+  var recId = window._editingMonthlyRecId;
+  var modeItems = window._editingMonthlyItems;
+  if(!recId||!modeItems){ showToast('錯誤：找不到編輯狀態'); return; }
+  saveMonthlyEdit(recId, modeItems);
+}
+
+function saveMonthlyEdit(recId, modeItems){
+  var rec = records.find(function(r){ return String(r.id)===String(recId); });
+  if(!rec){ showToast('找不到記錄'); return; }
+
+  // 讀取所有 input 的值
+  var inputs = document.querySelectorAll('[data-rec-item]');
+  inputs.forEach(function(inp){
+    var key = inp.getAttribute('data-rec-item');
+    var val = parseFloat(inp.value)||0;
+    var prefix = key.slice(0,2); // 'S_' or 'W_'
+    var itemId = key.slice(2);
+    var item = modeItems.find(function(i){ return String(i.id)===String(itemId); });
+    if(!item) return;
+    // 把 total 分解成最小單位存進 counts（簡化：直接存 s 欄位）
+    if(!rec.counts[key]) rec.counts[key]={s:0,m:0,l:0,w:0};
+    rec.counts[key].s = val; // 以最小單位存（等比換算）
+    rec.counts[key].m = 0;
+    rec.counts[key].l = 0;
+    rec.counts[key].w = 0;
+  });
+
+  saveRecords();
+
+  // 也推送到 Sheets 月盤分頁
+  var data = modeItems.map(function(item){
+    var cS=(rec.counts['S_'+item.id])||{s:0};
+    var cW=(rec.counts['W_'+item.id])||{s:0};
+    return {cat:item.cat, item:item.name, unit:item.sn,
+      qty_scene:cS.s||0, qty_store:cW.s||0, total:(cS.s||0)+(cW.s||0)};
+  });
+  api({action:'invSave', mode:'monthly', id:recId, date:rec.date, person:rec.person, data:JSON.stringify(data)},
+    function(d){ showToast(d&&d.ok?'✓ 月盤記錄已更新':'⚠️ 雲端同步失敗，本機已儲存'); }
+  );
+
+  closeOv('cfg');
+  setTimeout(function(){ renderMonthSummary(); }, 300);
+  showToast('✓ 月盤記錄已修改');
 }
 
 function getPrevMonth(ym){

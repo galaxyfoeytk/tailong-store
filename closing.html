@@ -398,6 +398,7 @@ var PRODUCTS = [
   {key:'ningxia',  name:'檸夏風凍', color:'#C07000'},
   {key:'youth',    name:'輕春風凍', color:'#1A6B3C'},
   {key:'cool',     name:'清涼風凍', color:'#2A8FA8'},
+  {key:'dongmei',  name:'冬玫風凍', color:'#C0395A'},
 ];
 var _charts = {};
 
@@ -705,7 +706,12 @@ function submitForm(){
     if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
     if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
     showToast('✓ 收班記錄已儲存！');
-    sendClosingLineNotify(params);
+    // 先儲存完成，再問是否要發送 LINE
+    setTimeout(function(){
+      if(confirm('收班記錄已儲存 ✓\n\n是否現在發送 LINE 通知給群組？')){
+        sendClosingLineNotify(params);
+      }
+    }, 400);
     // 清空數值欄位
     ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-hours'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.value = '';
@@ -1440,12 +1446,48 @@ function histDetail(r){
       cust(r.jelloReturn||0,'再喝風凍','var(--gl)','var(--g)')+
       cust(r.jelloDirect||0,'直接買','var(--gl)','var(--g)')+
     '</div>'+
-    '<div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">'+
-      '<button data-resend-id="'+r.id+'" onclick="resendLineNotify(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--g);font-size:12px;cursor:pointer">📲 重傳 LINE</button>'+
+    // 電表/溫度區（從 API 查詢後動態插入）
+    '<div id="hist-extra-'+r.id+'" style="margin-top:8px;padding:8px;background:var(--bg);border-radius:var(--r2);font-size:12px;color:var(--ink3)">'+
+      '<span id="hist-extra-loading-'+r.id+'" style="font-size:12px;color:var(--ink3)">⏳ 載入電表/溫度資料...</span>'+
+    '</div>'+
+    '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">'+
+      '<button onclick="loadHistExtra(\''+r.id+'\',\''+r.date+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--bl);color:var(--b);font-size:12px;cursor:pointer">🔍 載入電表/溫度</button>'+
+      '<button data-resend-id="'+r.id+'" onclick="resendLineNotify(\''+r.id+'\')" style="padding:5px 12px;border:none;border-radius:var(--r2);background:var(--g);color:#fff;font-size:12px;cursor:pointer;font-weight:700">📲 發送 LINE</button>'+
       '<button onclick="delRecord(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--red);font-size:12px;cursor:pointer">🗑 刪除</button>'+
     '</div>'+
   '</div>';
 }
+function loadHistExtra(id, date){
+  var el = document.getElementById('hist-extra-'+id);
+  var loading = document.getElementById('hist-extra-loading-'+id);
+  if(!el) return;
+  // 查電表
+  api({action:'elecGetAll', startDate:date, endDate:date}, function(de){
+    var elecStr = '⚡ 電表：無記錄';
+    if(de&&de.ok&&de.data&&de.data.length>0){
+      var er = de.data[0];
+      elecStr = '⚡ 電表：'+er.reading+' 度'+(er.usage!=null?' (+'+er.usage+'度)':'');
+    }
+    // 查溫度記錄（取同日溫度）
+    api({action:'tempGetAll', startDate:date, endDate:date}, function(dt){
+      var tempLines = [];
+      if(dt&&dt.ok&&dt.data&&dt.data.length>0){
+        dt.data.slice(0,3).forEach(function(t){
+          var label = {前冰:'🟦前冰',仙草凍:'🌿仙草凍'}[t.machine]||t.machine;
+          tempLines.push(label+' '+t.morning+'°→'+t.afternoon+'°→'+t.closing+'°');
+        });
+      }
+      var tempStr = tempLines.length ? '🌡 溫度：'+tempLines.join('　') : '🌡 溫度：無記錄';
+      if(el){
+        el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px">'+
+          '<span style="color:var(--b)">'+elecStr+'</span>'+
+          '<span style="color:var(--g)">'+tempStr+'</span>'+
+        '</div>';
+      }
+    });
+  });
+}
+
 function kv(label, val, unit, color){
   return '<div style="padding:7px;background:var(--bg);border-radius:var(--r2);text-align:center">'+
     '<div style="font-size:15px;font-weight:900;color:'+(color||'var(--ink)')+'">'+val+(unit?' '+unit:'')+'</div>'+
