@@ -1487,7 +1487,7 @@ function resendInvLine(ri){
 // ── 工具 ─────────────────────────────────────────────────────
 // ── 歷史記錄 ─────────────────────────────────────────────────
 function showHist(){
-  var el = document.getElementById('hist-body');
+  // 填入月份選擇器（月盤用）
   var monthlyRecs = records.filter(function(r){ return r.mode==='monthly'; });
   var months = {};
   monthlyRecs.forEach(function(r){ var m=(r.date||'').slice(0,7); if(m) months[m]=true; });
@@ -1499,6 +1499,45 @@ function showHist(){
   }
   renderAllHist();
   openOv('hist');
+}
+
+function renderAllHist(){
+  var modeLabels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+  var modeColors={daily:'var(--b)',weekly:'#7B3FA0',monthly:'var(--g)'};
+  var el = document.getElementById('hist-body');
+  if(!records.length){ el.innerHTML='<div class="empty">尚無記錄</div>'; return; }
+  el.innerHTML = records.slice(0,50).map(function(r,ri){
+    var mc=modeColors[r.mode]||'var(--b)';
+    var ml=modeLabels[r.mode]||r.mode;
+    return '<div style="border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden">'
+      +'<div style="padding:11px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--white)" onclick="toggleHistRow('+ri+')">'
+        +'<div>'
+          +'<div style="font-size:14px;font-weight:700">'+r.date+'</div>'
+          +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+r.person+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:'+mc+'22;color:'+mc+'">'+ml+'</span>'
+          +'<span id="hist-arrow-'+ri+'" style="color:var(--ink3);font-size:13px">▼</span>'
+        +'</div>'
+      +'</div>'
+      +'<div id="hist-detail-'+ri+'" style="display:none;border-top:1px solid var(--bd);background:var(--bg)">'
+        +histDetailHtml(r)
+        +'<div style="padding:8px 13px;display:flex;gap:8px;justify-content:flex-end">'
+          +(r.mode==='monthly'?'<button onclick="editMonthlyFromHist('+ri+')" style="padding:6px 14px;border:1px solid var(--b);border-radius:8px;background:var(--bl);color:var(--b);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ 編輯</button>':'')
+          +(r.mode!=='daily'?'<button onclick="previewInvLine('+ri+')" style="padding:6px 14px;border:1px solid #1A6B3C;border-radius:8px;background:#E8F5E9;color:#1A6B3C;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 LINE 通知</button>':'')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function toggleHistRow(ri){
+  var detail=document.getElementById('hist-detail-'+ri);
+  var arrow=document.getElementById('hist-arrow-'+ri);
+  if(!detail) return;
+  var open=detail.style.display==='none';
+  detail.style.display=open?'block':'none';
+  if(arrow) arrow.textContent=open?'▲':'▼';
 }
 
 function switchHistTab(tab){
@@ -1695,6 +1734,188 @@ function bulkSave(){
   showToast('✓ 已儲存所有設定');
   closeBulk();
 }
+
+// ── 品項操作 ─────────────────────────────────────────────────
+function updItemSave(id, field, value){
+  var item = items.find(function(i){ return String(i.id)===String(id); });
+  if(!item) return;
+  if(['ms','lm','sw'].indexOf(field)>-1) item[field]=parseFloat(value)||0;
+  else item[field]=String(value);
+  saveItems();
+}
+
+function delItem(id){
+  if(!confirm('確定刪除此品項？')) return;
+  items = items.filter(function(i){ return String(i.id)!==String(id); });
+  saveItems();
+  renderCfgBody();
+  showToast('已刪除');
+}
+
+function moveItemUp(id){
+  var idx=items.findIndex(function(i){return String(i.id)===String(id);});
+  if(idx<=0) return;
+  var tmp=items[idx-1]; items[idx-1]=items[idx]; items[idx]=tmp;
+  saveItems(); renderCfgBody();
+}
+
+function moveItemDown(id){
+  var idx=items.findIndex(function(i){return String(i.id)===String(id);});
+  if(idx<0||idx>=items.length-1) return;
+  var tmp=items[idx+1]; items[idx+1]=items[idx]; items[idx]=tmp;
+  saveItems(); renderCfgBody();
+}
+
+// ── 月盤總表 ─────────────────────────────────────────────────
+function getPrevMonth(ym){
+  var y=parseInt(ym.slice(0,4)), m=parseInt(ym.slice(5,7));
+  m--; if(m<1){m=12;y--;}
+  return y+'-'+String(m).padStart(2,'0');
+}
+
+function renderMonthSummary(){
+  var selMonth = document.getElementById('hist-month-sel').value;
+  var el = document.getElementById('month-summary-body');
+  if(!selMonth){ el.innerHTML='<div class="empty">請選擇月份</div>'; return; }
+  el.innerHTML='<div class="empty">載入中...</div>';
+
+  api({action:'invMonthlyGetAll', ym:selMonth}, function(d){
+    if(!d||!d.ok){ el.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    var allRecs=d.data||[];
+    var recMap={}, recOrder=[];
+    allRecs.forEach(function(row){
+      var rid=String(row.id);
+      if(!recMap[rid]){recMap[rid]={id:rid,date:row.date,person:row.person,items:[]};recOrder.push(rid);}
+      recMap[rid].items.push(row);
+    });
+    var recs=recOrder.map(function(rid){return recMap[rid];}).sort(function(a,b){return a.date.localeCompare(b.date);});
+    if(!recs.length){el.innerHTML='<div class="empty">此月份無月盤記錄</div>';return;}
+
+    var prevMonth=getPrevMonth(selMonth);
+    api({action:'invMonthlyGetAll', ym:prevMonth}, function(dp){
+      var prevAllRecs=(dp&&dp.ok&&dp.data)||[];
+      var prevMap={},prevOrder=[];
+      prevAllRecs.forEach(function(row){
+        var rid=String(row.id);
+        if(!prevMap[rid]){prevMap[rid]={id:rid,date:row.date,items:[]};prevOrder.push(rid);}
+        prevMap[rid].items.push(row);
+      });
+      var prevRecs=prevOrder.map(function(rid){return prevMap[rid];}).sort(function(a,b){return b.date.localeCompare(a.date);});
+      var prevRec=prevRecs[0]||null;
+      var modeItems=getItemsForMode('monthly');
+      var colDates=recs.map(function(r){return r.date;});
+      var hasPrev=!!prevRec;
+      var firstRec=recs[0], lastRec=recs[recs.length-1];
+
+      function getTotal(rec,item){
+        var found=(rec.items||[]).find(function(row){return row.item===item.name;});
+        return found?parseFloat(found.total)||0:0;
+      }
+      function getPrevTotal(item){
+        if(!prevRec) return null;
+        var found=(prevRec.items||[]).find(function(row){return row.item===item.name;});
+        return found?parseFloat(found.total)||0:0;
+      }
+
+      var cats=[],catMap2={};
+      modeItems.forEach(function(item){
+        if(!catMap2[item.cat]){catMap2[item.cat]=[];cats.push(item.cat);}
+        catMap2[item.cat].push(item);
+      });
+
+      var thHtml='<tr><th style="min-width:90px">品項</th>'
+        +(hasPrev?'<th style="background:#37474F;color:#fff">上月末<div style="font-size:9px;opacity:.75">'+prevRec.date.slice(5)+'</div></th>':'')
+        +colDates.map(function(d,i){
+          var isLast=i===colDates.length-1;
+          var bg=isLast?'background:var(--g);color:#fff':i===0&&colDates.length>1?'background:#2A5A8C;color:#fff':'';
+          var rid=recs[i].id;
+          return '<th style="'+bg+';cursor:pointer" data-edit-monthly="'+rid+'" title="點擊編輯 ✏️">'+d.slice(5)
+            +(isLast&&colDates.length>1?'<div style="font-size:9px;opacity:.8">月末</div>':'')
+            +'<div style="font-size:9px;opacity:.7">✏️</div></th>';
+        }).join('')
+        +'<th>月用量</th></tr>';
+
+      var bodyHtml='';
+      cats.forEach(function(cat){
+        var ci=catMap2[cat];
+        var hasData=ci.some(function(item){return recs.some(function(r){return getTotal(r,item)>0;});});
+        if(!hasData) return;
+        bodyHtml+='<tr class="cat-row"><td colspan="'+(2+colDates.length+(hasPrev?1:0))+'">'+cat+'</td></tr>';
+        ci.forEach(function(item){
+          var pv=hasPrev?getPrevTotal(item):null;
+          var lv=getTotal(lastRec,item);
+          var bv=pv!==null?pv:getTotal(firstRec,item);
+          var usage=Math.max(0,Math.round((bv-lv)*100)/100);
+          var allZero=recs.every(function(r){return getTotal(r,item)===0;})&&(pv===null||pv===0);
+          if(allZero) return;
+          bodyHtml+='<tr>'
+            +'<td>'+item.name+'</td>'
+            +(hasPrev?'<td style="color:var(--ink3)">'+(pv||0)+' '+item.sn+'</td>':'')
+            +recs.map(function(r,i){
+              var v=getTotal(r,item),isLast=i===recs.length-1;
+              return '<td class="'+(isLast?'total-col':'')+'">'+(v||0)+' '+item.sn+'</td>';
+            }).join('')
+            +'<td class="usage-col">'+(usage||0)+' '+item.sn+'</td></tr>';
+        });
+      });
+
+      el.innerHTML='<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">'+selMonth+' 共'+recs.length+'次盤點'
+        +(hasPrev?'　上月末：'+prevRec.date:'　(無上月末資料)')+'</div>'
+        +'<div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bd)">'
+          +'<table class="ms-table"><thead>'+thHtml+'</thead><tbody>'+bodyHtml+'</tbody></table>'
+        +'</div>'
+        +'<div style="margin-top:8px;font-size:11px;color:var(--ink3)">💡 月用量='+(hasPrev?'上月末':'本月初')+'庫存−本月末庫存</div>';
+
+      window._monthlyRecsFromSheets=recMap;
+      // 表頭事件委派
+      setTimeout(function(){
+        var tbl=document.querySelector('#month-summary-body table');
+        if(tbl) tbl.onclick=function(e){
+          var th=e.target.closest('[data-edit-monthly]');
+          if(th) editMonthlyRecFromSheets(th.getAttribute('data-edit-monthly'));
+        };
+      },100);
+    });
+  });
+}
+
+function editMonthlyRecFromSheets(recId){
+  var recMap=window._monthlyRecsFromSheets||{};
+  var rec=recMap[recId];
+  if(!rec){showToast('找不到記錄，請重新載入');return;}
+  var modeItems=getItemsForMode('monthly');
+  if(!modeItems.length){showToast('無月盤品項');return;}
+  var cats=[],catMap={};
+  modeItems.forEach(function(item){
+    if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
+    catMap[item.cat].push(item);
+  });
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var found=(rec.items||[]).find(function(row){return row.item===item.name;});
+      var tS=found?parseFloat(found.qty_scene)||0:0;
+      var tW=found?parseFloat(found.qty_store)||0:0;
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+item.name+'</span>'
+        +'<span style="font-size:11px;color:var(--ink3)">現場</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tS+'" style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" data-edit-item="S_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:11px;color:var(--ink3)">倉庫</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tW+'" style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" data-edit-item="W_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:12px;color:var(--ink3)">'+item.sn+'</span>'
+      +'</div>';
+    });
+  });
+  document.getElementById('monthly-edit-meta').textContent=rec.date+'　'+rec.person;
+  document.getElementById('monthly-edit-body').innerHTML=html;
+  window._editingMonthlyRecId=recId;
+  window._editingMonthlyItems=modeItems;
+  window._editingMonthlyDate=rec.date;
+  window._editingMonthlyPerson=rec.person;
+  openOv('monthly-edit');
+}
+
 
 function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}
 function openOv(id){document.getElementById('ov-'+id).classList.add('show');}
