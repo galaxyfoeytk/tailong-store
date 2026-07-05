@@ -1735,6 +1735,56 @@ function bulkSave(){
   closeBulk();
 }
 
+// ── 單位換算工具 ──────────────────────────────────────────────
+function getUnitLabel(item, unitCode){
+  // unitCode: 's'=小, 'm'=中, 'l'=大, 'w'=特殊
+  if(unitCode==='m') return item.mn||item.sn;
+  if(unitCode==='l') return item.ln||item.mn||item.sn;
+  if(unitCode==='w') return item.wu||item.sn;
+  return item.sn;
+}
+
+function unitToSmall(item, qty, unitCode){
+  // 把任意單位換算成最小單位
+  qty = parseFloat(qty)||0;
+  if(unitCode==='m') return qty * (item.ms||1);
+  if(unitCode==='l') return qty * (item.lm||1) * (item.ms||1);
+  if(unitCode==='w') return qty * (item.sw||1);
+  return qty; // 's' 或未知
+}
+
+// ── 推送記錄到 Sheets ─────────────────────────────────────────
+function pushToSheets(rec, modeItems, actionItems){
+  if(!rec) return;
+  // 月盤：存入月盤記錄分頁
+  if(rec.mode==='monthly'){
+    var data = modeItems.map(function(item){
+      var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var cW = rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+      var tS = Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*100)/100;
+      var tW = Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*100)/100;
+      return {cat:item.cat, item:item.name, unit:item.sn,
+        qty_scene:tS, qty_store:tW, total:Math.round((tS+tW)*100)/100};
+    }).filter(function(d){ return d.total>0; });
+    api({action:'invSave', mode:'monthly', id:rec.id, date:rec.date, person:rec.person,
+      data:JSON.stringify(data)}, function(d){
+      if(d&&d.ok) showToast('✓ 月盤記錄已同步至雲端');
+    });
+  } else {
+    // 日盤/週盤：存入盤點記錄分頁
+    var items2 = modeItems.map(function(item){
+      var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var total = calcTotal(item,cS);
+      return {cat:item.cat, item:item.name, unit:item.sn, qty:total};
+    });
+    api({action:'invSave', mode:rec.mode, id:rec.id, date:rec.date, person:rec.person,
+      data:JSON.stringify(items2)}, function(d){
+      if(d&&d.ok) showToast('✓ 記錄已同步至雲端');
+    });
+  }
+}
+
+
 // ── 品項操作 ─────────────────────────────────────────────────
 function updItemSave(id, field, value){
   var item = items.find(function(i){ return String(i.id)===String(id); });
