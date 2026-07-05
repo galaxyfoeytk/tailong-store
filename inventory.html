@@ -232,6 +232,17 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .bulk-save-btn{padding:8px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .bulk-save-btn:active{opacity:.8}
 .bulk-save-btn:disabled{opacity:.4;cursor:default}
+.bulk-cat-head{padding:7px 12px;background:var(--b);color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;margin-top:8px;border-radius:var(--r3) var(--r3) 0 0}
+.bulk-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--white);border:1px solid var(--bd);border-top:none}
+.bulk-row:last-child{border-radius:0 0 var(--r3) var(--r3)}
+.bulk-name-inp{flex:1;padding:5px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--white);min-width:60px}
+.bulk-name-inp:focus{outline:none;border-color:var(--b)}
+.bulk-fields{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bulk-lbl{font-size:11px;color:var(--ink3);white-space:nowrap}
+.bulk-inp{width:52px;padding:5px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center;font-family:inherit}
+.bulk-inp:focus{outline:none;border-color:var(--b)}
+.bulk-move-btn{width:26px;height:26px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink3)}
+.bulk-move-btn:active{background:var(--bl)}
 .bulk-add-btn{padding:8px 14px;background:var(--bl);color:var(--b);border:1.5px solid var(--bm);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .bulk-cancel-btn{padding:8px 14px;background:var(--white);color:var(--ink3);border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .bulk-badge{padding:4px 10px;background:var(--amberl);color:var(--amber);border-radius:10px;font-size:11px;font-weight:700}
@@ -1695,33 +1706,52 @@ function renderBulkBody(){
   var cats=[], catMap={};
   modeItems.forEach(function(i){ if(!catMap[i.cat]){catMap[i.cat]=[];cats.push(i.cat);} catMap[i.cat].push(i); });
 
-  body.innerHTML = cats.map(function(cat){
-    return '<div class="bulk-cat-head">'+cat+'</div>'
-      +catMap[cat].map(function(item){
-        var t = item[bulkMode]||{};
-        if(bulkMode==='daily'){
-          return '<div class="bulk-row" data-id="'+item.id+'">'
-            +'<div class="bulk-item-name">'+item.name+'</div>'
-            +'<div class="bulk-fields">'
-              +'<label class="bulk-lbl">標準量</label>'
-              +'<input class="bulk-inp" type="number" min="0" value="'+(t.std!=null?t.std:0)+'" data-field="std" data-id="'+item.id+'">'
-              +'<label class="bulk-lbl">補貨量</label>'
-              +'<input class="bulk-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:0)+'" data-field="refill" data-id="'+item.id+'">'
-            +'</div>'
-          +'</div>';
-        } else {
-          return '<div class="bulk-row" data-id="'+item.id+'">'
-            +'<div class="bulk-item-name">'+item.name+'</div>'
-            +'<div class="bulk-fields">'
-              +'<label class="bulk-lbl">低標</label>'
-              +'<input class="bulk-inp" type="number" min="0" value="'+(t.min||0)+'" data-field="min" data-id="'+item.id+'">'
-              +'<label class="bulk-lbl">補至</label>'
-              +'<input class="bulk-inp" type="number" min="0" value="'+(t.target||0)+'" data-field="target" data-id="'+item.id+'">'
-            +'</div>'
-          +'</div>';
-        }
-      }).join('');
-  }).join('');
+  // 用全域索引讓上下移動按鈕可以找到品項在 items 裡的位置
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div class="bulk-cat-head">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var t=item[bulkMode]||{};
+      var globalIdx=items.findIndex(function(i){return i.id===item.id;});
+      html+='<div class="bulk-row" data-id="'+item.id+'">'
+        // 上下移動
+        +'<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">'
+          +'<button class="bulk-move-btn" data-up="'+globalIdx+'">▲</button>'
+          +'<button class="bulk-move-btn" data-dn="'+globalIdx+'">▼</button>'
+        +'</div>'
+        // 品項名稱（可編輯）
+        +'<input class="bulk-name-inp" value="'+item.name+'" data-name-id="'+item.id+'" title="品項名稱">'
+        // 數字欄位
+        +'<div class="bulk-fields">';
+      if(bulkMode==='daily'){
+        html+='<label class="bulk-lbl">標準</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.std!=null?t.std:0)+'" data-field="std" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl">補貨</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:0)+'" data-field="refill" data-id="'+item.id+'">';
+      } else {
+        html+='<label class="bulk-lbl">低標</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.min||0)+'" data-field="min" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl">補至</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.target||0)+'" data-field="target" data-id="'+item.id+'">';
+      }
+      html+='</div></div>';
+    });
+  });
+  body.innerHTML=html;
+
+  // 事件委派
+  body.onclick=function(e){
+    var upBtn=e.target.closest('[data-up]');
+    var dnBtn=e.target.closest('[data-dn]');
+    if(upBtn){
+      var idx=parseInt(upBtn.getAttribute('data-up'));
+      if(idx>0){ var tmp=items[idx-1];items[idx-1]=items[idx];items[idx]=tmp; renderBulkBody(); }
+    }
+    if(dnBtn){
+      var idx=parseInt(dnBtn.getAttribute('data-dn'));
+      if(idx<items.length-1){ var tmp=items[idx+1];items[idx+1]=items[idx];items[idx]=tmp; renderBulkBody(); }
+    }
+  };
 }
 
 function bulkAddRow(){
@@ -1733,8 +1763,14 @@ function bulkAddRow(){
 }
 
 function bulkSave(){
-  var inputs=document.querySelectorAll('#bulk-body .bulk-inp');
-  inputs.forEach(function(inp){
+  // 儲存名稱修改
+  document.querySelectorAll('#bulk-body [data-name-id]').forEach(function(inp){
+    var id=inp.getAttribute('data-name-id');
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(item && inp.value.trim()) item.name=inp.value.trim();
+  });
+  // 儲存數字設定
+  document.querySelectorAll('#bulk-body .bulk-inp').forEach(function(inp){
     var id=inp.getAttribute('data-id');
     var field=inp.getAttribute('data-field');
     var val=parseFloat(inp.value)||0;
