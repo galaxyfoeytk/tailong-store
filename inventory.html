@@ -387,6 +387,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
   </div>
   <div class="bulk-bar">
     <button class="bulk-save-btn" id="bulk-save-btn" onclick="bulkSave()">💾 儲存全部</button>
+    <button onclick="resetToDefaults()" style="padding:8px 14px;background:var(--amberl,#FFF3E0);color:var(--amber,#E65100);border:1.5px solid var(--amber,#E65100);border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px">↩ 還原預設</button>
     <button class="bulk-add-btn" onclick="bulkAddRow()">＋ 新增品項</button>
     <span class="bulk-badge" id="bulk-badge" style="display:none"></span>
     <div style="flex:1"></div>
@@ -720,8 +721,17 @@ function pullFromCloud(force){
   api({action:'invItemGetAll'}, function(d){
     if(_syncLocked) return;
     if(d && d.ok && d.data && d.data.length > 0){
-      // 獨立分頁回傳的資料永遠是最新的，直接覆蓋本機
-      items = d.data;
+      // 獨立分頁回傳的資料，合併 DEFAULT_ITEMS 的設定值（若 extra 是空的）
+      items = d.data.map(function(item){
+        var def = DEFAULT_ITEMS.find(function(d){ return d.id === item.id; });
+        if(def){
+          // 若 daily/weekly 是空物件，用預設值補上
+          if(!item.daily || !Object.keys(item.daily).length) item.daily = def.daily || {};
+          if(!item.weekly || !Object.keys(item.weekly).length) item.weekly = def.weekly || {};
+          if(!item.monthly || !Object.keys(item.monthly).length) item.monthly = def.monthly || {};
+        }
+        return item;
+      });
       localStorage.setItem('inv3_items', JSON.stringify(items));
       renderCfgBody();
     } else if(d && d.ok && d.data && d.data.length === 0 && !force){
@@ -1266,8 +1276,8 @@ function histDetailHtml(r){
       }
       html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;padding:7px 13px;border-top:1px solid var(--bd);font-size:13px;align-items:center">'+
         '<div style="font-weight:500">'+item.name+'</div>'+
-        '<div style="text-align:right;color:var(--ink2)">'+tS+' '+item.sn+'</div>'+
-        '<div style="text-align:right;color:var(--ink2)">'+tW+' '+item.sn+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tS+item.sn+(cS.w?'<br><span style="font-size:11px;color:var(--ink3)">'+cS.w+item.wu+'</span>':'')+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tW+item.sn+(cW.w?'<br><span style="font-size:11px;color:var(--ink3)">'+cW.w+item.wu+'</span>':'')+'</div>'+
         '<div style="text-align:right;font-weight:700;color:var(--g)">'+tAll+' '+item.sn+'</div>'+
       '</div>';
     });
@@ -1588,7 +1598,10 @@ function renderCfgBody(){
       +'<div class="cir-conv-block">'
         +'<div class="cir-conv">'
           +'小：<input class="cf-inp" value="'+item.sn+'" data-upd="'+item.id+'" data-field="sn">'
-          +(item.mn?'　中：<input class="cf-inp" value="'+item.mn+'" data-upd="'+item.id+'" data-field="mn">　1中=<input class="cc-inp" type="number" value="'+item.ms+'" data-upd="'+item.id+'" data-field="ms">小':'')
+          +(item.mn||item.ms?'　中：<input class="cf-inp" value="'+(item.mn||'')+'" data-upd="'+item.id+'" data-field="mn" placeholder="中單位">　1中=<input class="cc-inp" type="number" value="'+(item.ms||0)+'" data-upd="'+item.id+'" data-field="ms">小':'')
+        +'</div>'
+        +'<div class="cir-conv" style="margin-top:4px;color:var(--ink3);font-size:12px">'
+          +'特殊：<input class="cf-inp" value="'+(item.wu||'')+'" data-upd="'+item.id+'" data-field="wu" placeholder="重量單位" style="width:52px">　1'+item.sn+'=<input class="cc-inp" type="number" value="'+(item.sw||0)+'" data-upd="'+item.id+'" data-field="sw" style="width:44px">'+(item.wu||'克')
         +'</div>'
       +'</div>'
     +'</div>';
@@ -1731,8 +1744,21 @@ function bulkSave(){
     item[bulkMode][field]=val;
   });
   saveItems();
-  showToast('✓ 已儲存所有設定');
+  showToast('✓ 已儲存，同步至雲端中…');
   closeBulk();
+}
+
+// 一鍵還原預設設定值
+function resetToDefaults(){
+  if(!confirm('確定要用預設設定值覆蓋所有品項的標準量/補貨量/低標/目標？\n（只會覆蓋空值的品項，已有設定的不受影響）')) return;
+  items.forEach(function(item){
+    var def = DEFAULT_ITEMS.find(function(d){ return d.id === item.id; });
+    if(!def) return;
+    if(!item.daily  || !Object.keys(item.daily).length)  item.daily  = def.daily  || {};
+    if(!item.weekly || !Object.keys(item.weekly).length) item.weekly = def.weekly || {};
+  });
+  saveItems();
+  showToast('✓ 已套用預設設定值並同步至雲端');
 }
 
 // ── 單位換算工具 ──────────────────────────────────────────────
@@ -2069,7 +2095,12 @@ function npConfirm(){
       npClose();
       renderCountPage();
     }
-    if(item) showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+    if(item){
+      var totalSmall=calcTotal(item,{s:s,m:m,l:l})+(item.sw>0?w/item.sw:0);
+      var toastStr=item.name+'：'+Math.round(totalSmall*100)/100+item.sn;
+      if(w>0&&item.wu) toastStr+=' ('+w+item.wu+')';
+      showToast('✓ '+toastStr);
+    }
   } else if(_np.cb){
     _np.cb(parseFloat(_np.val)||0);
     npClose();
