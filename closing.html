@@ -722,7 +722,7 @@ function doActualSubmit(date, person){
     jelloDirect:  getNum('f-jello-direct'),
   };
 
-  api(params, function(d, err){
+  apiPost(params, function(d, err){
     btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
     if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
     if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
