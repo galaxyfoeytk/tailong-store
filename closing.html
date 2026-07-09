@@ -193,6 +193,8 @@ canvas{width:100%!important}
         <div class="field"><label>🛵 外送單數</label><input id="f-delivery-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🛵 外送單數')"></div>
         <div class="field"><label>🥤 外送杯數</label><input id="f-delivery-cups" placeholder="0" type="text" readonly onfocus="npOpen(this,'🥤 外送杯數')"></div>
         <div class="field"><label>💰 外送金額</label><input id="f-delivery-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 外送金額')"></div>
+        <div class="field"><label>🐼 熊貓單數</label><input id="f-panda-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🐼 熊貓單數')"></div>
+        <div class="field"><label>💰 熊貓金額</label><input id="f-panda-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 熊貓金額')"></div>
       </div>
       <div class="field-grid grid-3">
         <div class="field"><label>🥤 封口機杯數</label><input id="f-seal" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🥤 封口機杯數')"></div>
@@ -568,8 +570,14 @@ function recalcAll(){
   var demoConv   = getNum('f-demo-convert');
 
   var dCnt = getNum('f-delivery-cnt'), dCups = getNum('f-delivery-cups'), dAmt = getNum('f-delivery-amt');
+  var pCnt = getNum('f-panda-cnt'), pAmt = getNum('f-panda-amt');
   var dEl = document.getElementById('c-delivery');
-  if(dEl) dEl.textContent = dCnt>0 ? dCnt+'單 '+dCups+'杯 $'+dAmt : '—';
+  if(dEl){
+    var dStr='';
+    if(dCnt>0||dAmt>0) dStr+='外送 '+dCnt+'單 '+dCups+'杯 $'+dAmt.toLocaleString();
+    if(pCnt>0||pAmt>0) dStr+=(dStr?'　':'')+'🐼熊貓 '+pCnt+'單 $'+pAmt.toLocaleString();
+    dEl.textContent=dStr||'—';
+  }
   document.getElementById('c-total-cups').textContent = totalCups;
   document.getElementById('c-take-cups').textContent  = takeCups;
   document.getElementById('c-dep-amt').textContent    = depAmt > 0 ? depAmt.toLocaleString()+' 元' : '0 元';
@@ -692,6 +700,8 @@ function doActualSubmit(date, person){
     deliveryCnt:  getNum('f-delivery-cnt'),
     deliveryCups: getNum('f-delivery-cups'),
     deliveryAmt:  getNum('f-delivery-amt'),
+    pandaCnt:     getNum('f-panda-cnt'),
+    pandaAmt:     getNum('f-panda-amt'),
     hours:        getNum('f-hours'),
     revenue: getNum('f-revenue'),
     receiptCount: getNum('f-receipt'),
@@ -734,7 +744,7 @@ function doActualSubmit(date, person){
       }
     }, 400);
     // 清空數值欄位
-    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-hours'].forEach(function(id){
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-panda-cnt','f-panda-amt','f-hours'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.value = '';
     });
     PRODUCTS.forEach(function(p){
@@ -774,6 +784,7 @@ function resendLineNotify(id){
       jelloReturn:r.jelloReturn, jelloDirect:r.jelloDirect,
       hours:r.hours||0,
       deliveryCnt:r.deliveryCnt||0, deliveryCups:r.deliveryCups||0, deliveryAmt:r.deliveryAmt||0,
+      pandaCnt:r.pandaCnt||0, pandaAmt:r.pandaAmt||0,
     };
     // 顯示預覽 modal，讓使用者確認後再傳
     var base = buildClosingMsgBase(p);
@@ -1037,12 +1048,19 @@ function buildClosingMsgBase(p){
     var bv=n(bk), tv=n(tk);
     if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
   });
-  if(n('deliveryCnt')>0 || n('deliveryAmt')>0 || n('deliveryCups')>0){
+  if(n('deliveryCnt')>0 || n('deliveryAmt')>0 || n('deliveryCups')>0 || n('pandaCnt')>0 || n('pandaAmt')>0){
     lines.push('');
-    var dLine='🛵 外送　'+n('deliveryCnt')+'單';
-    if(n('deliveryCups')>0) dLine+='　'+n('deliveryCups')+'杯';
-    if(n('deliveryAmt')>0) dLine+='　$'+Number(n('deliveryAmt')).toLocaleString();
-    lines.push(dLine);
+    if(n('deliveryCnt')>0||n('deliveryAmt')>0||n('deliveryCups')>0){
+      var dLine='🛵 外送　'+n('deliveryCnt')+'單';
+      if(n('deliveryCups')>0) dLine+='　'+n('deliveryCups')+'杯';
+      if(n('deliveryAmt')>0) dLine+='　$'+Number(n('deliveryAmt')).toLocaleString();
+      lines.push(dLine);
+    }
+    if(n('pandaCnt')>0||n('pandaAmt')>0){
+      var pLine='🐼 熊貓　'+n('pandaCnt')+'單';
+      if(n('pandaAmt')>0) pLine+='　$'+Number(n('pandaAmt')).toLocaleString();
+      lines.push(pLine);
+    }
   }
   lines.push(''); lines.push('📈 比例分析');
   lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
@@ -1221,6 +1239,7 @@ function previewTestNotify(){
   var p = {
     date:date, person:person,
     deliveryCnt:n('f-delivery-cnt'), deliveryCups:n('f-delivery-cups'), deliveryAmt:n('f-delivery-amt'),
+    pandaCnt:n('f-panda-cnt'), pandaAmt:n('f-panda-amt'),
     hours:n('f-hours'), revenue:n('f-revenue'), receiptCount:n('f-receipt'),
     sealMachine:n('f-seal'), creamTop:n('f-cream'), ecoCup:n('f-eco'),
     depOrig:n('f-dep-orig'), depFlav:n('f-dep-flav'), depSuper:n('f-dep-super'),
@@ -1468,6 +1487,12 @@ function histDetail(r){
     (prodHtml?'<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">銷售明細</div>'+prodHtml:'')+
     // 試飲
     (r.demoCups>0?'<div style="margin-top:8px;padding:8px;background:var(--bl);border-radius:var(--r2);font-size:13px">🥛 試飲：'+r.demoFocus+' '+r.demoCups+'杯 → 轉換 '+r.demoConvert+' 人（'+ratioStr(r.demoConvert||0,r.demoCups||0)+'）</div>':'')+
+    // 外送
+    ((r.deliveryCnt>0||r.deliveryAmt>0||r.pandaCnt>0||r.pandaAmt>0)?
+    '<div style="margin-top:8px;padding:8px;background:#FFF3E0;border-radius:var(--r2);font-size:13px;display:flex;flex-wrap:wrap;gap:10px">'+
+      (r.deliveryCnt>0||r.deliveryAmt>0?'<span>🛵 外送 '+r.deliveryCnt+'單 '+r.deliveryCups+'杯 $'+(r.deliveryAmt||0).toLocaleString()+'</span>':'')+
+      (r.pandaCnt>0||r.pandaAmt>0?'<span>🐼 熊貓 '+r.pandaCnt+'單 $'+(r.pandaAmt||0).toLocaleString()+'</span>':'')+
+    '</div>':'')+
     // 客群
     '<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">'+
       cust(r.newCustomer||0,'第一次來','')+
