@@ -1400,7 +1400,7 @@ function saveMonthlyEditOv(){
   var btn = document.getElementById('monthly-edit-save-btn');
   if(btn){ btn.textContent='儲存中...'; btn.disabled=true; }
 
-  api({action:'invSave', mode:'monthly', id:recId, date:date, person:person, data:JSON.stringify(data)},
+  apiPost({action:'invSave', mode:'monthly', id:String(recId), date:date, person:person, data:JSON.stringify(data)},
     function(d){
       if(btn){ btn.textContent='💾 儲存修改'; btn.disabled=false; }
       if(d&&d.ok){
@@ -1828,9 +1828,10 @@ function pushToSheets(rec, modeItems, actionItems){
       return {cat:item.cat, item:item.name, unit:item.sn,
         qty_scene:tS, qty_store:tW, total:Math.round((tS+tW)*100)/100};
     }).filter(function(d){ return d.total>0; });
-    api({action:'invSave', mode:'monthly', id:rec.id, date:rec.date, person:rec.person,
+    apiPost({action:'invSave', mode:'monthly', id:String(rec.id), date:rec.date, person:rec.person,
       data:JSON.stringify(data)}, function(d){
       if(d&&d.ok) showToast('✓ 月盤記錄已同步至雲端');
+      else showToast('⚠️ 月盤同步失敗：'+(d&&d.error?d.error:''));
     });
   } else {
     // 日盤/週盤：存入盤點記錄分頁
