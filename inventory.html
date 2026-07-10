@@ -1671,9 +1671,32 @@ var bulkDirty = {};
 function openBulk(){
   bulkMode = 'daily';
   bulkDirty = {};
+  // 先從雲端同步最新品項設定再打開
+  var ov = document.getElementById('bulk-ov');
+  ov.classList.add('show');
   renderBulkTabs();
-  renderBulkBody();
-  document.getElementById('bulk-ov').classList.add('show');
+  // 顯示載入中
+  document.getElementById('bulk-body').innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink3)">⏳ 載入最新設定中…</div>';
+  api({action:'invItemGetAll'}, function(d){
+    if(d && d.ok && d.data && d.data.length > 0){
+      // 合併：保留 extra（daily/weekly/monthly），更新單位欄位
+      d.data.forEach(function(remote){
+        var local = items.find(function(i){ return String(i.id)===String(remote.id); });
+        if(local){
+          local.sn = remote.sn || local.sn;
+          local.mn = remote.mn !== undefined ? remote.mn : local.mn;
+          local.ms = remote.ms !== undefined ? remote.ms : local.ms;
+          local.ln = remote.ln !== undefined ? remote.ln : local.ln;
+          local.lm = remote.lm !== undefined ? remote.lm : local.lm;
+          local.wu = remote.wu !== undefined ? remote.wu : local.wu;
+          local.sw = remote.sw !== undefined ? remote.sw : local.sw;
+          if(remote.daily  && Object.keys(remote.daily).length)  local.daily  = remote.daily;
+          if(remote.weekly && Object.keys(remote.weekly).length) local.weekly = remote.weekly;
+        }
+      });
+    }
+    renderBulkBody();
+  });
 }
 
 function closeBulk(){
