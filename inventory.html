@@ -1728,11 +1728,24 @@ function renderBulkBody(){
           +'<input class="bulk-inp" type="number" min="0" value="'+(t.std!=null?t.std:0)+'" data-field="std" data-id="'+item.id+'">'
           +'<label class="bulk-lbl">補貨</label>'
           +'<input class="bulk-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:0)+'" data-field="refill" data-id="'+item.id+'">';
-      } else {
+      } else if(bulkMode==='weekly'){
         html+='<label class="bulk-lbl">低標</label>'
           +'<input class="bulk-inp" type="number" min="0" value="'+(t.min||0)+'" data-field="min" data-id="'+item.id+'">'
           +'<label class="bulk-lbl">補至</label>'
           +'<input class="bulk-inp" type="number" min="0" value="'+(t.target||0)+'" data-field="target" data-id="'+item.id+'">';
+      } else {
+        // 月盤：顯示單位換算設定
+        html+='<label class="bulk-lbl" style="font-size:10px">小單位</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.sn||'')+'" data-unit-field="sn" data-id="'+item.id+'" placeholder="包">'
+          +'<label class="bulk-lbl" style="font-size:10px">中單位</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.mn||'')+'" data-unit-field="mn" data-id="'+item.id+'" placeholder="箱">'
+          +'<label class="bulk-lbl" style="font-size:10px">1中=</label>'
+          +'<input class="bulk-inp" style="width:40px" type="number" min="0" value="'+(item.ms||0)+'" data-unit-field="ms" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl" style="font-size:10px">小　特殊</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.wu||'')+'" data-unit-field="wu" data-id="'+item.id+'" placeholder="克">'
+          +'<label class="bulk-lbl" style="font-size:10px">1小=</label>'
+          +'<input class="bulk-inp" style="width:40px" type="number" min="0" value="'+(item.sw||0)+'" data-unit-field="sw" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl" style="font-size:10px">特殊</label>';
       }
       html+='</div></div>';
     });
@@ -1769,10 +1782,20 @@ function bulkSave(){
     var item=items.find(function(i){return String(i.id)===String(id);});
     if(item && inp.value.trim()) item.name=inp.value.trim();
   });
-  // 儲存數字設定
+  // 月盤：儲存單位換算設定
+  document.querySelectorAll('#bulk-body [data-unit-field]').forEach(function(inp){
+    var id=inp.getAttribute('data-id');
+    var field=inp.getAttribute('data-unit-field');
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(!item) return;
+    if(['ms','sw'].indexOf(field)>-1) item[field]=parseFloat(inp.value)||0;
+    else item[field]=inp.value.trim();
+  });
+  // 日盤/週盤：儲存數字設定
   document.querySelectorAll('#bulk-body .bulk-inp').forEach(function(inp){
     var id=inp.getAttribute('data-id');
     var field=inp.getAttribute('data-field');
+    if(!id||!field) return;
     var val=parseFloat(inp.value)||0;
     var item=items.find(function(i){return String(i.id)===String(id);});
     if(!item) return;
@@ -1966,7 +1989,8 @@ function renderMonthSummary(){
             +(hasPrev?'<td style="color:var(--ink3)">'+(pv||0)+' '+item.sn+'</td>':'')
             +recs.map(function(r,i){
               var v=getTotal(r,item),isLast=i===recs.length-1;
-              return '<td class="'+(isLast?'total-col':'')+'">'+(v||0)+' '+item.sn+'</td>';
+              var vStr=v?Math.round(v*100)/100:0;
+              return '<td class="'+(isLast?'total-col':'')+'">'+vStr+' '+item.sn+'</td>';
             }).join('')
             +'<td class="usage-col">'+(usage||0)+' '+item.sn+'</td></tr>';
         });
