@@ -1048,7 +1048,7 @@ function buildClosingMsgBase(p){
     var bv=n(bk), tv=n(tk);
     if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
   });
-  if(n('deliveryCnt')>0 || n('deliveryAmt')>0 || n('deliveryCups')>0 || n('pandaCnt')>0 || n('pandaAmt')>0){
+  {
     lines.push('');
     if(n('deliveryCnt')>0||n('deliveryAmt')>0||n('deliveryCups')>0){
       var dLine='🛵 外送　'+n('deliveryCnt')+'單';
@@ -1056,11 +1056,8 @@ function buildClosingMsgBase(p){
       if(n('deliveryAmt')>0) dLine+='　$'+Number(n('deliveryAmt')).toLocaleString();
       lines.push(dLine);
     }
-    if(n('pandaCnt')>0||n('pandaAmt')>0){
-      var pLine='🐼 熊貓　'+n('pandaCnt')+'單';
-      if(n('pandaAmt')>0) pLine+='　$'+Number(n('pandaAmt')).toLocaleString();
-      lines.push(pLine);
-    }
+    var pLine='🐼 熊貓　'+n('pandaCnt')+'單　$'+Number(n('pandaAmt')).toLocaleString();
+    lines.push(pLine);
   }
   lines.push(''); lines.push('📈 比例分析');
   lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
