@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>收班記錄</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#C07000;--amberl:#FFF3D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100dvh}
+input,select,textarea,button{font-family:inherit}
+
+/* topbar */
+.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-title{color:#fff;font-size:15px;font-weight:900}
+.topbar-sub{color:rgba(255,255,255,.6);font-size:11px}
+.tib{padding:6px 12px;border-radius:var(--r2);border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tib:active{background:rgba(255,255,255,.22)}
+
+/* 頁簽 */
+.tab-bar{background:var(--white);border-bottom:2px solid var(--bd);display:flex;position:sticky;top:52px;z-index:90}
+.tab{flex:1;padding:11px 6px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;text-align:center}
+.tab.on{color:var(--b);border-bottom-color:var(--b);font-weight:700}
+
+/* 內容區 */
+.content{padding:12px 14px 80px;max-width:680px;margin:0 auto}
+
+/* 區塊卡片 */
+.section{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.section-head{padding:10px 14px;background:linear-gradient(90deg,var(--bl),transparent);border-bottom:1px solid var(--bd);font-size:11px;font-weight:700;color:var(--b);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.section-body{padding:12px 14px}
+
+/* 表單元素 */
+.field-grid{display:grid;gap:10px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:1fr 1fr 1fr}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.field input,.field select{padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;color:var(--ink);background:var(--white);outline:none;width:100%}
+.field input:focus,.field select:focus{border-color:var(--bm)}
+.field input[type=number]{text-align:right}
+.field.highlight label{color:var(--g)}
+.field.highlight input{border-color:var(--gm);font-weight:700;font-size:16px}
+
+/* 產品組 */
+.product-block{background:var(--bg);border-radius:var(--r2);padding:10px;margin-bottom:8px;border:1px solid var(--bd)}
+.product-name{font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.buy-take{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bt-label{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px;text-align:center}
+.bt-input{padding:8px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-weight:700;text-align:center;font-family:inherit;color:var(--ink);background:var(--white);outline:none;width:100%}
+.bt-input:focus{border-color:var(--b)}
+
+/* 計算結果卡 */
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
+.calc-row:last-child{border-bottom:none}
+.calc-label{font-size:12px;color:var(--ink3)}
+.calc-value{font-size:16px;font-weight:900;color:var(--ink)}
+.calc-value.big{font-size:20px;color:var(--b)}
+.calc-value.green{color:var(--g)}
+.calc-value.amber{color:var(--amber)}
+.pct{font-size:12px;font-weight:500;color:var(--ink3)}
+
+/* 提交按鈕 */
+.submit-btn{width:100%;padding:15px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:active{opacity:.85}
+
+/* 歷史記錄 */
+.hist-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.hist-head{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hist-date{font-size:15px;font-weight:900;color:var(--ink)}
+.hist-person{font-size:12px;color:var(--ink3);margin-top:2px}
+.hist-revenue{font-size:16px;font-weight:900;color:var(--b)}
+.hist-detail{border-top:1px solid var(--bd);background:var(--bg);padding:12px 14px}
+
+/* 圖表頁 */
+.chart-wrap{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.chart-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+canvas{width:100%!important}
+
+/* 篩選列 */
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filter-bar input[type=date],.filter-bar select{padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;color:var(--ink);background:var(--white)}
+.filter-bar input[type=date]:focus,.filter-bar select:focus{border-color:var(--bm)}
+
+/* 統計卡 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:var(--white);border-radius:var(--r2);border:1px solid var(--bd);padding:12px;text-align:center}
+.stat-card .sv{font-size:22px;font-weight:900;color:var(--b)}
+.stat-card .sl{font-size:11px;color:var(--ink3);margin-top:3px}
+
+.empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
+.weather-btn{padding:6px 12px;border:1.5px solid var(--bd);border-radius:20px;background:var(--white);font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink3);transition:all .1s}
+.weather-btn.on{border-color:var(--b);background:var(--bl);color:var(--b);font-weight:700}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;font-weight:500}
+.badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:700}
+/* 數字小鍵盤 */
+.np-backdrop{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)}
+.np-backdrop.show{display:block}
+.np-wrap{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;z-index:501;padding:12px 14px 32px;max-width:540px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.15);transform:translateY(100%);transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.np-wrap.show{transform:translateY(0)}
+.np-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.np-label-row{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.np-display{font-size:38px;font-weight:900;color:var(--ink);letter-spacing:-.5px;min-height:48px;margin-bottom:10px}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.npk{padding:15px;border-radius:var(--r2);border:none;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.npk:active{background:var(--bd);transform:scale(.94)}
+.npk-del{background:var(--amberl);color:var(--amber)}
+.npk-clear{background:var(--redl);color:var(--red);font-size:13px;font-weight:800}
+.np-ok{width:100%;padding:14px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
+.np-ok:active{opacity:.85}
+
+/* 訊息預覽 Modal */
+.msg-modal-backdrop{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center}
+.msg-modal-backdrop.show{display:flex}
+.msg-modal{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88dvh;display:flex;flex-direction:column;box-shadow:0 -6px 32px rgba(0,0,0,.18)}
+.msg-modal-header{padding:16px 18px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.msg-modal-title{font-size:15px;font-weight:900;color:var(--ink)}
+.msg-modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);color:var(--ink3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.msg-modal-tag{display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-left:8px}
+.msg-modal-tag.test{background:var(--amberl);color:var(--amber)}
+.msg-modal-tag.real{background:var(--gl);color:var(--g)}
+.msg-modal-body{overflow-y:auto;padding:16px 18px;flex:1}
+.msg-preview{background:#F0F9F4;border:1.5px solid #B8DDCA;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.75;color:var(--ink);white-space:pre-wrap;word-break:break-all;font-family:'Noto Sans TC',sans-serif}
+.msg-modal-footer{padding:14px 18px 28px;border-top:1px solid var(--bd);display:flex;gap:10px;flex-shrink:0}
+.msg-modal-btn{flex:1;padding:13px;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.msg-modal-btn.copy{background:var(--bg);color:var(--ink2);border:1.5px solid var(--bd)}
+.msg-modal-btn.send{background:linear-gradient(135deg,#06C755,#04A645);color:#fff}
+.msg-modal-btn.close-only{background:var(--bg);color:var(--ink2);border:1.5px solid var(--bd)}
+.msg-modal-btn:active{opacity:.82}
+.test-line-btn{width:100%;padding:12px;background:var(--amberl);color:var(--amber);border:1.5px solid #E8C060;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;margin-bottom:8px}
+.test-line-btn:active{opacity:.82}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-title">🏪 收班記錄</div>
+      <div class="topbar-sub" id="today-label"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="tib" onclick="goHome()">🏠</button>
+  </div>
+</div>
+
+<!-- 頁簽 -->
+<div class="tab-bar">
+  <button class="tab on" id="tab-form" onclick="switchTab('form')">📝 填寫</button>
+  <button class="tab" id="tab-hist" onclick="switchTab('hist')">📂 記錄</button>
+  <button class="tab" id="tab-chart" onclick="switchTab('chart')">📊 圖表</button>
+</div>
+
+<!-- 填寫頁 -->
+<div id="panel-form">
+<div class="content">
+  <!-- 基本資訊 -->
+  <div class="section">
+    <div class="section-head">📋 基本資訊</div>
+    <div class="section-body">
+      <div class="field-grid grid-2">
+        <div class="field"><label>日期</label><input type="date" id="f-date"></div>
+        <div class="field"><label>收班人員</label>
+          <select id="f-person"><option value="">— 選擇 —</option></select>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:var(--amberl,#FFF3E0);border-radius:var(--r2);border:1.5px solid var(--amber,#FF8F00)">
+        <div style="font-size:12px;font-weight:700;color:var(--amber,#E65100);margin-bottom:8px">🧾 是否有進貨收據？（必填）</div>
+        <div style="display:flex;gap:10px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:15px;font-weight:700">
+            <input type="radio" name="has-receipt" id="receipt-yes" value="yes" onchange="onReceiptChange()">
+            <span>✅ 有</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:15px;font-weight:700">
+            <input type="radio" name="has-receipt" id="receipt-no" value="no" onchange="onReceiptChange()">
+            <span>❌ 沒有</span>
+          </label>
+        </div>
+        <div id="receipt-inventory-q" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--amber,#FF8F00)">
+          <div style="font-size:12px;font-weight:700;color:var(--b);margin-bottom:8px">📦 是否已填寫進貨盤點？</div>
+          <div style="display:flex;gap:10px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:700">
+              <input type="radio" name="has-inv" id="inv-yes" value="yes">
+              <span>✅ 已填</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:700">
+              <input type="radio" name="has-inv" id="inv-no" value="no">
+              <span>⬜ 未填</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 營業數據 -->
+  <div class="section">
+    <div class="section-head">💰 營業數據</div>
+    <div class="section-body">
+      <div class="field-grid grid-3" style="margin-bottom:10px">
+        <div class="field highlight"><label>💵 總營業額</label><input id="f-revenue" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'💵 總營業額')"></div>
+        <div class="field highlight"><label>🧾 單號（張數）</label><input id="f-receipt" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧾 單號')"></div>
+        <div class="field highlight"><label>⏱ 今日時數</label><input id="f-hours" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'⏱ 今日時數')"></div>
+      </div>
+      <div class="field-grid grid-3" style="margin-bottom:10px">
+        <div class="field"><label>🛵 外送單數</label><input id="f-delivery-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🛵 外送單數')"></div>
+        <div class="field"><label>🥤 外送杯數</label><input id="f-delivery-cups" placeholder="0" type="text" readonly onfocus="npOpen(this,'🥤 外送杯數')"></div>
+        <div class="field"><label>💰 外送金額</label><input id="f-delivery-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 外送金額')"></div>
+        <div class="field"><label>🐼 熊貓單數</label><input id="f-panda-cnt" placeholder="0" type="text" readonly onfocus="npOpen(this,'🐼 熊貓單數')"></div>
+        <div class="field"><label>💰 熊貓金額</label><input id="f-panda-amt" placeholder="0" type="text" readonly onfocus="npOpen(this,'💰 熊貓金額')"></div>
+      </div>
+      <div class="field-grid grid-3">
+        <div class="field"><label>🥤 封口機杯數</label><input id="f-seal" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🥤 封口機杯數')"></div>
+        <div class="field"><label>🧋 奶蓋</label><input id="f-cream" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'🧋 奶蓋')"></div>
+        <div class="field"><label>♻️ 環保杯</label><input id="f-eco" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'♻️ 環保杯')"></div>
+      </div>
+      <!-- 寄杯組 -->
+      <div class="section-head" style="margin:10px 0 6px;font-size:13px">🎁 寄杯組（組數）</div>
+      <div class="field-grid grid-3">
+        <div class="field"><label>原味組 <span style="color:var(--ink3);font-size:11px">$650/組</span></label><input id="f-dep-orig" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'原味組 組數')"></div>
+        <div class="field"><label>風味組 <span style="color:var(--ink3);font-size:11px">$750/組</span></label><input id="f-dep-flav" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'風味組 組數')"></div>
+        <div class="field"><label>超值組 <span style="color:var(--ink3);font-size:11px">$1400/組</span></label><input id="f-dep-super" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'超值組 組數')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 試飲 -->
+  <div class="section">
+    <div class="section-head">🥛 試飲數據</div>
+    <div class="section-body">
+      <div class="field-grid grid-3">
+        <div class="field"><label>試飲主力</label>
+          <select id="f-demo-focus">
+            <option value="">— 選 —</option>
+            <option>原味風凍</option><option>芋香風凍</option><option>檸夏風凍</option>
+            <option>輕春風凍</option><option>清涼風凍</option><option>冬玫風凍</option><option>其他</option>
+          </select>
+        </div>
+        <div class="field"><label>試飲杯總數</label><input id="f-demo-cups" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲杯總數')"></div>
+        <div class="field"><label>試飲轉換數量</label><input id="f-demo-convert" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲轉換數量')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 產品銷售 -->
+  <div class="section">
+    <div class="section-head">🌿 產品銷售（買入/取出）</div>
+    <div class="section-body">
+      <div id="products-block">
+        <!-- 動態產生 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 客群 -->
+  <div class="section">
+    <div class="section-head">👥 客群分析</div>
+    <div class="section-body">
+      <div class="field-grid grid-4">
+        <div class="field"><label>第一次來</label><input id="f-new" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'第一次來')"></div>
+        <div class="field"><label>有來過</label><input id="f-return" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'有來過')"></div>
+        <div class="field"><label>再喝風凍</label><input id="f-jello-return" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'再喝風凍')"></div>
+        <div class="field"><label>直接買</label><input id="f-jello-direct" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'直接買')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自動計算結果 -->
+  <div class="section">
+    <div class="section-head">📊 自動計算</div>
+    <div class="section-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div>
+          <div class="calc-row"><span class="calc-label">外送單數</span><span class="calc-value" id="c-delivery">—</span></div>
+          <div class="calc-row"><span class="calc-label">總杯數</span><span class="calc-value big" id="c-total-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">取寄杯數</span><span class="calc-value" id="c-take-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">寄杯組金額</span><span class="calc-value" id="c-dep-amt">0 元</span></div>
+          <div class="calc-row"><span class="calc-label">均杯單價</span><span class="calc-value" id="c-avg-price">—</span></div>
+          <div class="calc-row"><span class="calc-label">原味總杯數</span><span class="calc-value" id="c-orig">0</span></div>
+          <div class="calc-row"><span class="calc-label">風味總杯數</span><span class="calc-value" id="c-flav">0</span></div>
+          <div class="calc-row"><span class="calc-label">試飲杯總數</span><span class="calc-value" id="c-demo-cups">0</span></div>
+          <div class="calc-row"><span class="calc-label">試飲轉換率</span><span class="calc-value" id="c-demo-rate">—</span></div>
+          <div class="calc-row" style="margin-top:6px;border-top:1px solid var(--bd);padding-top:6px"><span class="calc-label">時數表</span><span class="calc-value" id="c-hour-sales">—</span></div>
+          <div class="calc-row"><span class="calc-label">平時數</span><span class="calc-value" id="c-avg-hour">—</span></div>
+          <div class="calc-row"><span class="calc-label">每日盈虧</span><span class="calc-value" id="c-profit" style="font-weight:900"></span></div>
+        </div>
+        <div style="padding-left:16px;border-left:1px solid var(--bd)">
+          <div class="calc-row"><span class="calc-label">仙草凍/總佔比</span><span class="calc-value green" id="c-jelly-ratio">—</span></div>
+          <div class="calc-row"><span class="calc-label">原味佔比</span><span class="calc-value green" id="c-orig-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">風味佔比</span><span class="calc-value amber" id="c-flav-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">首次來店比</span><span class="calc-value" id="c-first-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">回購比例</span><span class="calc-value" id="c-return-pct">—</span></div>
+          <div class="calc-row"><span class="calc-label">風凍回購</span><span class="calc-value" id="c-jello-ret">—</span></div>
+          <div class="calc-row"><span class="calc-label">風凍直購</span><span class="calc-value" id="c-jello-direct">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- 時數比設定 -->
+    <details id="cfg-section" style="margin:0 0 8px">
+      <summary style="padding:10px 14px;font-size:12px;color:var(--ink3);cursor:pointer;user-select:none;background:var(--bg);border-radius:var(--r2)">⚙️ 時數比設定（點擊展開）</summary>
+      <div style="padding:10px 14px;background:var(--bg);border-radius:0 0 var(--r2) var(--r2);border-top:1px solid var(--bd)">
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">平時數 = (每日工資 + 月租/26 + 月水電/26) ÷ 時數</div>
+        <div class="field-grid grid-3" style="margin-bottom:8px">
+          <div class="field"><label>👤 每日工資</label><input id="cfg-wage" placeholder="225" type="text" readonly onfocus="npOpen(this,'每日工資')"></div>
+          <div class="field"><label>🏠 月租金</label><input id="cfg-rent" placeholder="1300" type="text" readonly onfocus="npOpen(this,'月租金')"></div>
+          <div class="field"><label>💡 月水電</label><input id="cfg-utility" placeholder="500" type="text" readonly onfocus="npOpen(this,'月水電')"></div>
+        </div>
+        <button onclick="saveClosingConfig()" style="padding:7px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">儲存設定</button>
+      </div>
+    </details>
+    <!-- 茶製記錄 -->
+    <div class="section" id="tea-section">
+      <div class="section-head">🍵 茶製記錄（烏龍茶 / 紅茶 / 青茶）</div>
+      <div class="section-body">
+        <div id="tea-list" style="margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="field"><label>桶號</label>
+            <select id="tea-barrel" style="width:100%;padding:10px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;background:var(--white)">
+              <option value="1">1號桶</option>
+              <option value="2">2號桶</option>
+              <option value="3">3號桶</option>
+            </select>
+          </div>
+          <div class="field"><label>茶種</label>
+            <select id="tea-type" style="width:100%;padding:10px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;background:var(--white)">
+              <option value="烏龍茶">🍵 烏龍茶</option>
+              <option value="紅茶">☕ 紅茶</option>
+              <option value="青茶">🌿 青茶</option>
+            </select>
+          </div>
+          <div class="field"><label>煮好時間</label>
+            <input type="time" id="tea-cook-time" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="teaLogAdd()" style="flex:1;padding:11px;border-radius:var(--r2);border:none;background:var(--g);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">＋ 記錄煮好時間</button>
+          <button onclick="teaLogLoadToday()" style="padding:11px 14px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;cursor:pointer;font-family:inherit">🔄 載入今日</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="test-line-btn" onclick="previewTestNotify()">📋 預覽 / 測試 LINE 訊息</button>
+    <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
+  <div style="height:20px"></div>
+</div>
+</div>
+
+<!-- 記錄頁 -->
+<div id="panel-hist" style="display:none">
+<div class="content">
+  <div class="filter-bar">
+    <input type="date" id="h-start">
+    <input type="date" id="h-end">
+    <button class="tib" style="background:var(--b);border-color:var(--b)" onclick="loadHist()">查詢</button>
+    <button class="tib" onclick="loadThisMonth()">本月</button>
+  </div>
+  <div id="hist-list"><div class="empty">請選擇日期範圍查詢</div></div>
+</div>
+</div>
+
+<!-- 圖表頁 -->
+<div id="panel-chart" style="display:none">
+<div class="content">
+  <div class="filter-bar">
+    <input type="date" id="c-start">
+    <input type="date" id="c-end">
+    <button class="tib" style="background:var(--b);border-color:var(--b)" onclick="loadChart()">查詢</button>
+    <button class="tib" onclick="loadChartMonth()">本月</button>
+  </div>
+  <!-- 統計摘要 -->
+  <div class="stat-grid" id="stat-grid" style="display:none"></div>
+  <!-- 圖表 -->
+  <div class="chart-wrap">
+    <div class="chart-title">📈 每日營業額 & 總杯數</div>
+    <canvas id="chart-revenue" height="180"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">🌿 原味 vs 風味 趨勢</div>
+    <canvas id="chart-flavor" height="160"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">👥 客群比例（首次 / 回購）</div>
+    <canvas id="chart-customer" height="160"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">🥛 試飲轉換率</div>
+    <canvas id="chart-demo" height="140"></canvas>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 訊息預覽 Modal -->
+<div class="msg-modal-backdrop" id="msgModal" onclick="closeMsgModal(event)">
+  <div class="msg-modal">
+    <div class="msg-modal-header">
+      <div style="display:flex;align-items:center">
+        <span class="msg-modal-title" id="msgModalTitle">LINE 訊息預覽</span>
+        <span class="msg-modal-tag" id="msgModalTag"></span>
+      </div>
+      <button class="msg-modal-close" onclick="closeMsgModal()">✕</button>
+    </div>
+    <div class="msg-modal-body">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:10px" id="msgModalDesc"></div>
+      <div class="msg-preview" id="msgPreviewText">載入中...</div>
+    </div>
+    <div class="msg-modal-footer" id="msgModalFooter"></div>
+  </div>
+</div>
+
+<!-- 數字小鍵盤 -->
+<div class="np-backdrop" id="np-bd" onclick="npClose()"></div>
+<div class="np-wrap" id="np-wrap">
+  <div class="np-handle"></div>
+  <div class="np-label-row" id="np-lbl"></div>
+  <div class="np-display" id="np-disp">0</div>
+  <div class="np-grid">
+    <button class="npk" onclick="npK('7')">7</button>
+    <button class="npk" onclick="npK('8')">8</button>
+    <button class="npk" onclick="npK('9')">9</button>
+    <button class="npk" onclick="npK('4')">4</button>
+    <button class="npk" onclick="npK('5')">5</button>
+    <button class="npk" onclick="npK('6')">6</button>
+    <button class="npk" onclick="npK('1')">1</button>
+    <button class="npk" onclick="npK('2')">2</button>
+    <button class="npk" onclick="npK('3')">3</button>
+    <button class="npk npk-clear" onclick="npK('C')">清除</button>
+    <button class="npk" onclick="npK('0')">0</button>
+    <button class="npk" onclick="npK('.')">.</button>
+    <button class="npk npk-del" onclick="npK('DEL')" style="grid-column:span 1">⌫</button>
+  </div>
+  <button class="np-ok" onclick="npDone()">✓ 確認</button>
+</div>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var PRODUCTS = [
+  {key:'original', name:'原味風凍', color:'#4A7CB5'},
+  {key:'aromatic', name:'芋香風凍', color:'#7B5EA7'},
+  {key:'ningxia',  name:'檸夏風凍', color:'#C07000'},
+  {key:'youth',    name:'輕春風凍', color:'#1A6B3C'},
+  {key:'cool',     name:'清涼風凍', color:'#2A8FA8'},
+  {key:'dongmei',  name:'冬玫風凍', color:'#C0395A'},
+];
+var _charts = {};
+
+// ── 初始化 ─────────────────────────────────────────
+// ── 茶製記錄 ────────────────────────────────────────────────
+var teaRecords = [];  // 今日茶製記錄
+
+function todayStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function nowTimeStr(){
+  var d=new Date();
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function teaLogLoadToday(){
+  var date = todayStr();
+  api({action:'teaLogGetAll', date:date}, function(d){
+    if(d&&d.ok&&d.data){
+      teaRecords = d.data;
+      renderTeaList();
+      showToast('✓ 今日茶製記錄已載入');
+    }
+  });
+}
+
+function teaLogAdd(){
+  var barrel   = document.getElementById('tea-barrel').value;
+  var teaType  = document.getElementById('tea-type').value;
+  var cookTime = document.getElementById('tea-cook-time').value;
+  if(!cookTime){ showToast('請填入煮好時間'); return; }
+  var person = document.getElementById('f-person').value || '';
+  var date   = document.getElementById('f-date').value || todayStr();
+  var id     = String(Date.now());
+  apiPost({action:'teaLogSave', id:id, date:date, barrel:barrel, teaType:teaType,
+    cookTime:cookTime, washTime:'', durationMin:0, person:person, note:''},
+    function(d){
+      if(d&&d.ok){
+        teaRecords.unshift({id:id, date:date, barrel:barrel, teaType:teaType,
+          cookTime:cookTime, washTime:'', durationMin:0, person:person});
+        renderTeaList();
+        showToast('✓ 已記錄 '+teaType+' '+barrel+'號桶 煮好 '+cookTime);
+        // 重設時間為現在
+        document.getElementById('tea-cook-time').value = nowTimeStr();
+      } else {
+        showToast('❌ 記錄失敗');
+      }
+    }
+  );
+}
+
+function teaLogWash(id){
+  var rec = teaRecords.find(function(r){ return String(r.id)===String(id); });
+  if(!rec){ showToast('找不到記錄'); return; }
+  var washTime = nowTimeStr();
+  // 計算使用時長
+  var cookParts = (rec.cookTime||'').split(':');
+  var washParts = washTime.split(':');
+  var durationMin = 0;
+  if(cookParts.length===2 && washParts.length===2){
+    var cookMin = parseInt(cookParts[0])*60 + parseInt(cookParts[1]);
+    var washMin = parseInt(washParts[0])*60 + parseInt(washParts[1]);
+    durationMin = washMin - cookMin;
+    if(durationMin < 0) durationMin += 24*60; // 跨日
+  }
+  apiPost({action:'teaLogSave', id:id, date:rec.date, barrel:rec.barrel, teaType:rec.teaType,
+    cookTime:rec.cookTime, washTime:washTime, durationMin:durationMin,
+    person:rec.person, note:rec.note||''},
+    function(d){
+      if(d&&d.ok){
+        rec.washTime = washTime;
+        rec.durationMin = durationMin;
+        renderTeaList();
+        var h = Math.floor(durationMin/60), m = durationMin%60;
+        showToast('✓ 已記錄清洗時間　使用 '+h+'小時'+m+'分');
+      }
+    }
+  );
+}
+
+function teaLogDelete(id){
+  if(!confirm('確定刪除此茶製記錄？')) return;
+  api({action:'teaLogDelete', id:id}, function(d){
+    if(d&&d.ok){
+      teaRecords = teaRecords.filter(function(r){ return String(r.id)!==String(id); });
+      renderTeaList();
+      showToast('已刪除');
+    }
+  });
+}
+
+function renderTeaList(){
+  var el = document.getElementById('tea-list');
+  if(!el) return;
+  if(!teaRecords.length){
+    el.innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:8px 0">今日尚無茶製記錄</div>';
+    return;
+  }
+  var teaIcons = {烏龍茶:'🍵', 紅茶:'☕', 青茶:'🌿'};
+  el.innerHTML = teaRecords.map(function(r){
+    var icon = teaIcons[r.teaType]||'🍵';
+    var duration = '';
+    if(r.durationMin > 0){
+      var h=Math.floor(r.durationMin/60), m=r.durationMin%60;
+      duration = ' ⏱ '+h+'h'+m+'m';
+    }
+    var washed = !!r.washTime;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(washed?'var(--gl)':'var(--bg)')+';border-radius:var(--r2);border:1px solid '+(washed?'var(--gm)':'var(--bd)')+';margin-bottom:6px">'
+      +'<span style="font-size:18px">'+icon+'</span>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:700">'+r.barrel+'號桶　'+r.teaType+'</div>'
+        +'<div style="font-size:12px;color:var(--ink3)">煮好：'+r.cookTime+(r.washTime?'　清洗：'+r.washTime+duration:'　尚未清洗')+'</div>'
+      +'</div>'
+      +(!washed ? '<button onclick="teaLogWash(''+r.id+'')" style="padding:6px 12px;border:none;border-radius:var(--r2);background:var(--b);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">🫧 記錄清洗</button>' : '<span style="color:var(--g);font-size:12px;font-weight:700">✓ 已清洗</span>')
+      +'<button onclick="teaLogDelete(''+r.id+'')" style="padding:6px 8px;border:none;border-radius:var(--r2);background:var(--redl);color:var(--red);font-size:12px;cursor:pointer;font-family:inherit">✕</button>'
+    +'</div>';
+  }).join('');
+}
+
+window.onload = function(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var today = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('f-date').value = today;
+  document.getElementById('today-label').textContent = today;
+  // 茶製記錄：初始化時間為現在，並載入今日記錄
+  var tInp = document.getElementById('tea-cook-time');
+  if(tInp) tInp.value = pad(d.getHours())+':'+pad(d.getMinutes());
+  teaLogLoadToday();
+  loadClosingConfig();
+
+  // 人員下拉
+  var sel = document.getElementById('f-person');
+  PERSONS.forEach(function(p){ sel.innerHTML += '<option>'+p+'</option>'; });
+  // 從後端拉最新人員
+  api({action:'getEmps'}, function(d){
+    if(!d||!d.ok||!d.data||!d.data.length) return;
+    sel.innerHTML = '<option value="">— 選擇 —</option>';
+    d.data.forEach(function(p){ sel.innerHTML += '<option>'+p+'</option>'; });
+  });
+
+  // 產品區塊
+  buildProductsBlock();
+  recalcAll();
+};
+
+function buildProductsBlock(){
+  var html = PRODUCTS.map(function(p){
+    var buyLabel  = p.name+' 買入';
+    var takeLabel = p.name+' 取出';
+    return '<div class="product-block">'+
+      '<div class="product-name"><span style="width:10px;height:10px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+p.name+'</div>'+
+      '<div class="buy-take">'+
+        '<div>'+
+          '<div class="bt-label">🛍 買入</div>'+
+          '<input class="bt-input" type="text" id="f-buy-'+p.key+'" readonly value="0" onfocus="npOpen(this,\''+buyLabel+'\')">'+
+        '</div>'+
+        '<div>'+
+          '<div class="bt-label">📦 取出</div>'+
+          '<input class="bt-input" type="text" id="f-take-'+p.key+'" readonly value="0" onfocus="npOpen(this,\''+takeLabel+'\')">'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  document.getElementById('products-block').innerHTML = html;
+}
+
+// ── 計算 ─────────────────────────────────────────
+// ── 數字小鍵盤 ──────────────────────────────────────────────
+var _np = { val:'0', el:null, label:'' };
+function npOpen(el, label){
+  _np.el = el; _np.label = label;
+  _np.val = (el.value && el.value !== '0') ? el.value : '0';
+  document.getElementById('np-lbl').textContent = label;
+  document.getElementById('np-disp').textContent = _np.val;
+  document.getElementById('np-bd').classList.add('show');
+  document.getElementById('np-wrap').classList.add('show');
+  // blur 防止系統鍵盤（延後執行避免干擾 focus 事件）
+  setTimeout(function(){ el.blur(); }, 10);
+}
+function npClose(){
+  document.getElementById('np-bd').classList.remove('show');
+  document.getElementById('np-wrap').classList.remove('show');
+}
+function npK(k){
+  var v = _np.val === '0' ? '' : _np.val;
+  if(k==='C')     { _np.val = '0'; }
+  else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
+  else if(k==='.'){ if(v.indexOf('.')===-1) _np.val = (v||'0')+'.'; }
+  else            { if(v.replace('.','').length >= 7) return; _np.val = v+k; }
+  document.getElementById('np-disp').textContent = _np.val;
+}
+function npDone(){
+  if(_np.el){
+    _np.el.value = _np.val;
+  }
+  npClose();
+  // 每次確認後都重新計算（不論哪個欄位）
+  recalcAll();
+}
+
+var _todayChecksLoaded  = false;
+var _todayElecChecked   = false;
+var _todayWeatherChecked= false;
+
+function loadClosingConfig(){
+  api({action:'getClosingConfig'}, function(d){
+    if(!d||!d.ok) return;
+    var set = function(id, v){ var el=document.getElementById(id); if(el&&v) el.value=v; };
+    set('cfg-wage',    d.wage||225);
+    set('cfg-rent',    d.rent||1300);
+    set('cfg-utility', d.utility||500);
+    recalcAll();
+  });
+}
+function saveClosingConfig(){
+  var wage    = parseFloat(document.getElementById('cfg-wage').value)||225;
+  var rent    = parseFloat(document.getElementById('cfg-rent').value)||1300;
+  var utility = parseFloat(document.getElementById('cfg-utility').value)||500;
+  api({action:'setClosingConfig', wage:wage, rent:rent, utility:utility}, function(d){
+    showToast(d&&d.ok ? '✓ 設定已儲存' : '儲存失敗');
+    recalcAll();
+  });
+}
+
+function getNum(id){ return parseFloat(document.getElementById(id).value)||0; }
+function pct(n,d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
+
+function recalcAll(){
+  var buy = {}, take = {};
+  PRODUCTS.forEach(function(p){
+    buy[p.key]  = getNum('f-buy-'+p.key);
+    take[p.key] = getNum('f-take-'+p.key);
+  });
+
+  // 1. 總杯數 = 封口機+奶蓋+環保杯
+  var seal     = getNum('f-seal');
+  var cream    = getNum('f-cream');
+  var eco      = getNum('f-eco');
+  var totalCups = seal + cream + eco;
+
+  // 3. 取寄杯數（先算，因為均杯單價需要用到）
+  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool + take.dongmei;
+
+  // 寄杯組
+  var depOrig  = getNum('f-dep-orig');
+  var depFlav  = getNum('f-dep-flav');
+  var depSuper = getNum('f-dep-super');
+  var depAmt   = depOrig*650 + depFlav*750 + depSuper*1400;
+
+  // 2. 均杯單價 = (總營業額 - 寄杯組金額) / (總杯數 - 取寄杯數)
+  var revenue   = getNum('f-revenue');
+  var dineInCups = totalCups - takeCups;
+  var dineInRev  = revenue - depAmt;
+  var avgPrice  = dineInCups > 0 ? (dineInRev / dineInCups).toFixed(1) : '—';
+
+  // 4. 原味總數 = 原味買 + 原味取
+  var origTotal = buy.original + take.original;
+
+  // 5. 風味加總 = 芋香+檸夏+輕春+清涼 的買+取全部
+  var flavTotal = (buy.aromatic + take.aromatic) +
+                  (buy.ningxia  + take.ningxia)  +
+                  (buy.youth    + take.youth)    +
+                  (buy.cool     + take.cool)     +
+                  (buy.dongmei  + take.dongmei);
+
+  // 6. 仙草凍/總佔比 = (原味總數 + 風味總數) / 總杯數
+  var jellyTotal = origTotal + flavTotal;
+  var jellyRatio = totalCups > 0 ? (jellyTotal / totalCups * 100).toFixed(1)+'%' : '—';
+
+  // 7. 原味佔比 = 原味總數 / 總杯數
+  var origPct = pct(origTotal, totalCups);
+
+  // 8. 風味佔比 = 風味總數 / 總杯數
+  var flavPct = pct(flavTotal, totalCups);
+
+  // 9. 首次來店比 = 第一次來 / 單號
+  // 10. 回購比例 = 有來過 / 單號
+  // 11. 風凍回購 = 再喝風凍 / 單號
+  // 12. 風凍直購 = 直接買 / 單號
+  var receipt    = getNum('f-receipt');
+  var newCust    = getNum('f-new');
+  var retCust    = getNum('f-return');
+  var jelloRet   = getNum('f-jello-return');
+  var jelloDirect= getNum('f-jello-direct');
+  var demoCups   = getNum('f-demo-cups');
+  var demoConv   = getNum('f-demo-convert');
+
+  var dCnt = getNum('f-delivery-cnt'), dCups = getNum('f-delivery-cups'), dAmt = getNum('f-delivery-amt');
+  var pCnt = getNum('f-panda-cnt'), pAmt = getNum('f-panda-amt');
+  var dEl = document.getElementById('c-delivery');
+  if(dEl){
+    var dStr='';
+    if(dCnt>0||dAmt>0) dStr+='外送 '+dCnt+'單 '+dCups+'杯 $'+dAmt.toLocaleString();
+    if(pCnt>0||pAmt>0) dStr+=(dStr?'　':'')+'🐼熊貓 '+pCnt+'單 $'+pAmt.toLocaleString();
+    dEl.textContent=dStr||'—';
+  }
+  document.getElementById('c-total-cups').textContent = totalCups;
+  document.getElementById('c-take-cups').textContent  = takeCups;
+  document.getElementById('c-dep-amt').textContent    = depAmt > 0 ? depAmt.toLocaleString()+' 元' : '0 元';
+  document.getElementById('c-avg-price').textContent  = avgPrice === '—' ? '—' : avgPrice + ' 元';
+  document.getElementById('c-orig').textContent       = origTotal;
+  document.getElementById('c-flav').textContent       = flavTotal;
+  document.getElementById('c-jelly-ratio').textContent = jellyRatio;
+  document.getElementById('c-orig-pct').textContent   = origPct;
+  document.getElementById('c-flav-pct').textContent   = flavPct;
+  document.getElementById('c-demo-cups').textContent  = demoCups;
+  document.getElementById('c-demo-rate').textContent  = pct(demoConv, demoCups);
+  document.getElementById('c-first-pct').textContent  = pct(newCust,    receipt);
+  document.getElementById('c-return-pct').textContent = pct(retCust,    receipt);
+  document.getElementById('c-jello-ret').textContent  = pct(jelloRet,   receipt);
+  document.getElementById('c-jello-direct').textContent = pct(jelloDirect, receipt);
+
+  // 時數比
+  var hours = getNum('f-hours');
+  var wage  = parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
+  var rent  = parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
+  var util  = parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
+  // 平時數 = (工資 + (房租+水電)/時數) / 毛利0.5
+  var avgHour   = hours>0 ? ((wage + (rent+util)/hours)/0.5).toFixed(1) : null;
+  // 時數表 = 總營業額 / 時數
+  var hourSale  = hours>0 ? (revenue/hours).toFixed(1)  : null;
+  // 每日盈虧 = (時數表 - 平時數) × 時數 × 0.5
+  var profitVal = hours>0 ? ((parseFloat(hourSale)-parseFloat(avgHour))*hours*0.5).toFixed(0) : null;
+  var hSalesEl = document.getElementById('c-hour-sales');
+  var hAvgEl   = document.getElementById('c-avg-hour');
+  var hProfEl  = document.getElementById('c-profit');
+  if(hSalesEl) hSalesEl.textContent = hourSale  ? hourSale+' 元/時' : '—';
+  if(hAvgEl)   hAvgEl.textContent   = avgHour   ? avgHour+' 元/時'  : '—';
+  if(hProfEl){
+    if(profitVal!==null){
+      hProfEl.textContent = (profitVal>=0?'+':'')+profitVal+' 元';
+      hProfEl.style.color = profitVal>=0 ? 'var(--g)' : 'var(--red)';
+    } else { hProfEl.textContent='—'; hProfEl.style.color=''; }
+  }
+}
+
+// ── 提交 ─────────────────────────────────────────
+function submitForm(){
+  var date   = document.getElementById('f-date').value;
+  var person = document.getElementById('f-person').value;
+  var revenue = getNum('f-revenue');
+  if(!date)   { showToast('請填入日期'); return; }
+  if(!person) { showToast('請選擇人員'); return; }
+  if(!revenue){ showToast('請填入總營業額'); return; }
+  if(!getNum('f-hours')){ showToast('請填入今日時數'); return; }
+  // 收據必填
+  var receiptYes = document.getElementById('receipt-yes');
+  var receiptNo  = document.getElementById('receipt-no');
+  if(!receiptYes.checked && !receiptNo.checked){ showToast('請選擇是否有進貨收據'); return; }
+  // 有收據但未選進貨盤點
+  if(receiptYes.checked){
+    var invYes = document.getElementById('inv-yes');
+    var invNo  = document.getElementById('inv-no');
+    if(!invYes.checked && !invNo.checked){ showToast('請選擇是否已填寫進貨盤點'); return; }
+    if(invNo.checked){
+      if(!confirm('⚠️ 進貨盤點尚未填寫\n確定要繼續送出收班記錄嗎？')){ return; }
+    }
+  }
+
+  // 驗證今日電表是否已記錄
+  var elecOk = false;
+  (function(){
+    // 從本機快取或直接給過
+    elecOk = _todayElecChecked;
+  })();
+
+  // 驗證今日溫度是否已有天氣記錄
+  var weatherOk = false;
+  (function(){
+    weatherOk = _todayWeatherChecked;
+  })();
+
+  if(!_todayChecksLoaded){
+    // 尚未查詢，先查再送
+    showToast('⏳ 確認電表及天氣資料中...');
+    var checked = {elec:null, weather:null};
+    function tryCheck(){
+      if(checked.elec===null||checked.weather===null) return;
+      var warns=[];
+      if(!checked.elec)    warns.push(date+' 尚未記錄電表');
+      if(!checked.weather) warns.push(date+' 尚未記錄天氣');
+      if(warns.length){
+        if(!confirm('⚠️ '+warns.join('\n')+'\n\n確定仍要送出收班記錄？')){
+          _todayChecksLoaded=false; return;
+        }
+      }
+      _todayElecChecked=true; _todayWeatherChecked=true; _todayChecksLoaded=true;
+      submitForm();
+    }
+    api({action:'elecGetAll'}, function(d){
+      checked.elec = d&&d.ok&&d.data&&d.data.some(function(r){ return r.date===date; });
+      tryCheck();
+    });
+    api({action:'getTodayWeather', date:date}, function(d){
+      checked.weather = d&&d.ok&&d.times&&d.times.length>0;
+      tryCheck();
+    });
+    return;
+  }
+
+  // 已通過驗證，重置後繼續送出
+  _todayChecksLoaded=false; _todayElecChecked=false; _todayWeatherChecked=false;
+
+  // ── 防呆：查詢當日是否已有收班記錄 ──
+  var btn = document.querySelector('.submit-btn');
+  btn.textContent = '⏳ 確認中...'; btn.disabled = true;
+  api({action:'closingGetAll', startDate:date, endDate:date}, function(dupCheck){
+    btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
+    if(dupCheck && dupCheck.ok && dupCheck.data && dupCheck.data.length > 0){
+      var existing = dupCheck.data[0];
+      var msg = '⚠️ ' + date + ' 已有一筆收班記錄\n'
+        + '人員：' + (existing.person||'—') + '　'
+        + '營業額：' + (existing.revenue||0).toLocaleString() + ' 元\n\n'
+        + '確定要再新增一筆？（舊記錄不會被刪除）';
+      if(!confirm(msg)) return;
+    }
+    doActualSubmit(date, person);
+  });
+}
+
+function doActualSubmit(date, person){
+  var btn = document.querySelector('.submit-btn');
+  btn.textContent = '⏳ 送出中...'; btn.disabled = true;
+
+  // 直接攤平所有欄位，避免 JSON 巢狀編碼問題
+  var params = {
+    action: 'closingSave',
+    date: date, person: person,
+    deliveryCnt:  getNum('f-delivery-cnt'),
+    deliveryCups: getNum('f-delivery-cups'),
+    deliveryAmt:  getNum('f-delivery-amt'),
+    pandaCnt:     getNum('f-panda-cnt'),
+    pandaAmt:     getNum('f-panda-amt'),
+    hours:        getNum('f-hours'),
+    revenue: getNum('f-revenue'),
+    receiptCount: getNum('f-receipt'),
+    sealMachine:  getNum('f-seal'),
+    creamTop:     getNum('f-cream'),
+    ecoCup:       getNum('f-eco'),
+    depOrig:      getNum('f-dep-orig'),
+    depFlav:      getNum('f-dep-flav'),
+    depSuper:     getNum('f-dep-super'),
+    demoFocus:    document.getElementById('f-demo-focus').value,
+    demoCups:     getNum('f-demo-cups'),
+    demoConvert:  getNum('f-demo-convert'),
+    buyOriginal:  getNum('f-buy-original'),
+    takeOriginal: getNum('f-take-original'),
+    buyAromatic:  getNum('f-buy-aromatic'),
+    takeAromatic: getNum('f-take-aromatic'),
+    buyNingxia:   getNum('f-buy-ningxia'),
+    takeNingxia:  getNum('f-take-ningxia'),
+    buyYouth:     getNum('f-buy-youth'),
+    takeYouth:    getNum('f-take-youth'),
+    buyCool:      getNum('f-buy-cool'),
+    takeCool:     getNum('f-take-cool'),
+    buyDongmei:   getNum('f-buy-dongmei'),
+    takeDongmei:  getNum('f-take-dongmei'),
+    newCustomer:  getNum('f-new'),
+    returnCustomer: getNum('f-return'),
+    jelloReturn:  getNum('f-jello-return'),
+    jelloDirect:  getNum('f-jello-direct'),
+  };
+
+  apiPost(params, function(d, err){
+    btn.textContent = '📤 送出收班記錄'; btn.disabled = false;
+    if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
+    if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
+    showToast('✓ 收班記錄已儲存！');
+    // 先儲存完成，再問是否要發送 LINE
+    setTimeout(function(){
+      if(confirm('收班記錄已儲存 ✓\n\n是否現在發送 LINE 通知給群組？\n\n📌 記得 @家暉哥')){
+        sendClosingLineNotify(params);
+      }
+    }, 400);
+    // 清空數值欄位
+    document.getElementById('receipt-yes').checked=false;
+    document.getElementById('receipt-no').checked=false;
+    document.getElementById('inv-yes').checked=false;
+    document.getElementById('inv-no').checked=false;
+    document.getElementById('receipt-inventory-q').style.display='none';
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-panda-cnt','f-panda-amt','f-hours'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.value = '';
+    });
+    PRODUCTS.forEach(function(p){
+      document.getElementById('f-buy-'+p.key).value = 0;
+      document.getElementById('f-take-'+p.key).value = 0;
+    });
+    recalcAll();
+  });
+}
+
+function onReceiptChange(){
+  var yes = document.getElementById('receipt-yes');
+  var q   = document.getElementById('receipt-inventory-q');
+  if(yes && q) q.style.display = yes.checked ? 'block' : 'none';
+}
+
+function weatherIcon(w){
+  return {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'}[w]||'';
+}
+
+function resendLineNotify(id){
+  var btn = document.querySelector('[data-resend-id="'+id+'"]');
+  if(btn){ btn.textContent='載入中...'; btn.disabled=true; }
+
+  api({action:'closingGetAll', startDate:'2020-01-01', endDate:'2030-12-31'}, function(d){
+    if(btn){ btn.textContent='📲 重傳 LINE'; btn.disabled=false; }
+    if(!d||!d.ok){ showToast('查詢失敗'); return; }
+    var r = d.data.find(function(x){ return String(x.id)===String(id); });
+    if(!r){ showToast('找不到記錄'); return; }
+    var p = {
+      date:r.date, person:r.person, weather:r.weather||'',
+      revenue:r.revenue, receiptCount:r.receiptCount,
+      sealMachine:r.sealMachine, creamTop:r.creamTop, ecoCup:r.ecoCup,
+      depOrig:r.depOrig||0, depFlav:r.depFlav||0, depSuper:r.depSuper||0,
+      demoFocus:r.demoFocus, demoCups:r.demoCups, demoConvert:r.demoConvert,
+      buyOriginal:r.buyOriginal, takeOriginal:r.takeOriginal,
+      buyAromatic:r.buyAromatic, takeAromatic:r.takeAromatic,
+      buyNingxia:r.buyNingxia, takeNingxia:r.takeNingxia,
+      buyYouth:r.buyYouth, takeYouth:r.takeYouth,
+      buyCool:r.buyCool, takeCool:r.takeCool,
+      buyDongmei:r.buyDongmei||0, takeDongmei:r.takeDongmei||0,
+      newCustomer:r.newCustomer, returnCustomer:r.returnCustomer,
+      jelloReturn:r.jelloReturn, jelloDirect:r.jelloDirect,
+      hours:r.hours||0,
+      deliveryCnt:r.deliveryCnt||0, deliveryCups:r.deliveryCups||0, deliveryAmt:r.deliveryAmt||0,
+      pandaCnt:r.pandaCnt||0, pandaAmt:r.pandaAmt||0,
+    };
+    // 顯示預覽 modal，讓使用者確認後再傳
+    var base = buildClosingMsgBase(p);
+    showResendModal(base, p.date);
+  });
+}
+
+// 重傳預覽 modal（查詢電表/天氣/仙草凍後顯示，確認才傳）
+function showResendModal(baseMsg, date){
+  var modal = document.getElementById('msgModal');
+  var previewEl = document.getElementById('msgPreviewText');
+  var titleEl = document.getElementById('msgModalTitle');
+  var tagEl = document.getElementById('msgModalTag');
+  var descEl = document.getElementById('msgModalDesc');
+  var footerEl = document.getElementById('msgModalFooter');
+
+  titleEl.textContent = '重新傳送通知';
+  tagEl.textContent = date;
+  tagEl.className = 'msg-modal-tag real';
+  descEl.textContent = '以下為該日完整通知訊息，確認後傳送至 LINE 群組';
+
+  previewEl.textContent = baseMsg + '\n\n（正在查詢電表 / 天氣 / 仙草凍...）';
+  footerEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:4px 0">⏳ 正在查詢額外資料...</div>';
+  modal.classList.add('show');
+
+  var yDate = new Date(date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yesterday = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+
+  function getIceRecordForDate(d){
+    try { var arr=JSON.parse(localStorage.getItem('ice_v1')||'[]'); return arr.find(function(r){ return r.date===d; })||null; }
+    catch(e){ return null; }
+  }
+  function calcIceHours(slots){
+    var t=0; (slots||[]).forEach(function(s){
+      if(!s.on||!s.off) return;
+      var on=s.on.split(':').map(Number), off=s.off.split(':').map(Number);
+      var m=(off[0]*60+off[1])-(on[0]*60+on[1]); if(m>0) t+=m;
+    }); return t>0?Math.round(t/15)*0.25:0;
+  }
+
+  var done = {elec:null, weather:null, jelly:null, stock:null};
+  var _fullMsg = baseMsg;
+
+  function rebuild(){
+    if(done.elec===null||done.weather===null||done.jelly===null||done.stock===null) return;
+    var extra=[];
+
+    // 仙草凍：先查仙草凍系統，沒有則查前一天電表備注
+    var _jellyLines = [];
+    if(done.jelly&&done.jelly.ok&&done.jelly.summary){
+      var items=Object.keys(done.jelly.summary);
+      if(items.length){
+        _jellyLines.push(''); _jellyLines.push('🫙 昨日煮好（'+yesterday+'）─────');
+        items.forEach(function(it){ var s=done.jelly.summary[it]; _jellyLines.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
+      }
+    }
+    if(!_jellyLines.length && done.elec&&done.elec.ok&&done.elec.data){
+      var _jellyCount = extractJellyFromElec(done.elec.data, yesterday);
+      if(_jellyCount>0){ _jellyLines.push(''); _jellyLines.push('🫙 昨日仙草凍（'+yesterday+'）：'+_jellyCount+' 桶（電表備注）'); }
+    }
+    _jellyLines.forEach(function(l){ extra.push(l); });
+    if(done.weather&&done.weather.ok&&done.weather.times&&done.weather.times.length){
+      var wIcon={晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
+      var tLabel={'10':'上午','14':'下午','18':'傍晚'};
+      extra.push(''); extra.push('🌡 今日天氣氣溫 ─────────');
+      done.weather.times.forEach(function(t){
+        var icon=wIcon[t.weather]||''; var label=tLabel[t.time]||t.time+'時';
+        var line=label+'　'+icon+t.weather;
+        if(t.outdoorTemp!==''&&t.outdoorTemp!==undefined) line+='　'+t.outdoorTemp+'°C';
+        extra.push(line);
+      });
+    }
+    if(done.elec&&done.elec.ok&&done.elec.data&&done.elec.data.length){
+      var sorted=done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+      var todayR=sorted.filter(function(r){ return r.date===date; }).pop();
+      if(todayR){
+        var prev=sorted.filter(function(r){ return r.date<date; }).pop();
+        var usage=prev?todayR.reading-prev.reading:null;
+        var curMonth=date.slice(0,7); var monthUsages=[];
+        for(var i=1;i<sorted.length;i++){ if(sorted[i].date.startsWith(curMonth)){ var u=sorted[i].reading-sorted[i-1].reading; if(u>=0) monthUsages.push(u); } }
+        var monthTotal=monthUsages.reduce(function(s,v){ return s+v; },0);
+        var monthAvg=monthUsages.length?Math.round(monthTotal/monthUsages.length):0;
+        todayR._usage=usage; todayR._monthTotal=monthTotal; todayR._monthAvg=monthAvg;
+        extractElecExtra(todayR, extra, getIceRecordForDate, date);
+      }
+    }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extra.push(l); });
+    }
+
+    _fullMsg = baseMsg + extra.join('\n');
+    previewEl.textContent = _fullMsg;
+
+    footerEl.innerHTML = '';
+    var cpBtn = document.createElement('button');
+    cpBtn.className='msg-modal-btn copy'; cpBtn.textContent='📋 複製';
+    cpBtn.onclick=function(){ navigator.clipboard&&navigator.clipboard.writeText(_fullMsg); showToast('✓ 已複製'); };
+    var sdBtn = document.createElement('button');
+    sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送到群組';
+    sdBtn.onclick=function(){
+      sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
+      apiPost({action:'sendLine', msg:_fullMsg}, function(r, err){
+        if(r&&r.ok){ showToast('✓ 已重新傳送 LINE 通知'); closeMsgModal(); }
+        else { showToast('❌ 傳送失敗：'+(err||(r&&r.error)||'未知錯誤')); sdBtn.textContent='📲 傳送到群組'; sdBtn.disabled=false; }
+      });
+    };
+    footerEl.appendChild(cpBtn); footerEl.appendChild(sdBtn);
+  }
+
+  api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuild(); });
+  api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuild(); });
+  api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuild(); });
+  api({action:'stockGetByDate',date:date}, function(d){ done.stock=d||{ok:false}; rebuild(); });
+}
+
+
+// ── 電表 note 解析輔助（closing.html 共用）──────────────────
+function parseIceNoteInClosing(txt){
+  if(!txt) return [];
+  var parts = String(txt).split(/[,，、；;]/);
+  var events = [];
+  parts.forEach(function(part){
+    part = part.trim();
+    if(!part || !/製冰|冰機/i.test(part)) return;
+    var isOpen  = /開|start/i.test(part);
+    var isClose = /關|stop|end/i.test(part);
+    var tm = part.match(/(\d{1,2})[:：]?(\d{2})/);
+    if(!tm) return;
+    var h=parseInt(tm[1]), m=parseInt(tm[2]);
+    if(h>23||m>59) return;
+    events.push({time:String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'), isOpen:isOpen, isClose:isClose});
+  });
+  var slots=[], openTime=null;
+  events.forEach(function(ev){
+    if(ev.isOpen&&!ev.isClose){ openTime=ev.time; }
+    else if(ev.isClose&&openTime){ slots.push({on:openTime,off:ev.time}); openTime=null; }
+    else if(ev.isOpen){ if(openTime) slots.push({on:openTime,off:''}); openTime=ev.time; }
+  });
+  if(openTime) slots.push({on:openTime,off:''});
+  return slots;
+}
+function calcIceHoursFromSlots(slots){
+  var t=0; (slots||[]).forEach(function(s){
+    if(!s.on||!s.off) return;
+    var on=s.on.split(':').map(Number), off=s.off.split(':').map(Number);
+    var m=(off[0]*60+off[1])-(on[0]*60+on[1]); if(m>0) t+=m;
+  }); return t>0?Math.round(t/15)*0.25:0;
+}
+// 從電表記錄解析仙草凍、製冰機、備注，回傳 extraLines 陣列
+function extractElecExtra(elecRec, lines, iceRecordFn, dateStr){
+  lines.push(''); lines.push('⚡ 電表記錄 ─────────────');
+  lines.push('本日讀數：'+elecRec.reading+' 度');
+  // 昨日用電、本月累積、每日平均（由外層計算後暫存在 _usage 等欄位）
+  if(elecRec._usage!=null && elecRec._usage>=0) lines.push('昨日用電：'+elecRec._usage+' 度'+(elecRec._usage>500?' ⚠️偏高':''));
+  if(elecRec._monthTotal!=null) lines.push('本月累積：'+elecRec._monthTotal+' 度');
+  if(elecRec._monthAvg!=null) lines.push('每日平均：'+elecRec._monthAvg+' 度');
+  // 製冰機（優先電表新欄位→解析舊備注→localStorage）
+  var noteText = elecRec.noteText||'';
+  if(!noteText && elecRec.note){
+    var rawNote2 = elecRec.note;
+    try { var obj2=JSON.parse(rawNote2); if(obj2.note) noteText=obj2.note; } catch(e){ if(!/製冰|冰機/i.test(rawNote2) && !/\d+\s*桶/.test(rawNote2)) noteText=rawNote2; }
+  }
+  if(noteText) lines.push('備注：'+noteText);
+  var iceH=parseFloat(elecRec.iceMachineHours)||0;
+  var iceSlot='';
+  if(!iceH){
+    var rawN=elecRec.noteText||elecRec.note||'';
+    var iceSlots=parseIceNoteInClosing(rawN);
+    if(iceSlots.length){ iceH=calcIceHoursFromSlots(iceSlots); iceSlot=iceSlots.map(function(s){return s.on+(s.off?' ~ '+s.off:'起');}).join('、'); }
+  }
+  if(!iceH && iceRecordFn){
+    var ir=iceRecordFn(dateStr);
+    if(ir&&ir.slots&&ir.slots.length){
+      var fn2=function(slots){var t=0;(slots||[]).forEach(function(s){if(!s.on||!s.off)return;var on=s.on.split(':').map(Number),off=s.off.split(':').map(Number);var m=(off[0]*60+off[1])-(on[0]*60+on[1]);if(m>0)t+=m;});return t>0?Math.round(t/15)*0.25:0;};
+      iceH=fn2(ir.slots); iceSlot=ir.slots.map(function(s){return s.on+(s.off?' ~ '+s.off:'起');}).join('、');
+    }
+  }
+  if(iceH>0||iceSlot){ lines.push(''); lines.push('🧊 製冰機記錄 ─────────'); if(iceSlot) lines.push('時段：'+iceSlot); if(iceH>0) lines.push('開機時數：'+iceH+' 時'); }
+}
+
+// 從電表記錄（前一天）解析仙草凍桶數
+function extractJellyFromElec(elecData, yesterday){
+  if(!elecData || !elecData.length) return 0;
+  var yRec = elecData.filter(function(r){ return r.date===yesterday; }).pop();
+  if(!yRec) return 0;
+  var jelly = parseInt(yRec.jellyCount)||0;
+  if(!jelly){
+    var rawNote = yRec.noteText || yRec.note || '';
+    try { var obj=JSON.parse(rawNote); if(obj.jelly!=null) jelly=parseInt(obj.jelly)||0; if(!jelly&&obj.note){ var bm=obj.note.match(/(\d+)\s*桶/); if(bm) jelly=parseInt(bm[1])||0; } }
+    catch(e){ var bm2=rawNote.match(/(\d+)\s*桶/); if(bm2) jelly=parseInt(bm2[1])||0; }
+  }
+  return jelly;
+}
+
+// 把當天進貨記錄組成通知用的明細文字陣列
+function buildStockExtraLines(stockData){
+  if(!stockData || !stockData.length) return [];
+  var lines = [];
+  lines.push('');
+  lines.push('📦 今日進貨明細 ─────────');
+  stockData.forEach(function(r){
+    var head = (r.catName?'['+r.catName+'] ':'') + (r.itemName||'');
+    lines.push(head);
+    var qtys = [];
+    if(r.uLv && parseFloat(r.uLv)>0) qtys.push(parseFloat(r.uLv)+(r.uLn||''));
+    if(r.uMv && parseFloat(r.uMv)>0) qtys.push(parseFloat(r.uMv)+(r.uMn||''));
+    if(r.uSv && parseFloat(r.uSv)>0) qtys.push(parseFloat(r.uSv)+(r.uSn||''));
+    var detail = [];
+    if(qtys.length) detail.push(qtys.join('+'));
+    if(r.src) detail.push('來源:'+r.src);
+    if(r.expense && r.amt>0) detail.push('$'+Number(r.amt).toLocaleString()+(r.invoice?'✅':''));
+    if(detail.length) lines.push('　'+detail.join('　'));
+    if(r.note) lines.push('　備注：'+r.note);
+  });
+  var totalAmt = stockData.reduce(function(s,r){ return s + (r.expense?(parseFloat(r.amt)||0):0); }, 0);
+  if(totalAmt>0) lines.push('小計：$'+totalAmt.toLocaleString());
+  return lines;
+}
+
+
+
+// ── 訊息預覽 Modal ──────────────────────────────────────
+function closeMsgModal(e){
+  if(e && e.target !== document.getElementById('msgModal')) return;
+  document.getElementById('msgModal').classList.remove('show');
+}
+
+// 組出 LINE 訊息主體（不含電表/天氣/仙草凍）
+function buildClosingMsgBase(p){
+  var n = function(k){ return parseFloat(p[k]||0)||0; };
+  var totalCups  = n('sealMachine')+n('creamTop')+n('ecoCup');
+  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool')+n('takeDongmei');
+  var depAmt     = n('depOrig')*650+n('depFlav')*750+n('depSuper')*1400;
+  var dineInCups = totalCups-takeCups;
+  var avgPrice   = dineInCups>0 ? Math.round((n('revenue')-depAmt)/dineInCups*10)/10 : 0;
+  var origTotal  = n('buyOriginal')+n('takeOriginal');
+  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool')+n('buyDongmei')+n('takeDongmei');
+  var receipt    = n('receiptCount');
+  function pct(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
+
+  var lines = [
+    '📊 收班記錄 ─────────────',
+    '📅 '+p.date+'　👤 '+p.person+(p.weather?'　'+weatherIcon(p.weather)+p.weather:''),
+    '',
+    '💰 營業數據',
+    '總營業額：$'+Number(p.revenue||0).toLocaleString(),
+    '單號：'+receipt+' 張',
+    '總杯數：'+totalCups+' 杯　取寄：'+takeCups+' 杯',
+    '均杯單價：'+avgPrice+' 元',
+  ];
+  if(depAmt>0){
+    lines.push('寄杯組：原味'+n('depOrig')+'組 風味'+n('depFlav')+'組 超值'+n('depSuper')+'組（$'+depAmt.toLocaleString()+'）');
+  }
+  lines.push(''); lines.push('🧋 銷售明細');
+  lines.push('原味總杯數：'+origTotal+' 杯　風味總杯數：'+flavTotal+' 杯');
+  PRODUCTS.forEach(function(prod){
+    var bk='buy'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
+    var tk='take'+prod.key.charAt(0).toUpperCase()+prod.key.slice(1);
+    var bv=n(bk), tv=n(tk);
+    if(bv+tv>0) lines.push(prod.name+'　買'+bv+' 取'+tv+' 共'+(bv+tv));
+  });
+  {
+    lines.push('');
+    if(n('deliveryCnt')>0||n('deliveryAmt')>0||n('deliveryCups')>0){
+      var dLine='🛵 外送　'+n('deliveryCnt')+'單';
+      if(n('deliveryCups')>0) dLine+='　'+n('deliveryCups')+'杯';
+      if(n('deliveryAmt')>0) dLine+='　$'+Number(n('deliveryAmt')).toLocaleString();
+      lines.push(dLine);
+    }
+    var pLine='🐼 熊貓　'+n('pandaCnt')+'單　$'+Number(n('pandaAmt')).toLocaleString();
+    lines.push(pLine);
+  }
+  lines.push(''); lines.push('📈 比例分析');
+  lines.push('原味佔比：'+pct(origTotal,totalCups)+'　風味佔比：'+pct(flavTotal,totalCups));
+  lines.push('仙草凍/總：'+pct(origTotal+flavTotal,totalCups));
+  lines.push('首次來店：'+n('newCustomer')+'張（'+pct(n('newCustomer'),receipt)+'）　回購：'+n('returnCustomer')+'張（'+pct(n('returnCustomer'),receipt)+'）');
+  lines.push('風凍回購：'+pct(n('jelloReturn'),receipt)+'　風凍直購：'+pct(n('jelloDirect'),receipt));
+  if(n('demoCups')>0){
+    lines.push(''); lines.push('🥛 試飲　'+p.demoFocus+' '+n('demoCups')+'杯 → 轉換'+n('demoConvert')+'人（'+pct(n('demoConvert'),n('demoCups'))+'）');
+  }
+  if(n('hours')>0){
+    var wage2=parseFloat((document.getElementById('cfg-wage')||{}).value)||225;
+    var rent2=parseFloat((document.getElementById('cfg-rent')||{}).value)||1300;
+    var util2=parseFloat((document.getElementById('cfg-utility')||{}).value)||500;
+    var hSale=(n('revenue')/n('hours')).toFixed(1);
+    var avgH=((wage2+(rent2+util2)/n('hours'))/0.5).toFixed(1);
+    var prof=((parseFloat(hSale)-parseFloat(avgH))*n('hours')*0.5).toFixed(0);
+    lines.push(''); lines.push('⏱ 時數比（'+n('hours')+'時）');
+    lines.push('時數表：'+hSale+' 元/時　平時數：'+avgH+' 元/時');
+    lines.push('每日盈虧：'+(prof>=0?'+':'')+prof+' 元');
+  }
+  return lines.join('\n');
+}
+
+// 顯示訊息 modal（帶上非同步查詢的額外資訊）
+function showMsgModal(baseMsg, isTest, date, onSend){
+  var modal = document.getElementById('msgModal');
+  var previewEl = document.getElementById('msgPreviewText');
+  var titleEl = document.getElementById('msgModalTitle');
+  var tagEl = document.getElementById('msgModalTag');
+  var descEl = document.getElementById('msgModalDesc');
+  var footerEl = document.getElementById('msgModalFooter');
+
+  titleEl.textContent = isTest ? '測試訊息預覽' : '今日 LINE 通知';
+  tagEl.textContent = isTest ? '測試' : '實際發送';
+  tagEl.className = 'msg-modal-tag '+(isTest?'test':'real');
+  descEl.textContent = isTest
+    ? '以下為根據目前填寫內容組出的訊息，可選擇傳送測試訊息至群組（不會儲存記錄）'
+    : '收班記錄已儲存，以下訊息已傳送至 LINE 群組';
+
+  previewEl.textContent = baseMsg + '\n\n（正在查詢電表 / 天氣 / 仙草凍...）';
+  modal.classList.add('show');
+
+  // 前一天日期（仙草凍查前一天）
+  var yDate = new Date(date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yesterday = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+
+  // 從 localStorage 讀製冰機記錄（ice_v1）
+  function getIceRecordForDate(d){
+    try {
+      var raw = localStorage.getItem('ice_v1');
+      if(!raw) return null;
+      var arr = JSON.parse(raw);
+      return arr.find(function(r){ return r.date === d; }) || null;
+    } catch(e){ return null; }
+  }
+
+  // 計算製冰機總開機小時數（四捨五入到 0.25 小時）
+  function calcIceHours(slots){
+    var total = 0;
+    (slots||[]).forEach(function(s){
+      if(!s.on || !s.off) return;
+      var on  = s.on.split(':').map(Number);
+      var off = s.off.split(':').map(Number);
+      var mins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+      if(mins > 0) total += mins;
+    });
+    return total > 0 ? Math.round(total / 15) * 0.25 : 0;
+  }
+
+  var done = {elec:null, weather:null, jelly:null, stock:null};
+  var _fullMsg = baseMsg;
+
+  function rebuildPreview(){
+    if(done.elec===null||done.weather===null||done.jelly===null||done.stock===null) return;
+    var extra=[];
+
+    // 🫙 仙草凍（前一天完成桶數）
+    // 仙草凍：先查仙草凍系統，沒有則查前一天電表備注
+    var _jellyLines2 = [];
+    if(done.jelly&&done.jelly.ok&&done.jelly.summary){
+      var items=Object.keys(done.jelly.summary);
+      if(items.length){
+        _jellyLines2.push(''); _jellyLines2.push('🫙 昨日煮好（'+yesterday+'）─────');
+        items.forEach(function(it){ var s=done.jelly.summary[it]; _jellyLines2.push(it+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
+      }
+    }
+    if(!_jellyLines2.length && done.elec&&done.elec.ok&&done.elec.data){
+      var _jc2 = extractJellyFromElec(done.elec.data, yesterday);
+      if(_jc2>0){ _jellyLines2.push(''); _jellyLines2.push('🫙 昨日仙草凍（'+yesterday+'）：'+_jc2+' 桶（電表備注）'); }
+    }
+    _jellyLines2.forEach(function(l){ extra.push(l); });
+
+    // 🌡 天氣氣溫
+    if(done.weather&&done.weather.ok&&done.weather.times&&done.weather.times.length){
+      var wIcon={晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
+      var tLabel={'10':'上午','14':'下午','18':'傍晚'};
+      extra.push(''); extra.push('🌡 今日天氣氣溫 ─────────');
+      done.weather.times.forEach(function(t){
+        var icon=wIcon[t.weather]||''; var label=tLabel[t.time]||t.time+'時';
+        var line=label+'　'+icon+t.weather;
+        if(t.outdoorTemp!==''&&t.outdoorTemp!==undefined) line+='　'+t.outdoorTemp+'°C';
+        extra.push(line);
+      });
+    }
+
+    // ⚡ 電表記錄
+    if(done.elec&&done.elec.ok&&done.elec.data&&done.elec.data.length){
+      var sorted=done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+      var todayR=sorted.filter(function(r){ return r.date===date; }).pop();
+      if(todayR){
+        var prev=sorted.filter(function(r){ return r.date<date; }).pop();
+        var usage=prev?todayR.reading-prev.reading:null;
+        var curMonth=date.slice(0,7); var monthUsages=[];
+        for(var i=1;i<sorted.length;i++){ if(sorted[i].date.startsWith(curMonth)){ var u=sorted[i].reading-sorted[i-1].reading; if(u>=0) monthUsages.push(u); } }
+        var monthTotal=monthUsages.reduce(function(s,v){ return s+v; },0);
+        var monthAvg=monthUsages.length?Math.round(monthTotal/monthUsages.length):0;
+        // 把 usage/monthTotal/monthAvg 先暫存到 todayR，讓 extractElecExtra 統一組裝
+        todayR._usage=usage; todayR._monthTotal=monthTotal; todayR._monthAvg=monthAvg;
+        extractElecExtra(todayR, extra, getIceRecordForDate, date);
+      }
+    }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extra.push(l); });
+    }
+
+    _fullMsg = baseMsg + extra.join('\n');
+    previewEl.textContent = _fullMsg;
+    buildFooter(_fullMsg);
+  }
+
+  function buildFooter(msg){
+    if(isTest){
+      footerEl.innerHTML = '';
+      var cpBtn = document.createElement('button');
+      cpBtn.className='msg-modal-btn copy'; cpBtn.textContent='📋 複製';
+      cpBtn.onclick=function(){ navigator.clipboard&&navigator.clipboard.writeText(msg); showToast('✓ 已複製'); };
+      var sdBtn = document.createElement('button');
+      sdBtn.className='msg-modal-btn send'; sdBtn.textContent='📲 傳送測試到群組';
+      sdBtn.onclick=function(){
+        sdBtn.textContent='傳送中...'; sdBtn.disabled=true;
+        apiPost({action:'sendLine', msg:msg}, function(r, err){
+          if(r&&r.ok){ showToast('✓ 測試訊息已傳送'); closeMsgModal(); }
+          else { showToast('❌ 傳送失敗：'+(err||(r&&r.error)||'未知錯誤')); sdBtn.textContent='📲 傳送測試到群組'; sdBtn.disabled=false; }
+        });
+      };
+      footerEl.appendChild(cpBtn); footerEl.appendChild(sdBtn);
+    } else {
+      footerEl.innerHTML = '';
+      var cpBtn2 = document.createElement('button');
+      cpBtn2.className='msg-modal-btn copy'; cpBtn2.textContent='📋 複製訊息';
+      cpBtn2.onclick=function(){ navigator.clipboard&&navigator.clipboard.writeText(msg); showToast('✓ 已複製'); };
+      var clBtn = document.createElement('button');
+      clBtn.className='msg-modal-btn close-only'; clBtn.textContent='關閉';
+      clBtn.onclick=function(){ closeMsgModal(); };
+      footerEl.appendChild(cpBtn2); footerEl.appendChild(clBtn);
+    }
+  }
+
+  footerEl.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:4px 0">⏳ 正在查詢額外資料...</div>';
+
+  api({action:'elecGetAll'}, function(d){ done.elec=d||{ok:false}; rebuildPreview(); });
+  api({action:'getTodayWeather',date:date}, function(d){ done.weather=d||{ok:false}; rebuildPreview(); });
+  // 仙草凍查前一天
+  api({action:'jellyGetCookedByDate',date:yesterday}, function(d){ done.jelly=d||{ok:false}; rebuildPreview(); });
+  api({action:'stockGetByDate',date:date}, function(d){ done.stock=d||{ok:false}; rebuildPreview(); });
+}
+// 預覽測試按鈕
+function previewTestNotify(){
+  var date   = document.getElementById('f-date').value;
+  var person = document.getElementById('f-person').value;
+  if(!date)   { showToast('請先填入日期'); return; }
+  if(!person) { showToast('請先選擇人員'); return; }
+  var n = function(id){ return parseFloat(document.getElementById(id).value||0)||0; };
+  var p = {
+    date:date, person:person,
+    deliveryCnt:n('f-delivery-cnt'), deliveryCups:n('f-delivery-cups'), deliveryAmt:n('f-delivery-amt'),
+    pandaCnt:n('f-panda-cnt'), pandaAmt:n('f-panda-amt'),
+    hours:n('f-hours'), revenue:n('f-revenue'), receiptCount:n('f-receipt'),
+    sealMachine:n('f-seal'), creamTop:n('f-cream'), ecoCup:n('f-eco'),
+    depOrig:n('f-dep-orig'), depFlav:n('f-dep-flav'), depSuper:n('f-dep-super'),
+    demoFocus:document.getElementById('f-demo-focus').value,
+    demoCups:n('f-demo-cups'), demoConvert:n('f-demo-convert'),
+    buyOriginal:n('f-buy-original'), takeOriginal:n('f-take-original'),
+    buyAromatic:n('f-buy-aromatic'), takeAromatic:n('f-take-aromatic'),
+    buyNingxia:n('f-buy-ningxia'), takeNingxia:n('f-take-ningxia'),
+    buyYouth:n('f-buy-youth'), takeYouth:n('f-take-youth'),
+    buyCool:n('f-buy-cool'), takeCool:n('f-take-cool'),
+    buyDongmei:n('f-buy-dongmei'), takeDongmei:n('f-take-dongmei'),
+    newCustomer:n('f-new'), returnCustomer:n('f-return'),
+    jelloReturn:n('f-jello-return'), jelloDirect:n('f-jello-direct'),
+    deliveryCnt:n('f-delivery-cnt'), deliveryCups:n('f-delivery-cups'), deliveryAmt:n('f-delivery-amt'),
+    pandaCnt:n('f-panda-cnt'), pandaAmt:n('f-panda-amt'),
+  };
+  var base = buildClosingMsgBase(p);
+  showMsgModal(base, true, date);
+}
+
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendClosingLineNotify(p){
+  var closingMsg = buildClosingMsgBase(p);
+
+  // 前一天日期（仙草凍查前一天）
+  var yDate = new Date(p.date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yesterday = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+
+  // 製冰機時數計算
+  function calcIceHours(slots){
+    var total = 0;
+    (slots||[]).forEach(function(s){
+      if(!s.on || !s.off) return;
+      var on  = s.on.split(':').map(Number);
+      var off = s.off.split(':').map(Number);
+      var mins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+      if(mins > 0) total += mins;
+    });
+    return total > 0 ? Math.round(total / 15) * 0.25 : 0;
+  }
+
+  // 從 localStorage 讀製冰機記錄
+  function getIceRecordForDate(d){
+    try {
+      var raw = localStorage.getItem('ice_v1');
+      if(!raw) return null;
+      var arr = JSON.parse(raw);
+      return arr.find(function(r){ return r.date === d; }) || null;
+    } catch(e){ return null; }
+  }
+
+  var done = {elec: null, weather: null, jelly: null, stock: null};
+  function tryMergeAndSend(){
+    if(done.elec === null || done.weather === null || done.jelly === null || done.stock === null) return;
+
+    var extraLines = [];
+
+    // 🫙 仙草凍：先查仙草凍系統，沒有則查前一天電表備注
+    var _jellyLines3 = [];
+    if(done.jelly && done.jelly.ok && done.jelly.summary){
+      var items = Object.keys(done.jelly.summary);
+      if(items.length > 0){
+        _jellyLines3.push(''); _jellyLines3.push('🫙 昨日煮好（'+yesterday+'）─────');
+        items.forEach(function(item){ var s=done.jelly.summary[item]; _jellyLines3.push(item+'　'+s.count+' 桶（'+s.barrels.join('、')+'）'); });
+      }
+    }
+    if(!_jellyLines3.length && done.elec&&done.elec.ok&&done.elec.data){
+      var _jc3 = extractJellyFromElec(done.elec.data, yesterday);
+      if(_jc3>0){ _jellyLines3.push(''); _jellyLines3.push('🫙 昨日仙草凍（'+yesterday+'）：'+_jc3+' 桶（電表備注）'); }
+    }
+    _jellyLines3.forEach(function(l){ extraLines.push(l); });
+
+    // 🌡 天氣氣溫
+    if(done.weather && done.weather.ok && done.weather.times && done.weather.times.length){
+      var wIcon = {晴天:'☀️',陰天:'☁️',雨天:'🌧',雷雨:'⛈',颱風:'🌀'};
+      var timeLabel = {'10':'上午','14':'下午','18':'傍晚'};
+      extraLines.push('');
+      extraLines.push('🌡 今日天氣氣溫 ─────────');
+      done.weather.times.forEach(function(t){
+        var icon = wIcon[t.weather]||'';
+        var label = timeLabel[t.time]||t.time+'時';
+        var line = label+'　'+icon+t.weather;
+        if(t.outdoorTemp!==''&&t.outdoorTemp!==undefined) line += '　'+t.outdoorTemp+'°C';
+        extraLines.push(line);
+      });
+    }
+
+    // ⚡ 電表
+    if(done.elec && done.elec.ok && done.elec.data && done.elec.data.length){
+      var sorted = done.elec.data.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+      var today = sorted.filter(function(r){ return r.date===p.date; }).pop();
+      if(today){
+        var prev = sorted.filter(function(r){ return r.date < p.date; }).pop();
+        var usage = prev ? today.reading - prev.reading : null;
+        var curMonth = p.date.slice(0,7);
+        var monthUsages = [];
+        for(var i=1; i<sorted.length; i++){
+          if(sorted[i].date.startsWith(curMonth)){
+            var u = sorted[i].reading - sorted[i-1].reading;
+            if(u >= 0) monthUsages.push(u);
+          }
+        }
+        var monthTotal = monthUsages.reduce(function(s,v){ return s+v; }, 0);
+        var monthAvg   = monthUsages.length ? Math.round(monthTotal/monthUsages.length) : 0;
+        today._usage=usage; today._monthTotal=monthTotal; today._monthAvg=monthAvg;
+        extractElecExtra(today, extraLines, getIceRecordForDate, p.date);
+      }
+    }
+    // 📦 今日進貨明細
+    if(done.stock&&done.stock.ok&&done.stock.data){
+      buildStockExtraLines(done.stock.data).forEach(function(l){ extraLines.push(l); });
+    }
+
+    var fullMsg = closingMsg + extraLines.join('\n');
+    apiPost({action:'sendLine', msg:fullMsg}, function(r, err){
+      if(r&&r.ok){
+        showToast('✓ 已傳送 LINE 通知');
+        showMsgModal(closingMsg, false, p.date);
+      } else {
+        showToast('❌ LINE 傳送失敗：'+(err||(r&&r.error)||'未知錯誤'));
+        showMsgModal(closingMsg, false, p.date);
+      }
+    });
+  }
+
+  api({action:'elecGetAll'}, function(d){ done.elec = d||{ok:false}; tryMergeAndSend(); });
+  api({action:'getTodayWeather', date:p.date}, function(d){ done.weather = d||{ok:false}; tryMergeAndSend(); });
+  // 仙草凍查前一天（煮好的桶數）
+  api({action:'jellyGetCookedByDate', date:yesterday}, function(d){ done.jelly = d||{ok:false}; tryMergeAndSend(); });
+  api({action:'stockGetByDate', date:p.date}, function(d){ done.stock = d||{ok:false}; tryMergeAndSend(); });
+}
+// ── 頁簽 ─────────────────────────────────────────
+function switchTab(tab){
+  ['form','hist','chart'].forEach(function(t){
+    document.getElementById('panel-'+t).style.display = t===tab?'':'none';
+    document.getElementById('tab-'+t).classList.toggle('on', t===tab);
+  });
+  if(tab==='hist') loadThisMonth();
+  if(tab==='chart') loadChartMonth();
+}
+
+// ── 歷史記錄 ─────────────────────────────────────
+function loadThisMonth(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var start = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-01';
+  var end   = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('h-start').value = start;
+  document.getElementById('h-end').value   = end;
+  loadHist();
+}
+
+function loadHist(){
+  var start = document.getElementById('h-start').value;
+  var end   = document.getElementById('h-end').value;
+  var list  = document.getElementById('hist-list');
+  list.innerHTML = '<div class="empty">⏳ 載入中...</div>';
+  api({action:'closingGetAll', startDate:start, endDate:end}, function(d){
+    if(!d||!d.ok){ list.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    if(!d.data.length){ list.innerHTML='<div class="empty">此區間無記錄</div>'; return; }
+    list.innerHTML = d.data.map(function(r,i){ return histCard(r,i); }).join('');
+  });
+}
+
+function histCard(r, i){
+  var totalCups = calcTotalCups(r);
+  var receipt   = r.receiptCount||0;
+  var origTotal = calcOrigTotal(r);
+  var flavTotal = calcFlavTotal(r);
+  var jellyTotal= origTotal + flavTotal;
+  return '<div class="hist-card">'+
+    '<div class="hist-head" onclick="toggleHist('+i+')">'+
+      '<div>'+
+        '<div class="hist-date">'+r.date+'</div>'+
+        '<div class="hist-person">'+r.person+'</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div class="hist-revenue">$ '+(r.revenue||0).toLocaleString()+'</div>'+
+        '<div style="font-size:12px;color:var(--ink3)">'+
+          totalCups+' 杯　'+
+          (totalCups>0?'均 '+Math.round(((r.revenue||0)-(r.depAmt||0))/(totalCups-calcTakeCups(r)))+'元':'—')+
+          (receipt>0?'　'+receipt+'張':'') +
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="hd-'+i+'" style="display:none" data-hist-id="'+r.id+'" data-hist-date="'+r.date+'">'+histDetail(r)+'</div>'+
+  '</div>';
+}
+
+function toggleHist(i){
+  var el = document.getElementById('hd-'+i);
+  var opening = el.style.display==='none';
+  el.style.display = opening?'block':'none';
+  if(opening){
+    var hid  = el.getAttribute('data-hist-id');
+    var date = el.getAttribute('data-hist-date');
+    if(hid && date) loadHistExtra(hid, date);
+  }
+}
+
+function histDetail(r){
+  var totalCups = calcTotalCups(r);
+  var origTotal = calcOrigTotal(r);
+  var flavTotal = calcFlavTotal(r);
+  var jellyTotal= origTotal + flavTotal;
+  var receipt   = r.receiptCount||0;
+  function ratioStr(n, d){ return d>0 ? (n/d*100).toFixed(1)+'%' : '—'; }
+
+  var prodHtml = PRODUCTS.map(function(p){
+    var bk = 'buy'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    var tk = 'take'+p.key.charAt(0).toUpperCase()+p.key.slice(1);
+    var bv = r[bk]||0, tv = r[tk]||0;
+    if(bv+tv===0) return '';
+    return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid var(--bd)">'+
+      '<span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:'+p.color+';display:inline-block"></span>'+p.name+'</span>'+
+      '<span style="color:var(--ink3)">買 <b style="color:var(--ink)">'+bv+'</b>　取 <b style="color:var(--ink)">'+tv+'</b>　共 <b style="color:var(--b)">'+(bv+tv)+'</b></span>'+
+    '</div>';
+  }).join('');
+
+  return '<div class="hist-detail">'+
+    // 營業數據
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">'+
+      kv('封口機',r.sealMachine||0,'杯')+
+      kv('奶蓋',r.creamTop||0,'杯')+
+      kv('環保杯',r.ecoCup||0,'杯')+
+      kv('總杯數',totalCups,'杯','var(--b)')+
+    '</div>'+
+    ((r.depOrig||r.depFlav||r.depSuper)?
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">'+
+      kv('原味組',r.depOrig||0,'組')+
+      kv('風味組',r.depFlav||0,'組')+
+      kv('超值組',r.depSuper||0,'組')+
+      kv('寄杯金額',(r.depAmt||0).toLocaleString(),'元','var(--amber)')+
+    '</div>':'')+
+    // 計算結果
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">'+
+      kv('均杯單價',(totalCups-calcTakeCups(r))>0?Math.round(((r.revenue||0)-(r.depAmt||0))/(totalCups-calcTakeCups(r))):'—','元')+
+      kv('仙草凍佔比',ratioStr(jellyTotal,totalCups),'')+
+      kv('原味佔比',ratioStr(origTotal,totalCups),'')+
+      kv('風味佔比',ratioStr(flavTotal,totalCups),'')+
+      kv('首次來店',ratioStr(r.newCustomer||0,receipt),'')+
+      kv('回購比例',ratioStr(r.returnCustomer||0,receipt),'')+
+      kv('風凍回購',ratioStr(r.jelloReturn||0,receipt),'')+
+      kv('風凍直購',ratioStr(r.jelloDirect||0,receipt),'')+
+    '</div>'+
+    // 產品明細
+    (prodHtml?'<div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">銷售明細</div>'+prodHtml:'')+
+    // 試飲
+    (r.demoCups>0?'<div style="margin-top:8px;padding:8px;background:var(--bl);border-radius:var(--r2);font-size:13px">🥛 試飲：'+r.demoFocus+' '+r.demoCups+'杯 → 轉換 '+r.demoConvert+' 人（'+ratioStr(r.demoConvert||0,r.demoCups||0)+'）</div>':'')+
+    // 外送
+    ((r.deliveryCnt>0||r.deliveryAmt>0||r.pandaCnt>0||r.pandaAmt>0)?
+    '<div style="margin-top:8px;padding:8px;background:#FFF3E0;border-radius:var(--r2);font-size:13px;display:flex;flex-wrap:wrap;gap:10px">'+
+      (r.deliveryCnt>0||r.deliveryAmt>0?'<span>🛵 外送 '+r.deliveryCnt+'單 '+r.deliveryCups+'杯 $'+(r.deliveryAmt||0).toLocaleString()+'</span>':'')+
+      (r.pandaCnt>0||r.pandaAmt>0?'<span>🐼 熊貓 '+r.pandaCnt+'單 $'+(r.pandaAmt||0).toLocaleString()+'</span>':'')+
+    '</div>':'')+
+    // 客群
+    '<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">'+
+      cust(r.newCustomer||0,'第一次來','')+
+      cust(r.returnCustomer||0,'有來過','')+
+      cust(r.jelloReturn||0,'再喝風凍','var(--gl)','var(--g)')+
+      cust(r.jelloDirect||0,'直接買','var(--gl)','var(--g)')+
+    '</div>'+
+    // 電表/溫度區（自動載入）
+    '<div id="hist-extra-'+r.id+'" style="margin-top:8px;padding:8px;background:var(--bg);border-radius:var(--r2);font-size:12px;color:var(--ink3)">'+
+      '⏳ 載入電表/溫度中...'+
+    '</div>'+
+    '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">'+
+      '<button data-resend-id="'+r.id+'" onclick="resendLineNotify(\''+r.id+'\')" style="padding:5px 12px;border:none;border-radius:var(--r2);background:var(--g);color:#fff;font-size:12px;cursor:pointer;font-weight:700">📲 發送 LINE</button>'+
+      '<button onclick="delRecord(\''+r.id+'\')" style="padding:5px 12px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--red);font-size:12px;cursor:pointer">🗑 刪除</button>'+
+    '</div>'+
+  '</div>';
+}
+function loadHistExtra(id, date){
+  var el = document.getElementById('hist-extra-'+id);
+  if(!el) return;
+  el.innerHTML = '<span style="font-size:12px;color:var(--ink3)">⏳ 載入中...</span>';
+
+  var done = {elec:null, temp:null};
+  function tryRender(){
+    if(done.elec===null || done.temp===null) return;
+    // 電表
+    var elecStr = '⚡ 電表：無記錄';
+    if(done.elec && done.elec.ok && done.elec.data){
+      var rec = done.elec.data.find(function(r){ return r.date===date; });
+      if(rec) elecStr = '⚡ 電表：'+rec.reading+' 度';
+    }
+    // 溫度：getTempData 回傳的是該月所有記錄，用 day 欄位過濾
+    var tempStr = '🌡 溫度：無記錄';
+    if(done.temp && done.temp.ok && done.temp.data && done.temp.data.length>0){
+      var day = date.slice(8); // 取日期的「日」部分，如 '26'
+      var dayRecs = done.temp.data.filter(function(r){
+        return String(r.day).padStart(2,'0') === day.padStart(2,'0');
+      });
+      if(dayRecs.length > 0){
+        var t = dayRecs[0];
+        // temps 陣列：[前冰開班,前冰中午,前冰收班, 仙草凍開班,仙草凍中午,仙草凍收班, ...]
+        var parts = [];
+        if(t.temps[0]||t.temps[1]||t.temps[2]) parts.push('前冰 '+[t.temps[0],t.temps[1],t.temps[2]].filter(Boolean).join('/'));
+        if(t.temps[3]||t.temps[4]||t.temps[5]) parts.push('仙草凍 '+[t.temps[3],t.temps[4],t.temps[5]].filter(Boolean).join('/'));
+        if(parts.length) tempStr = '🌡 '+parts.join('　');
+      }
+    }
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:12px">'+
+      '<span style="color:var(--b)">'+elecStr+'</span>'+
+      '<span style="color:var(--g)">'+tempStr+'</span>'+
+    '</div>';
+  }
+
+  // 查電表（全部拉回，在前端過濾當日）
+  api({action:'elecGetAll'}, function(d){ done.elec=d; tryRender(); });
+  // 查溫度（傳年月）
+  var ym = date.slice(0,7); // '2026-07'
+  api({action:'getTempData', ym:ym}, function(d){ done.temp=d; tryRender(); });
+}
+
+function kv(label, val, unit, color){
+  return '<div style="padding:7px;background:var(--bg);border-radius:var(--r2);text-align:center">'+
+    '<div style="font-size:15px;font-weight:900;color:'+(color||'var(--ink)')+'">'+val+(unit?' '+unit:'')+'</div>'+
+    '<div style="font-size:10px;color:var(--ink3)">'+label+'</div>'+
+  '</div>';
+}
+function cust(val, label, bg, color){
+  return '<div style="padding:7px;background:'+(bg||'var(--bg)')+';border-radius:var(--r2)">'+
+    '<div style="font-size:16px;font-weight:900;color:'+(color||'var(--ink)')+'">'+val+'</div>'+
+    '<div style="font-size:10px;color:'+(color||'var(--ink3)')+'">'+label+'</div>'+
+  '</div>';
+}
+
+// 總杯數 = 封口機+奶蓋+環保杯
+function calcTotalCups(r){
+  return (r.sealMachine||0) + (r.creamTop||0) + (r.ecoCup||0);
+}
+// 取寄杯數
+function calcTakeCups(r){
+  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0)+(r.takeDongmei||0);
+}
+// 原味總數
+function calcOrigTotal(r){
+  return (r.buyOriginal||0) + (r.takeOriginal||0);
+}
+// 風味加總
+function calcFlavTotal(r){
+  return (r.buyAromatic||0)+(r.takeAromatic||0)+
+         (r.buyNingxia||0) +(r.takeNingxia||0)+
+         (r.buyYouth||0)   +(r.takeYouth||0)+
+         (r.buyCool||0)    +(r.takeCool||0)+
+         (r.buyDongmei||0) +(r.takeDongmei||0);
+}
+
+function delRecord(id){
+  if(!confirm('確定刪除此筆記錄？')) return;
+  api({action:'closingDelete', id:id}, function(d){
+    if(d&&d.ok){ showToast('已刪除'); loadHist(); }
+    else showToast('刪除失敗');
+  });
+}
+
+// ── 圖表 ─────────────────────────────────────────
+function loadChartMonth(){
+  var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
+  var start = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-01';
+  var end   = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  document.getElementById('c-start').value = start;
+  document.getElementById('c-end').value   = end;
+  loadChart();
+}
+
+function loadChart(){
+  var start = document.getElementById('c-start').value;
+  var end   = document.getElementById('c-end').value;
+  api({action:'closingGetAll', startDate:start, endDate:end}, function(d){
+    if(!d||!d.ok||!d.data.length){ showToast('無資料'); return; }
+    var data = d.data.slice().reverse(); // 按日期升序
+    renderSummary(data);
+    renderRevenueChart(data);
+    renderFlavorChart(data);
+    renderCustomerChart(data);
+    renderDemoChart(data);
+    document.getElementById('stat-grid').style.display = 'grid';
+  });
+}
+
+function renderSummary(data){
+  var totalRev  = data.reduce(function(s,r){ return s+(r.revenue||0); }, 0);
+  var avgRev    = Math.round(totalRev/data.length);
+  var totalCups = data.reduce(function(s,r){ return s+calcTotalCups(r); }, 0);
+  var avgCups   = Math.round(totalCups/data.length);
+  document.getElementById('stat-grid').innerHTML =
+    stat(totalRev.toLocaleString()+'元','總營業額')+
+    stat(avgRev.toLocaleString()+'元','日均營業額')+
+    stat(totalCups+'杯','總杯數')+
+    stat(avgCups+'杯','日均杯數');
+}
+function stat(v,l){ return '<div class="stat-card"><div class="sv">'+v+'</div><div class="sl">'+l+'</div></div>'; }
+
+function getOrCreate(id, type, labels, datasets, options){
+  var canvas = document.getElementById(id);
+  if(_charts[id]){ _charts[id].destroy(); }
+  _charts[id] = new Chart(canvas, { type:type, data:{labels:labels,datasets:datasets}, options:options||{} });
+}
+
+function renderRevenueChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var revs   = data.map(function(r){ return r.revenue||0; });
+  var cups   = data.map(function(r){ return calcTotalCups(r); });
+  getOrCreate('chart-revenue','bar',labels,[
+    { label:'營業額', data:revs, backgroundColor:'rgba(42,90,140,.75)', yAxisID:'y' },
+    { label:'杯數', data:cups, type:'line', borderColor:'#C07000', backgroundColor:'#FFF3D0', pointBackgroundColor:'#C07000', yAxisID:'y1', tension:.35 }
+  ],{
+    responsive:true, interaction:{mode:'index',intersect:false},
+    scales:{
+      y:{ beginAtZero:true, position:'left', ticks:{callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v;}} },
+      y1:{ beginAtZero:true, position:'right', grid:{drawOnChartArea:false} }
+    },
+    plugins:{ legend:{position:'bottom'} }
+  });
+}
+
+function renderFlavorChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var orig   = data.map(function(r){ return calcOrigTotal(r); });
+  var flav   = data.map(function(r){ return calcFlavTotal(r); });
+  getOrCreate('chart-flavor','bar',labels,[
+    { label:'原味', data:orig, backgroundColor:'rgba(74,124,181,.8)', stack:'s' },
+    { label:'風味', data:flav, backgroundColor:'rgba(192,112,0,.75)', stack:'s' }
+  ],{ responsive:true, scales:{ x:{stacked:true}, y:{stacked:true,beginAtZero:true} }, plugins:{legend:{position:'bottom'}} });
+}
+
+function renderCustomerChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var newC   = data.map(function(r){ return r.newCustomer||0; });
+  var retC   = data.map(function(r){ return r.returnCustomer||0; });
+  getOrCreate('chart-customer','bar',labels,[
+    { label:'第一次來', data:newC, backgroundColor:'rgba(74,124,181,.8)', stack:'s' },
+    { label:'有來過',   data:retC, backgroundColor:'rgba(26,107,60,.7)', stack:'s' }
+  ],{ responsive:true, scales:{ x:{stacked:true}, y:{stacked:true,beginAtZero:true} }, plugins:{legend:{position:'bottom'}} });
+}
+
+function renderDemoChart(data){
+  var labels = data.map(function(r){ return r.date.slice(5); });
+  var rate   = data.map(function(r){
+    return r.demoCups>0 ? Math.round(r.demoConvert/r.demoCups*100) : 0;
+  });
+  getOrCreate('chart-demo','line',labels,[
+    { label:'試飲轉換率%', data:rate, borderColor:'#5B2D8E', backgroundColor:'rgba(91,45,142,.1)', fill:true, tension:.35, pointBackgroundColor:'#5B2D8E' }
+  ],{ responsive:true, scales:{ y:{beginAtZero:true, max:100, ticks:{callback:function(v){ return v+'%'; }}} }, plugins:{legend:{position:'bottom'}} });
+}
+
+// ── API ─────────────────────────────────────────
+function api(params, cb){
+  var qs = Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){ return r.text(); })
+    .then(function(txt){
+      try{ cb(JSON.parse(txt), null); }
+      catch(e){ cb(null, 'API回應非JSON：'+txt.slice(0,100)); }
+    })
+    .catch(function(e){ cb(null, '連線失敗：'+e.toString()); });
+}
+function apiPost(params, cb){
+  console.log('[apiPost] 發送請求', params.action, 'URL:', API_URL);
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
+  console.log('[apiPost] body長度:', body.length);
+  fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body
+  })
+    .then(function(r){
+      console.log('[apiPost] HTTP狀態:', r.status, r.statusText);
+      return r.text();
+    })
+    .then(function(txt){
+      console.log('[apiPost] 回應內容:', txt.slice(0,300));
+      try{
+        var d = JSON.parse(txt);
+        if(cb) cb(d, null);
+      } catch(e){
+        console.error('[apiPost] JSON解析失敗:', e, '原始內容:', txt);
+        if(cb) cb(null, 'API回應非JSON：'+txt.slice(0,200));
+      }
+    })
+    .catch(function(e){
+      console.error('[apiPost] fetch失敗:', e);
+      if(cb) cb(null, '連線失敗：'+e.toString());
+    });
+}
+function showToast(m){
+  console.log('[showToast]', m);
+  var t=document.getElementById('toast');
+  t.textContent=m; t.style.display='block';
+  clearTimeout(t._t);
+  var dur = String(m).indexOf('❌')===0 ? 6000 : 2800;
+  t._t=setTimeout(function(){ t.style.display='none'; },dur);
+}
+function goHome(){ if(window.top&&window.top.showPage){ window.top.showPage('home'); } else { window.top.location.href='index.html'; } }
+</script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</body>
+</html>
