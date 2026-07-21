@@ -2,488 +2,1307 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>仙草凍・茶製記錄</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>仙草凍記錄</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 :root{
-  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
-  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
-  --amber:#E65100;--amberl:#FFF3E0;
-  --red:#C62828;--redl:#FFEBEE;
-  --purple:#5E35B1;--purplel:#EDE7F6;
-  --ink:#1A1A2E;--ink2:#444;--ink3:#888;
-  --bd:#E0E4EE;--bg:#F5F7FA;--white:#fff;
-  --r:14px;--r2:10px;--r3:6px;
+  --g:#0A7C52;--gl:#E8F5EE;--gm:#34B87A;
+  --blue:#1A6AAA;--bluel:#E6F0FA;
+  --purple:#6B3A9A;--purplel:#F0EAFE;
+  --amber:#8A5000;--amberl:#FEF0DC;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#111;--ink2:#444;--ink3:#888;--ink4:#ccc;
+  --bg:#F0EFEB;--white:#fff;--bd:#DDDBD4;
+  --r:12px;--r2:8px;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100dvh}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 
-/* 頂部分頁 */
-.tabs{display:flex;background:var(--b);padding:0 4px}
-.tab-btn{flex:1;padding:14px 0;border:none;background:transparent;color:rgba(255,255,255,.55);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;transition:.2s}
-.tab-btn.on{color:#fff;border-bottom-color:var(--gm)}
+/* TOP */
+.topbar{background:var(--g);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.brand{color:#fff;font-size:16px;font-weight:900}
+.brand-sub{color:rgba(255,255,255,.65);font-size:11px;margin-top:1px}
+.top-btns{display:flex;gap:5px}
+.tib{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tib:active{background:rgba(255,255,255,.35)}
 
-.panel{display:none;padding:12px}
-.panel.on{display:block}
+/* TABS */
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border:none;background:transparent;font-family:inherit;border-bottom:2.5px solid transparent}
+.tab.on{color:var(--g);font-weight:700;border-bottom-color:var(--g)}
 
-/* 卡片 */
-.card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
-.card-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
-.card-head-title{font-size:14px;font-weight:700}
-.card-body{padding:12px 14px}
+/* PAGES */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;display:none;overflow:hidden}
+.page.on{display:flex;flex-direction:column}
 
-/* 表單 */
-.field{margin-bottom:10px}
-.field label{display:block;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-.field select,.field input[type=time],.field input[type=text],.field input[type=date]{
-  width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);
-  font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
-.field select:focus,.field input:focus{border-color:var(--b)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* ══════ KANBAN ══════ */
+.board-wrap{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;display:flex;align-items:stretch;padding:10px;gap:10px;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.board-wrap::-webkit-scrollbar{height:4px}
+.board-wrap::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.zone{width:200px;flex-shrink:0;border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;border:1.5px solid var(--bd);background:var(--white)}
+.zone-hd{padding:9px 12px;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.zone-icon{font-size:16px;flex-shrink:0}
+.zone-name{font-size:13px;font-weight:700;color:#fff;flex:1}
+.zone-cnt{background:rgba(255,255,255,.28);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px}
+.z-cook .zone-hd{background:linear-gradient(135deg,#1D6E40,#2A9C5E)}
+.z-lower .zone-hd{background:linear-gradient(135deg,#1A5A8A,#2678B8)}
+.z-upper .zone-hd{background:linear-gradient(135deg,#6B3A9A,#8B55BE)}
+.z-bed   .zone-hd{background:linear-gradient(135deg,#8A4A0A,#C06A18)}
+.zone-body{flex:1;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:5px}
+.zone-body::-webkit-scrollbar{width:2px}
+.zone-add-btn{margin:7px;padding:9px;border:1.5px dashed var(--gm);border-radius:var(--r2);background:var(--gl);color:var(--g);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;flex-shrink:0}
+.zone-add-btn:active{background:#D0EFE0}
 
-/* 按鈕 */
-.btn{padding:12px;border:none;border-radius:var(--r2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%}
-.btn-g{background:var(--g);color:#fff}
-.btn-b{background:var(--b);color:#fff}
-.btn-outline{background:var(--white);color:var(--ink2);border:1.5px solid var(--bd)}
-.btn-sm{padding:7px 14px;font-size:12px;width:auto;border-radius:var(--r3)}
-.btn-red{background:var(--redl);color:var(--red);border:none}
+/* BARREL CARD */
+.bc{background:var(--bg);border-radius:var(--r2);border:1px solid var(--bd);padding:8px 10px;cursor:pointer}
+.bc:active{opacity:.8}
+.bc-name{font-size:12px;font-weight:700;color:var(--ink)}
+.bc-barrel{font-size:11px;color:var(--ink3);margin-bottom:4px}
+.bc-weight{font-size:11px;color:var(--blue);font-weight:600;margin-bottom:3px}
+.bc-latest{font-size:11px;color:var(--ink2);line-height:1.5}
+.bc-latest b{color:var(--g)}
+.bc-timer{font-size:11px;font-weight:700;color:var(--amber);margin-top:3px}
+.zone-empty{text-align:center;color:var(--ink4);font-size:12px;padding:18px 8px}
 
-/* 進行中記錄 */
-.active-card{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);margin-bottom:8px;overflow:hidden}
-.active-head{padding:10px 14px;display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--bl),transparent)}
-.active-item{font-size:14px;font-weight:900;color:var(--b)}
-.active-barrel{padding:3px 10px;background:var(--b);color:#fff;border-radius:10px;font-size:12px;font-weight:700}
-.stage-row{display:flex;gap:6px;padding:8px 14px;border-top:1px solid var(--bd);flex-wrap:wrap;align-items:center}
-.stage-lbl{font-size:11px;color:var(--ink3);min-width:44px;font-weight:600}
-.stage-time{font-size:13px;font-weight:700;color:var(--b)}
-.stage-empty{font-size:12px;color:var(--bd)}
-.stage-badge{padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
-.stage-done{background:var(--gl);color:var(--g)}
-.stage-cur{background:var(--amberl);color:var(--amber)}
-.action-row{padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--bd)}
+/* ══════ TRACKER ══════ */
+.track-board{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;display:flex;padding:10px;gap:10px;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.track-board::-webkit-scrollbar{height:4px}
+.track-board::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.track-zone{width:220px;flex-shrink:0;border-radius:var(--r);border:1.5px solid var(--bd);background:var(--white);display:flex;flex-direction:column;overflow:hidden}
+.tz-hd{padding:9px 12px;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.tz-icon{font-size:15px}
+.tz-name{font-size:13px;font-weight:700;color:#fff;flex:1}
+.tz-cnt{background:rgba(255,255,255,.28);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:12px}
+.tz-lower .tz-hd{background:linear-gradient(135deg,#1A5A8A,#2678B8)}
+.tz-upper .tz-hd{background:linear-gradient(135deg,#6B3A9A,#8B55BE)}
+.tz-bed   .tz-hd{background:linear-gradient(135deg,#8A4A0A,#C06A18)}
+.tz-body{flex:1;overflow-y:auto;padding:7px;display:flex;flex-direction:column;gap:6px}
+.tz-body::-webkit-scrollbar{width:2px}
+.track-card{background:var(--bg);border-radius:var(--r2);border:1px solid var(--bd);padding:9px 10px;cursor:pointer}
+.track-card:active{opacity:.8}
+.tc-name{font-size:12px;font-weight:700;color:var(--ink)}
+.tc-barrel{font-size:11px;color:var(--ink3);margin-bottom:4px}
+.tc-since{font-size:11px;color:var(--ink2)}
+.tc-since b{color:var(--g)}
+.tc-dur{font-size:13px;font-weight:900;color:var(--amber);margin-top:4px;letter-spacing:-.3px}
+.tz-empty{text-align:center;color:var(--ink4);font-size:12px;padding:18px}
 
-/* 茶製記錄 */
-.tea-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r2);border:1.5px solid var(--bd);margin-bottom:6px;background:var(--white)}
-.tea-card.washed{background:var(--gl);border-color:var(--gm)}
-.tea-info{flex:1;min-width:0}
-.tea-name{font-size:14px;font-weight:700}
-.tea-time{font-size:12px;color:var(--ink3);margin-top:2px}
-.tea-duration{font-size:12px;font-weight:700;color:var(--g);margin-top:2px}
+/* ══════ SUMMARY ══════ */
+#page-summary{overflow-y:auto;padding:10px 12px 20px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.sc{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:11px;text-align:center}
+.sl{font-size:9px;color:var(--ink3);font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.sv{font-size:20px;font-weight:900;color:var(--g);margin-top:3px}
+.fsel{padding:7px 9px;border:1px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd);background:var(--white)}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:620px}
+thead th{padding:7px 6px;font-size:9px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--bd);background:var(--bg);text-align:left;white-space:nowrap}
+tbody td{padding:7px 6px;border-bottom:1px solid var(--bd);color:var(--ink);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#F8F7F3}
+.td-g{font-weight:700;color:var(--g)}
+.td-dur{font-weight:700;color:var(--g)}
+.bdg{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:7px}
+.bg-a{background:var(--amberl);color:var(--amber)}
+.del-btn{font-size:10px;padding:2px 7px;border:1px solid var(--bd);border-radius:5px;background:var(--white);color:var(--red);cursor:pointer;font-family:inherit}
+.del-btn:active{background:var(--redl)}
 
-/* 歷史 */
-.log-card{padding:10px 14px;border-bottom:1px solid var(--bd)}
-.log-card:last-child{border-bottom:none}
-.log-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.log-item{font-size:13px;font-weight:700}
-.log-date{font-size:11px;color:var(--ink3)}
-.log-stages{display:flex;gap:8px;flex-wrap:wrap}
-.log-stage{font-size:12px;color:var(--ink2)}
+/* ══════ OVERLAYS ══════ */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:90dvh;overflow-y:auto;padding:16px 14px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;color:var(--ink)}
+.sh-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);padding:0 4px;line-height:1}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}
+.sh-ok{width:100%;margin-top:12px;padding:13px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+.sh-ok:disabled{opacity:.4;cursor:not-allowed}
 
-/* Toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1}
+/* 品項桶號格 */
+.item-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.item-btn{padding:12px 8px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center}
+.item-btn.on{background:var(--g);color:#fff;border-color:var(--g)}
+.item-btn:active{opacity:.7}
+.barrel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.barrel-btn{padding:10px 4px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center}
+.barrel-btn.on{background:var(--amber);color:#fff;border-color:var(--amber)}
+.barrel-btn.used{background:var(--bg);color:var(--ink4);cursor:not-allowed}
+.barrel-btn:active:not(.used){opacity:.7}
 
-.empty{text-align:center;padding:30px;color:var(--ink3);font-size:13px}
-.section-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin:12px 0 8px}
+/* 秤重小鍵盤 */
+.weight-display{width:100%;padding:16px;background:var(--bg);border-radius:var(--r2);font-size:38px;font-weight:700;text-align:center;color:var(--ink);margin-bottom:10px;letter-spacing:1px;border:1.5px solid var(--bd);min-height:72px;display:flex;align-items:center;justify-content:center}
+.weight-display.has-val{background:var(--bluel);color:var(--blue);border-color:var(--blue)}
+.weight-unit{font-size:16px;font-weight:400;color:var(--ink3);margin-left:4px}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}
+.nk{padding:16px 8px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:22px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink);text-align:center;min-height:58px;display:flex;align-items:center;justify-content:center;user-select:none}
+.nk:active{background:var(--gl);border-color:var(--gm)}
+.nk.dot{font-size:28px;line-height:1}
+.nk.del{background:var(--redl);color:var(--red);border-color:#F5A0A0;font-size:18px}
+.nk.del:active{background:var(--red);color:#fff}
+
+/* 人員格 */
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.pg-btn{padding:13px 6px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center;min-height:52px}
+.pg-btn.on{background:var(--g);color:#fff;border-color:var(--g)}
+.pg-btn:active{opacity:.7}
+
+/* 時間拖曳 */
+.tp-wrap{background:var(--bg);border-radius:var(--r2);padding:12px;margin-bottom:8px}
+.tp-date{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;margin-bottom:10px;text-align:center}
+.tp-date:focus{border-color:var(--gm)}
+.tp-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tp-lbl{font-size:11px;font-weight:600;color:var(--ink3);width:20px;text-align:center;flex-shrink:0}
+.tp-slider{-webkit-appearance:none;appearance:none;flex:1;height:8px;border-radius:4px;background:var(--bd);outline:none;cursor:pointer}
+.tp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--g);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.tp-slider::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--g);cursor:pointer;border:3px solid #fff}
+.tp-val{font-size:18px;font-weight:700;color:var(--g);width:30px;text-align:center;flex-shrink:0}
+.tp-result{font-size:16px;font-weight:700;color:var(--g);text-align:center;padding:10px;background:var(--gl);border-radius:var(--r2);border:1px solid var(--gm);margin-bottom:8px}
+.now-btn{width:100%;padding:10px;border:1.5px solid var(--gm);border-radius:var(--r2);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--g)}
+.now-btn:active{background:var(--gl)}
+
+/* 詳情 */
+.detail-step{padding:10px 0;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;gap:10px}
+.detail-step:last-child{border-bottom:none}
+.ds-left{flex:1}
+.ds-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.ds-time{font-size:14px;font-weight:700;color:var(--g)}
+.ds-person{font-size:12px;color:var(--ink3);margin-top:1px}
+.ds-empty{font-size:13px;color:var(--ink4);font-style:italic}
+.ds-right{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.ds-edit-btn{padding:6px 11px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);white-space:nowrap}
+.ds-edit-btn:active{background:var(--bg)}
+.move-btn{width:100%;padding:13px;border-radius:var(--r);border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:12px}
+.move-btn:active{opacity:.8}
+.mb-lower{background:linear-gradient(135deg,#1A5A8A,#2678B8);color:#fff}
+.mb-upper{background:linear-gradient(135deg,#6B3A9A,#8B55BE);color:#fff}
+.mb-bed{background:linear-gradient(135deg,#8A4A0A,#C06A18);color:#fff}
+.mb-wash{background:linear-gradient(135deg,var(--red),#E04040);color:#fff}
+
+/* 管理 */
+.mgmt-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.mgmt-row{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--bd)}
+.mgmt-name{font-size:14px;font-weight:600;color:var(--ink);flex:1}
+.mgmt-del{padding:5px 12px;border:1px solid #F5A0A0;border-radius:6px;background:var(--redl);color:var(--red);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap}
+.mgmt-del:active{background:var(--red);color:#fff}
+.barrel-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.bchip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;background:var(--amberl);color:var(--amber);border-radius:12px;font-size:11px;font-weight:600}
+.bchip-del{background:none;border:none;cursor:pointer;color:var(--amber);font-size:12px;padding:0;line-height:1;font-weight:700}
+.bchip-del:active{color:var(--red)}
+.add-barrel-row{display:flex;gap:6px;margin-top:7px}
+.ab-inp{flex:1;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.ab-inp:focus{border-color:var(--gm)}
+.ab-btn{padding:8px 12px;background:var(--amber);color:#fff;border:none;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.add-row{display:flex;gap:8px;margin-top:4px}
+.add-inp{flex:1;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.add-inp:focus{border-color:var(--gm)}
+.add-inp-btn{padding:10px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-inp-btn:active{opacity:.8}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
 </style>
 </head>
 <body>
 
-<!-- 分頁切換 -->
+<div class="topbar">
+  <div><div class="brand">🌿 仙草凍記錄</div><div class="brand-sub">瀧飲山潮 · 學士店</div></div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+    <div class="top-btns"><button onclick="location.href='index.html'" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap">🏠 主頁</button>
+      <button class="tib" onclick="openMgmt('item')">📦</button>
+      <button class="tib" onclick="openMgmt('person')">👥</button>
+      <button class="tib" onclick="syncFromSheets()" title="從Sheets重新同步">🔄</button>
+    </div>
+    <div id="sync-status" style="font-size:10px;color:rgba(255,255,255,.65)">本地模式</div>
+  </div>
+</div>
+
 <div class="tabs">
-  <button class="tab-btn on" onclick="switchTab('jelly')">🌿 仙草凍記錄</button>
-  <button class="tab-btn" onclick="switchTab('tea')">🍵 茶製記錄</button>
+  <button class="tab on" id="tab-board"   onclick="showPage('board')">🌿 流程</button>
+  <button class="tab"    id="tab-track"   onclick="showPage('track')">⏱ 追蹤</button>
+  <button class="tab"    id="tab-summary" onclick="showPage('summary')">📊 總表</button>
 </div>
 
-<!-- ═══ 仙草凍記錄 ═══ -->
-<div class="panel on" id="panel-jelly">
+<div class="pages">
 
-  <!-- 新增進行中 -->
-  <div class="card">
-    <div class="card-head">
-      <div class="card-head-title">🌿 新增仙草凍</div>
-      <button class="btn btn-outline btn-sm" onclick="loadActives()">🔄 重新載入</button>
-    </div>
-    <div class="card-body">
-      <div class="grid3">
-        <div class="field">
-          <label>品項</label>
-          <select id="j-item">
-            <option value="仙草凍">仙草凍</option>
-            <option value="青草凍">青草凍</option>
-            <option value="芋頭凍">芋頭凍</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>桶號</label>
-          <select id="j-barrel">
-            <option>1號桶</option><option>2號桶</option><option>3號桶</option>
-            <option>4號桶</option><option>5號桶</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>重量(g)</label>
-          <input type="text" id="j-weight" placeholder="選填">
-        </div>
+  <!-- 流程看板 -->
+  <div class="page on" id="page-board">
+    <!-- 口味統整面板 -->
+    <div id="flavor-summary" style="background:var(--white);border-bottom:1px solid var(--bd);padding:10px 12px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;margin-bottom:8px">📊 各口味桶數統整</div>
+      <div id="flavor-summary-body" style="overflow-x:auto">
+        <!-- 由 renderFlavorSummary() 填入 -->
       </div>
-      <button class="btn btn-g" onclick="jellyAddNew()">＋ 開始記錄（煮好時間）</button>
+    </div>
+    <div class="board-wrap">
+      <div class="zone z-cook">
+        <div class="zone-hd"><span class="zone-icon">🍳</span><span class="zone-name">煮好</span><span class="zone-cnt" id="cnt-cook">0</span></div>
+        <button class="zone-add-btn" onclick="openAddSheet()">＋ 新增煮好</button>
+        <div class="zone-body" id="zone-cook"></div>
+      </div>
+      <div class="zone z-lower">
+        <div class="zone-hd"><span class="zone-icon">⬇️</span><span class="zone-name">下層冷藏</span><span class="zone-cnt" id="cnt-lower">0</span></div>
+        <div class="zone-body" id="zone-lower"></div>
+      </div>
+      <div class="zone z-upper">
+        <div class="zone-hd"><span class="zone-icon">⬆️</span><span class="zone-name">上層冷藏</span><span class="zone-cnt" id="cnt-upper">0</span></div>
+        <div class="zone-body" id="zone-upper"></div>
+      </div>
+      <div class="zone z-bed">
+        <div class="zone-hd"><span class="zone-icon">🛏️</span><span class="zone-name">臥式冰箱</span><span class="zone-cnt" id="cnt-bed">0</span></div>
+        <div class="zone-body" id="zone-bed"></div>
+      </div>
     </div>
   </div>
 
-  <!-- 進行中 -->
-  <div class="section-title">進行中</div>
-  <div id="actives-list"><div class="empty">載入中...</div></div>
-
-  <!-- 歷史 -->
-  <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-    <span>完成記錄</span>
-    <select id="j-log-item" onchange="loadLogs()" style="font-size:12px;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-family:inherit">
-      <option value="">全部品項</option>
-      <option value="仙草凍">仙草凍</option>
-      <option value="青草凍">青草凍</option>
-      <option value="芋頭凍">芋頭凍</option>
-    </select>
+  <!-- 追蹤表 -->
+  <div class="page" id="page-track">
+    <div class="track-board" id="track-board">
+      <div class="track-zone tz-lower">
+        <div class="tz-hd"><span class="tz-icon">⬇️</span><span class="tz-name">下層冷藏</span><span class="tz-cnt" id="tcnt-lower">0</span></div>
+        <div class="tz-body" id="tz-lower"></div>
+      </div>
+      <div class="track-zone tz-upper">
+        <div class="tz-hd"><span class="tz-icon">⬆️</span><span class="tz-name">上層冷藏</span><span class="tz-cnt" id="tcnt-upper">0</span></div>
+        <div class="tz-body" id="tz-upper"></div>
+      </div>
+      <div class="track-zone tz-bed">
+        <div class="tz-hd"><span class="tz-icon">🛏️</span><span class="tz-name">臥式冰箱</span><span class="tz-cnt" id="tcnt-bed">0</span></div>
+        <div class="tz-body" id="tz-bed"></div>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <div id="logs-list"><div class="empty">載入中...</div></div>
+
+  <!-- 總表 -->
+  <div class="page" id="page-summary">
+    <div class="stat-row" id="stat-row"></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+      <select class="fsel" id="sum-fi" onchange="renderSummary()"><option value="">全部品項</option></select>
+      <select class="fsel" id="sum-fy" onchange="renderSummary()"><option value="">全部年份</option></select>
+      <select class="fsel" id="sum-fm" onchange="renderSummary()"><option value="">全部月份</option></select>
+      <input type="date" id="sum-fd" onchange="renderSummary()" style="padding:7px 9px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+      <button onclick="toggleSelectAll()" id="sel-all-btn" style="padding:6px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">全選</button>
+      <button onclick="delSelected()" style="padding:6px 12px;border:1.5px solid #F5A0A0;border-radius:var(--r2);background:var(--redl);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 刪除選取</button>
+      <span id="sel-count" style="font-size:12px;color:var(--ink3)">0 筆已選</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="chk-all" onchange="checkAll(this.checked)"></th>
+          <th>品項</th><th>桶號</th><th>重量</th>
+          <th>煮好</th><th>下層</th><th>上層</th><th>臥式</th><th>清洗</th>
+          <th>總時長</th>
+        </tr></thead>
+        <tbody id="sum-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- ═══ 茶製記錄 ═══ -->
-<div class="panel" id="panel-tea">
-
-  <!-- 新增茶製 -->
-  <div class="card">
-    <div class="card-head">
-      <div class="card-head-title">🍵 記錄煮好時間</div>
-      <button class="btn btn-outline btn-sm" onclick="teaLoadToday()">🔄 重新載入</button>
+<!-- 新增煮好 Step1: 品項桶號 -->
+<div class="ov" id="ov-add">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">選擇品項與桶號 <button class="sh-close" onclick="closeOv('add')">✕</button></div>
+    <div class="sec-lbl">品項</div>
+    <div class="item-grid" id="add-item-grid"></div>
+    <div id="add-barrel-section" style="display:none">
+      <div class="sec-lbl">桶號</div>
+      <div class="barrel-grid" id="add-barrel-grid"></div>
     </div>
-    <div class="card-body">
-      <div class="grid3">
-        <div class="field">
-          <label>桶號</label>
-          <select id="t-barrel">
-            <option value="1">1號桶</option>
-            <option value="2">2號桶</option>
-            <option value="3">3號桶</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>茶種</label>
-          <select id="t-type">
-            <option value="烏龍茶">烏龍茶</option>
-            <option value="紅茶">紅茶</option>
-            <option value="青茶">青茶</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>煮好時間</label>
-          <input type="time" id="t-cook-time">
-        </div>
+    <button class="sh-ok" id="add-next-btn" onclick="goToWeight()" disabled>下一步：填寫重量</button>
+  </div>
+</div>
+
+<!-- 新增煮好 Step2: 秤重 -->
+<div class="ov" id="ov-weight">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title"><span id="weight-title">填寫煮好重量</span><button class="sh-close" onclick="closeOv('weight')">✕</button></div>
+    <div class="weight-display" id="weight-display"><span id="weight-val">—</span><span class="weight-unit">kg</span></div>
+    <div class="numpad">
+      <button class="nk" onclick="nkPress('7')">7</button>
+      <button class="nk" onclick="nkPress('8')">8</button>
+      <button class="nk" onclick="nkPress('9')">9</button>
+      <button class="nk" onclick="nkPress('4')">4</button>
+      <button class="nk" onclick="nkPress('5')">5</button>
+      <button class="nk" onclick="nkPress('6')">6</button>
+      <button class="nk" onclick="nkPress('1')">1</button>
+      <button class="nk" onclick="nkPress('2')">2</button>
+      <button class="nk" onclick="nkPress('3')">3</button>
+      <button class="nk" onclick="nkPress('0')">0</button>
+      <button class="nk dot" onclick="nkPress('.')">．</button>
+      <button class="nk del" onclick="nkDel()">⌫</button>
+    </div>
+    <button class="sh-ok" onclick="goToPerson()">下一步：選擇人員</button>
+  </div>
+</div>
+
+<!-- 人員選擇 -->
+<div class="ov" id="ov-person">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title"><span id="person-title">選擇人員</span><button class="sh-close" onclick="closeOv('person')">✕</button></div>
+    <div class="pg" id="pg-grid"></div>
+    <button class="sh-ok" onclick="confirmPerson()">確認</button>
+  </div>
+</div>
+
+<!-- 時間拖曳選擇 -->
+<div class="ov" id="ov-time">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title"><span id="time-title">設定時間</span><button class="sh-close" onclick="closeOv('time')">✕</button></div>
+    <div class="tp-wrap">
+      <input type="date" class="tp-date" id="tp-date" oninput="updateTP()">
+      <div class="tp-row">
+        <span class="tp-lbl">時</span>
+        <input type="range" class="tp-slider" id="tp-hr" min="0" max="23" step="1" oninput="updateTP()">
+        <span class="tp-val" id="tv-hr">00</span>
       </div>
-      <button class="btn btn-g" onclick="teaAdd()">＋ 記錄煮好</button>
+      <div class="tp-row">
+        <span class="tp-lbl">分</span>
+        <input type="range" class="tp-slider" id="tp-mn" min="0" max="59" step="1" oninput="updateTP()">
+        <span class="tp-val" id="tv-mn">00</span>
+      </div>
+      <div class="tp-result" id="tp-result">—</div>
+      <button class="now-btn" onclick="tpNow()">⟳ 設為現在時間</button>
+    </div>
+    <button class="sh-ok" onclick="confirmTime()">確認時間</button>
+  </div>
+</div>
+
+<!-- 桶子詳情 -->
+<div class="ov" id="ov-detail">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title"><span id="detail-title">詳情</span><button class="sh-close" onclick="closeOv('detail')">✕</button></div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- 品項管理 -->
+<div class="ov" id="ov-mgmt-item">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">品項與桶號管理 <button class="sh-close" onclick="closeOv('mgmt-item')">✕</button></div>
+    <div class="mgmt-list" id="ml-item"></div>
+    <div style="background:var(--bg);border-radius:var(--r2);padding:10px;border:1px solid var(--bd)">
+      <div class="sec-lbl">新增品項</div>
+      <div class="add-row">
+        <input class="add-inp" id="ai-item" placeholder="品項名稱">
+        <button class="add-inp-btn" onclick="addItem()">新增</button>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="section-title">今日茶製記錄</div>
-  <div id="tea-list"><div class="empty">載入中...</div></div>
-
+<!-- 人員管理 -->
+<div class="ov" id="ov-mgmt-person">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">人員管理 <button class="sh-close" onclick="closeOv('mgmt-person')">✕</button></div>
+    <div class="mgmt-list" id="ml-person"></div>
+    <div class="add-row">
+      <input class="add-inp" id="ai-person" placeholder="人員姓名">
+      <button class="add-inp-btn" onclick="addPerson()">新增</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════════
+// ★ 請將部署網址填入這裡 ★
+// ═══════════════════════════════════
 var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
 
-// ── 初始化 ─────────────────────────────────────────────────
-window.onload = function(){
-  // 初始化時間
-  var now = new Date();
-  var pad = function(n){ return String(n).padStart(2,'0'); };
-  document.getElementById('t-cook-time').value = pad(now.getHours())+':'+pad(now.getMinutes());
+// ═══════════════════════════════════
+// 預設資料（離線備援）
+// ═══════════════════════════════════
+var DEFAULT_ITEMS = [
+  {name:'原味', barrels:['1','2','3','4','5','6','7','8','9','10','11'].map(function(n){return n+'號桶';})},
+  {name:'芋香', barrels:['1','2','3','4','5'].map(function(n){return n+'號桶';})},
+  {name:'清涼', barrels:['1','2','3','4','5'].map(function(n){return n+'號桶';})},
+  {name:'四季', barrels:['1','2','3','4','5'].map(function(n){return n+'號桶';})},
+];
+var DEFAULT_PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 
-  loadActives();
-  loadLogs();
-  teaLoadToday();
-};
+var items, persons, actives, logs;
+var _syncing = false;
 
-// ── API ────────────────────────────────────────────────────
+// ── API 呼叫 ──
 function api(params, cb){
-  var qs = Object.keys(params).map(function(k){
-    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
-  }).join('&');
+  if(!API_URL){ cb && cb(null, '請先設定 API_URL'); return; }
+  var qs=Object.keys(params).map(function(k){ return encodeURIComponent(k)+'='+encodeURIComponent(params[k]); }).join('&');
   fetch(API_URL+'?'+qs)
     .then(function(r){ return r.json(); })
-    .then(function(d){ cb(d); })
-    .catch(function(){ cb(null); });
-}
-function apiPost(params, cb){
-  fetch(API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:Object.keys(params).map(function(k){
-      return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
-    }).join('&')
-  }).then(function(r){ return r.json(); }).then(function(d){ cb(d); }).catch(function(){ cb(null); });
+    .then(function(d){ cb && cb(d, null); })
+    .catch(function(e){ cb && cb(null, e.message); });
 }
 
-function showToast(msg){
-  var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+// ── 本地儲存（離線備援）──
+function localSave(){ try{ localStorage.setItem('jelly_v8',JSON.stringify({items,persons,actives,logs})); }catch(e){} }
+function localLoad(){
+  try{
+    var raw=localStorage.getItem('jelly_v8'); if(!raw) throw 0;
+    var d=JSON.parse(raw); items=d.items; persons=d.persons; actives=d.actives||[]; logs=d.logs||[];
+    return true;
+  }catch(e){ return false; }
 }
 
-function todayStr(){
-  var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
-  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-}
-function nowTimeStr(){
-  var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
-  return pad(d.getHours())+':'+pad(d.getMinutes());
+function getItem(name){ return items.find(function(x){ return x.name===name; }); }
+
+// ── 同步到 Sheets ──
+function save(){
+  localSave(); // 立即本地儲存
 }
 
-// ── 分頁切換 ──────────────────────────────────────────────
-function switchTab(tab){
-  document.querySelectorAll('.tab-btn').forEach(function(b,i){
-    b.classList.toggle('on', (i===0&&tab==='jelly')||(i===1&&tab==='tea'));
-  });
-  document.getElementById('panel-jelly').classList.toggle('on', tab==='jelly');
-  document.getElementById('panel-tea').classList.toggle('on', tab==='tea');
+// 把一筆 active 記錄推到 Sheets
+function pushActive(a){
+  if(!API_URL) return;
+  api({
+    action:'jellySaveActive',
+    id:a.id, item:a.item, barrel:a.barrel, weight:a.weight||'', stage:a.stage,
+    cook_t:a.cook.t, cook_p:a.cook.p,
+    lower_t:a.lower.t, lower_p:a.lower.p,
+    upper_t:a.upper.t, upper_p:a.upper.p,
+    bed_t:a.bed.t, bed_p:a.bed.p,
+    wash_t:a.wash.t, wash_p:a.wash.p
+  }, function(d,e){ if(e) console.warn('pushActive error:',e); });
 }
 
-// ════════════════════════════════════
-// 仙草凍記錄
-// ════════════════════════════════════
-var actives = [];
+// 把清洗完成記錄推到 Sheets
+function pushFinish(a, durMs, dur){
+  if(!API_URL) return;
+  api({
+    action:'jellyFinish',
+    id:a.id, item:a.item, barrel:a.barrel, weight:a.weight||'', stage:a.stage,
+    cook_t:a.cook.t, cook_p:a.cook.p,
+    lower_t:a.lower.t, lower_p:a.lower.p,
+    upper_t:a.upper.t, upper_p:a.upper.p,
+    bed_t:a.bed.t, bed_p:a.bed.p,
+    wash_t:a.wash.t, wash_p:a.wash.p,
+    durMs:durMs, dur:dur
+  }, function(d,e){ if(e) console.warn('pushFinish error:',e); });
+}
 
-function jellyAddNew(){
-  var item   = document.getElementById('j-item').value;
-  var barrel = document.getElementById('j-barrel').value;
-  var weight = document.getElementById('j-weight').value;
-  var id     = String(Date.now());
-  var now    = nowTimeStr();
-  apiPost({action:'jellySaveActive', id:id, item:item, barrel:barrel, weight:weight,
-    stage:'cook', cook_t:now, cook_p:''},
-    function(d){
-      if(d&&d.ok){ showToast('✓ '+item+' '+barrel+' 煮好記錄 '+now); loadActives(); }
-      else showToast('❌ 記錄失敗');
+function pushDeleteActive(id){
+  if(!API_URL) return;
+  api({action:'jellyDeleteActive', id:String(id)}, null);
+}
+
+function pushDeleteLog(id){
+  if(!API_URL) return;
+  api({action:'jellyDeleteLog', id:String(id)}, null);
+}
+
+// ═══════════════════════════════════
+// Overlay
+// ═══════════════════════════════════
+function openOv(id){ document.getElementById('ov-'+id).classList.add('show'); }
+function closeOv(id){ document.getElementById('ov-'+id).classList.remove('show'); }
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.ov.show').forEach(function(ov){ if(e.target===ov) ov.classList.remove('show'); });
+});
+
+// ═══════════════════════════════════
+// Init
+// ═══════════════════════════════════
+// ═══════════════════════════════════
+// Init
+// ═══════════════════════════════════
+var _washedIds = {}; // 已清洗的 id
+
+function cfgSet(key, value, cb){
+  api({action:'cfgSet', key:key, value:JSON.stringify(value)}, cb||null);
+}
+function cfgGet(key, cb){
+  api({action:'cfgGet', key:key}, function(d){
+    if(d&&d.ok&&d.value!=null){
+      try{ cb(JSON.parse(d.value)); return; }catch(e){}
     }
-  );
-}
-
-function loadActives(){
-  api({action:'jellyGetActives'}, function(d){
-    actives = (d&&d.ok&&d.data) ? d.data : [];
-    renderActives();
+    cb(null);
   });
 }
 
-var STAGES = [
-  {key:'cook',  label:'煮好', field:'cook_t'},
-  {key:'lower', label:'下桶', field:'lower_t'},
-  {key:'upper', label:'上層', field:'upper_t'},
-  {key:'bed',   label:'床層', field:'bed_t'},
-  {key:'wash',  label:'清洗', field:'wash_t'},
-];
-var STAGE_NEXT = {cook:'lower',lower:'upper',upper:'bed',bed:'wash'};
+function loadWashedIds(){
+  try{ _washedIds=JSON.parse(localStorage.getItem('jelly_washed')||'{}'); }catch(e){ _washedIds={}; }
+}
+function saveWashedIds(){
+  try{ localStorage.setItem('jelly_washed',JSON.stringify(_washedIds)); }catch(e){}
+  // 雲端同步，只保留 7 天內的 ID
+  var now=Date.now();
+  var clean={};
+  Object.keys(_washedIds).forEach(function(k){ if(now-_washedIds[k]<7*24*3600*1000) clean[k]=_washedIds[k]; });
+  cfgSet('jelly:washed', clean);
+}
 
-function renderActives(){
-  var el = document.getElementById('actives-list');
-  if(!actives.length){ el.innerHTML='<div class="empty">目前無進行中記錄</div>'; return; }
-  el.innerHTML = actives.map(function(r){
-    var stageIdx = STAGES.findIndex(function(s){ return s.key===r.stage; });
-    var stagesHtml = STAGES.map(function(s,i){
-      var t = r[s.key] ? r[s.key].t : '';
-      var done = t && i < stageIdx;
-      var cur  = i === stageIdx;
-      return '<div class="stage-row">'
-        +'<span class="stage-lbl">'+s.label+'</span>'
-        +(t ? '<span class="stage-time">'+t+'</span>' : '<span class="stage-empty">—</span>')
-        +(done?'<span class="stage-badge stage-done">✓</span>':cur?'<span class="stage-badge stage-cur">進行中</span>':'')
-      +'</div>';
-    }).join('');
-    var nextStage = STAGE_NEXT[r.stage];
-    var actionsHtml = '<div class="action-row">';
-    if(nextStage){
-      var nextLabel = STAGES.find(function(s){return s.key===nextStage;}).label;
-      actionsHtml += '<button class="btn btn-b btn-sm" onclick="jellyNextStage(\''+r.id+'\',\''+nextStage+'\')">記錄'+nextLabel+' ⟶</button>';
+window.onload=function(){
+  loadWashedIds();
+  // 同步雲端 washedIds（有新裝置也能知道哪些已清洗）
+  cfgGet('jelly:washed', function(v){
+    if(v&&typeof v==='object'){
+      Object.keys(v).forEach(function(k){ _washedIds[k]=v[k]; });
+      try{localStorage.setItem('jelly_washed',JSON.stringify(_washedIds));}catch(e){}
     }
-    if(r.stage==='wash'){
-      actionsHtml += '<button class="btn btn-g btn-sm" onclick="jellyComplete(\''+r.id+'\')">✓ 完成</button>';
-    }
-    actionsHtml += '<button class="btn btn-red btn-sm" onclick="jellyDelete(\''+r.id+'\')">✕ 刪除</button></div>';
-    return '<div class="active-card">'
-      +'<div class="active-head">'
-        +'<span class="active-item">'+r.item+'</span>'
-        +'<span class="active-barrel">'+r.barrel+'</span>'
-        +(r.weight?'<span style="font-size:12px;color:var(--ink3)">'+r.weight+'g</span>':'')
-      +'</div>'
-      +stagesHtml
-      +actionsHtml
-    +'</div>';
-  }).join('');
-}
-
-function jellyNextStage(id, nextStage){
-  var r = actives.find(function(a){ return String(a.id)===String(id); });
-  if(!r) return;
-  var now = nowTimeStr();
-  var p = {action:'jellySaveActive', id:id, item:r.item, barrel:r.barrel,
-    weight:r.weight||'', stage:nextStage,
-    cook_t:r.cook?r.cook.t:'', lower_t:r.lower?r.lower.t:'',
-    upper_t:r.upper?r.upper.t:'', bed_t:r.bed?r.bed.t:'', wash_t:r.wash?r.wash.t:''};
-  p[nextStage+'_t'] = now;
-  apiPost(p, function(d){
-    if(d&&d.ok){ showToast('✓ '+STAGES.find(function(s){return s.key===nextStage;}).label+' '+now); loadActives(); }
-    else showToast('❌ 更新失敗');
   });
-}
-
-function jellyComplete(id){
-  if(!confirm('確定完成並移至歷史記錄？')) return;
-  api({action:'jellyComplete', id:id}, function(d){
-    if(d&&d.ok){ showToast('✓ 已完成'); loadActives(); loadLogs(); }
-    else showToast('❌ 失敗');
-  });
-}
-
-function jellyDelete(id){
-  if(!confirm('確定刪除此進行中記錄？')) return;
-  api({action:'jellyDeleteActive', id:id}, function(d){
-    if(d&&d.ok){ showToast('已刪除'); loadActives(); }
-  });
-}
-
-function loadLogs(){
-  var item = document.getElementById('j-log-item').value;
-  api({action:'jellyGetLogs', item:item}, function(d){
-    var logs = (d&&d.ok&&d.data) ? d.data : [];
-    renderLogs(logs);
-  });
-}
-
-function renderLogs(logs){
-  var el = document.getElementById('logs-list');
-  if(!logs.length){ el.innerHTML='<div class="empty">尚無完成記錄</div>'; return; }
-  el.innerHTML = logs.slice(0,30).map(function(r){
-    var stages = STAGES.filter(function(s){ return r[s.key]&&r[s.key].t; });
-    return '<div class="log-card">'
-      +'<div class="log-head">'
-        +'<span class="log-item">'+r.item+' '+r.barrel+(r.weight?' ('+r.weight+'g)':'')+'</span>'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span class="log-date">'+(r.cook&&r.cook.t?r.cook.t:'')+'</span>'
-          +'<button onclick="jellyLogDelete(\''+r.id+'\')" style="border:none;background:var(--redl);color:var(--red);padding:2px 8px;border-radius:4px;font-size:11px;cursor:pointer">✕</button>'
-        +'</div>'
-      +'</div>'
-      +'<div class="log-stages">'
-        +stages.map(function(s){ return '<span class="log-stage">'+s.label+' '+r[s.key].t+'</span>'; }).join(' → ')
-      +'</div>'
-    +'</div>';
-  }).join('');
-}
-
-function jellyLogDelete(id){
-  if(!confirm('確定刪除此完成記錄？')) return;
-  api({action:'jellyDeleteLog', id:id}, function(d){
-    if(d&&d.ok){ showToast('已刪除'); loadLogs(); }
-  });
-}
-
-// ════════════════════════════════════
-// 茶製記錄
-// ════════════════════════════════════
-var teaRecs = [];
-
-function teaLoadToday(){
-  api({action:'teaLogGetAll', date:todayStr()}, function(d){
-    teaRecs = (d&&d.ok&&d.data) ? d.data : [];
-    renderTeaList();
-  });
-}
-
-function teaAdd(){
-  var barrel   = document.getElementById('t-barrel').value;
-  var teaType  = document.getElementById('t-type').value;
-  var cookTime = document.getElementById('t-cook-time').value;
-  if(!cookTime){ showToast('請填入煮好時間'); return; }
-  var id = String(Date.now());
-  apiPost({action:'teaLogSave', id:id, date:todayStr(), barrel:barrel,
-    teaType:teaType, cookTime:cookTime, washTime:'', durationMin:0, person:'', note:''},
-    function(d){
-      if(d&&d.ok){
-        teaRecs.unshift({id:id, date:todayStr(), barrel:barrel, teaType:teaType,
-          cookTime:cookTime, washTime:'', durationMin:0});
-        renderTeaList();
-        showToast('✓ '+teaType+' '+barrel+'號桶 煮好 '+cookTime);
-        // 更新時間為現在
-        var now = new Date(), pad=function(n){return String(n).padStart(2,'0');};
-        document.getElementById('t-cook-time').value = pad(now.getHours())+':'+pad(now.getMinutes());
-      } else showToast('❌ 記錄失敗');
-    }
-  );
-}
-
-function teaWash(id){
-  var r = teaRecs.find(function(x){ return String(x.id)===String(id); });
-  if(!r) return;
-  var washTime = nowTimeStr();
-  var durationMin = 0;
-  if(r.cookTime){
-    var c=r.cookTime.split(':'), w=washTime.split(':');
-    durationMin = (parseInt(w[0])*60+parseInt(w[1])) - (parseInt(c[0])*60+parseInt(c[1]));
-    if(durationMin<0) durationMin+=1440;
+  if(!localLoad()){
+    items=JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    persons=DEFAULT_PERSONS.slice();
+    actives=[]; logs=[];
   }
-  apiPost({action:'teaLogSave', id:id, date:r.date, barrel:r.barrel, teaType:r.teaType,
-    cookTime:r.cookTime, washTime:washTime, durationMin:durationMin, person:r.person||'', note:r.note||''},
-    function(d){
-      if(d&&d.ok){
-        r.washTime = washTime; r.durationMin = durationMin;
-        renderTeaList();
-        var h=Math.floor(durationMin/60), m=durationMin%60;
-        showToast('✓ 已記錄清洗　使用 '+h+'h'+m+'m');
+  // 確保本地 actives 中沒有已清洗的桶子
+  actives=actives.filter(function(a){ return !_washedIds[String(a.id)]; });
+  renderAll(); renderTrack();
+  setInterval(function(){ renderTrackTimers(); },60000);
+
+  if(API_URL){
+    setStatus('同步中…');
+    // 有 API 時，先清空 actives 等 Sheets 回來再顯示，避免顯示舊資料
+    actives=[];
+    renderAll(); renderTrack();
+    api({action:'jellyGetConfig'},function(d,e){
+      if(d&&d.ok&&d.items&&d.items.length){
+        items=d.items; persons=d.persons; localSave(); renderAll();
       }
-    }
-  );
+    });
+    api({action:'jellyGetActives'},function(d,e){
+      if(d&&d.ok&&d.data){
+        // Sheets 為主：直接用 Sheets 資料，過濾掉已清洗的桶子
+        var filtered=d.data.filter(function(x){
+          return !_washedIds[String(x.id)];
+        });
+        // 保留本地剛新增但還沒推到 Sheets 的桶子（id 不在 Sheets 裡）
+        var sheetsIds={};
+        filtered.forEach(function(a){ sheetsIds[String(a.id)]=true; });
+        var localOnly=actives.filter(function(a){
+          return !sheetsIds[String(a.id)] && !_washedIds[String(a.id)];
+        });
+        // 合併：Sheets資料 + 本地新增未推送的
+        actives=filtered.concat(localOnly);
+        localSave(); renderAll(); renderTrack();
+        setStatus('已同步 ✓');
+        setTimeout(function(){ setStatus(''); },3000);
+      } else {
+        setStatus('離線模式');
+      }
+    });
+    api({action:'jellyGetLogs'},function(d,e){
+      if(d&&d.ok&&d.data&&d.data.length>0){
+        var sheetsIds={};
+        d.data.forEach(function(r){ sheetsIds[String(r.id)]=true; });
+        var localOnly=logs.filter(function(r){ return !sheetsIds[String(r.id)]; });
+        if(d.data.length+localOnly.length !== logs.length){
+          logs=d.data.concat(localOnly);
+          localSave();
+        }
+      }
+    });
+  } else {
+    setStatus('本地模式（未設定API）');
+  }
+};
+function setStatus(msg){
+  var el=document.getElementById('sync-status');
+  if(el) el.textContent=msg;
 }
 
-function teaDelete(id){
-  if(!confirm('確定刪除此茶製記錄？')) return;
-  api({action:'teaLogDelete', id:id}, function(d){
-    if(d&&d.ok){
-      teaRecs = teaRecs.filter(function(r){ return String(r.id)!==String(id); });
-      renderTeaList();
-      showToast('已刪除');
-    }
+// ═══════════════════════════════════
+// 新增流程：品項桶號
+// ═══════════════════════════════════
+var _addItem='', _addBarrel='';
+function openAddSheet(){
+  _addItem=''; _addBarrel='';
+  document.getElementById('add-item-grid').innerHTML=items.map(function(it){
+    return '<button class="item-btn" onclick="pickAddItem(\''+esc(it.name)+'\',this)">'+it.name+'</button>';
+  }).join('');
+  document.getElementById('add-barrel-section').style.display='none';
+  document.getElementById('add-barrel-grid').innerHTML='';
+  document.getElementById('add-next-btn').disabled=true;
+  openOv('add');
+}
+function pickAddItem(name,btn){
+  _addItem=name; _addBarrel='';
+  document.querySelectorAll('#add-item-grid .item-btn').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  var it=getItem(name);
+  var html=(it?it.barrels:[]).map(function(b){
+    var inUse=actives.find(function(a){ return a.item===name&&a.barrel===b; });
+    return '<button class="barrel-btn'+(inUse?' used':'')+'" onclick="pickAddBarrel(\''+esc(b)+'\',this)'+(inUse?' disabled':'')+'" >'+b+(inUse?'<br><span style="font-size:9px">使用中</span>':'')+'</button>';
+  }).join('');
+  document.getElementById('add-barrel-grid').innerHTML=html;
+  document.getElementById('add-barrel-section').style.display='block';
+  document.getElementById('add-next-btn').disabled=true;
+}
+function pickAddBarrel(name,btn){
+  if(btn.disabled) return;
+  _addBarrel=name;
+  document.querySelectorAll('#add-barrel-grid .barrel-btn').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  document.getElementById('add-next-btn').disabled=false;
+}
+
+// ═══════════════════════════════════
+// 新增流程：秤重
+// ═══════════════════════════════════
+var _nkVal='';
+function goToWeight(){
+  if(!_addItem||!_addBarrel){ showToast('請選擇品項與桶號'); return; }
+  closeOv('add');
+  _nkVal='';
+  document.getElementById('weight-title').textContent=_addItem+' '+_addBarrel+' — 填寫重量';
+  updateWeightDisplay();
+  openOv('weight');
+}
+function nkPress(ch){
+  if(ch==='.'&&_nkVal.indexOf('.')!==-1) return;
+  if(_nkVal.replace('.','').length>=5) return;
+  _nkVal+=ch;
+  updateWeightDisplay();
+}
+function nkDel(){ _nkVal=_nkVal.slice(0,-1); updateWeightDisplay(); }
+function updateWeightDisplay(){
+  var el=document.getElementById('weight-val');
+  var wd=document.getElementById('weight-display');
+  el.textContent=_nkVal||'—';
+  wd.className='weight-display'+(_nkVal?' has-val':'');
+}
+
+// ═══════════════════════════════════
+// 新增流程：人員
+// ═══════════════════════════════════
+function goToPerson(){
+  if(!_nkVal){ showToast('請填寫重量'); return; }
+  closeOv('weight');
+  openPersonPicker('選擇煮好人員','',function(p){
+    var rec={
+      id:Date.now(), item:_addItem, barrel:_addBarrel,
+      weight:_nkVal, stage:'cook',
+      cook:{t:nowStr(),p:p}, lower:{t:'',p:''}, upper:{t:'',p:''}, bed:{t:'',p:''}, wash:{t:'',p:''}
+    };
+    actives.push(rec); save(); pushActive(rec); renderAll();
+    showToast('✓ '+_addItem+' '+_addBarrel+' '+_nkVal+'kg 煮好完成');
   });
 }
 
-var TEA_ICONS = {烏龍茶:'🍵', 紅茶:'☕', 青茶:'🌿'};
+// ═══════════════════════════════════
+// 人員選擇
+// ═══════════════════════════════════
+var _pCb=null, _pSel='';
+function openPersonPicker(title,cur,cb){
+  _pCb=cb; _pSel=cur||'';
+  document.getElementById('person-title').textContent=title;
+  document.getElementById('pg-grid').innerHTML=persons.map(function(n){
+    return '<button class="pg-btn'+(n===_pSel?' on':'')+'" onclick="pgTap(this,\''+esc(n)+'\')">'+n+'</button>';
+  }).join('');
+  openOv('person');
+}
+function pgTap(btn,name){
+  _pSel=name;
+  document.querySelectorAll('#pg-grid .pg-btn').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+}
+function confirmPerson(){ if(!_pSel){ showToast('請選擇人員'); return; } closeOv('person'); if(_pCb){ _pCb(_pSel); _pCb=null; } }
 
-function renderTeaList(){
-  var el = document.getElementById('tea-list');
-  if(!teaRecs.length){ el.innerHTML='<div class="empty">今日尚無茶製記錄</div>'; return; }
-  el.innerHTML = teaRecs.map(function(r){
-    var icon = TEA_ICONS[r.teaType]||'🍵';
-    var washed = !!r.washTime;
-    var durationStr = '';
-    if(r.durationMin>0){
-      durationStr = '使用 '+Math.floor(r.durationMin/60)+'h'+r.durationMin%60+'m';
-    }
-    return '<div class="tea-card'+(washed?' washed':'')+'">'
-      +'<span style="font-size:22px">'+icon+'</span>'
-      +'<div class="tea-info">'
-        +'<div class="tea-name">'+r.barrel+'號桶　'+r.teaType+'</div>'
-        +'<div class="tea-time">煮好 '+r.cookTime+(r.washTime ? '　清洗 '+r.washTime : '　尚未清洗')+'</div>'
-        +(durationStr?'<div class="tea-duration">⏱ '+durationStr+'</div>':'')
+// ═══════════════════════════════════
+// 時間選擇
+// ═══════════════════════════════════
+var _tCb=null;
+function openTimePicker(title,cur,cb){
+  _tCb=cb;
+  document.getElementById('time-title').textContent=title;
+  var str=cur||nowStr();
+  var m=str.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+)/);
+  var n=new Date(), pad=function(x){return String(x).padStart(2,'0');};
+  if(m){
+    document.getElementById('tp-date').value=m[1]+'-'+m[2]+'-'+m[3];
+    document.getElementById('tp-hr').value=parseInt(m[4]);
+    document.getElementById('tp-mn').value=parseInt(m[5]);
+  } else {
+    document.getElementById('tp-date').value=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());
+    document.getElementById('tp-hr').value=n.getHours();
+    document.getElementById('tp-mn').value=n.getMinutes();
+  }
+  updateTP(); openOv('time');
+}
+function updateTP(){
+  var hr=parseInt(document.getElementById('tp-hr').value);
+  var mn=parseInt(document.getElementById('tp-mn').value);
+  var pad=function(x){return String(x).padStart(2,'0');};
+  document.getElementById('tv-hr').textContent=pad(hr);
+  document.getElementById('tv-mn').textContent=pad(mn);
+  var dv=document.getElementById('tp-date').value;
+  document.getElementById('tp-result').textContent=dv?dv.replace(/-/g,'/')+' '+pad(hr)+':'+pad(mn):'—';
+}
+function tpNow(){
+  var n=new Date(),pad=function(x){return String(x).padStart(2,'0');};
+  document.getElementById('tp-date').value=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate());
+  document.getElementById('tp-hr').value=n.getHours();
+  document.getElementById('tp-mn').value=n.getMinutes();
+  updateTP();
+}
+function confirmTime(){ var r=document.getElementById('tp-result').textContent; if(r==='—'){ showToast('請選擇日期'); return; } closeOv('time'); if(_tCb){ _tCb(r); _tCb=null; } }
+
+// ═══════════════════════════════════
+// 桶子詳情
+// ═══════════════════════════════════
+var SLBL={cook:'🍳 煮好',lower:'⬇️ 進下層',upper:'⬆️ 進上層',bed:'🛏️ 進臥式'};
+var STAGES=['cook','lower','upper','bed'];
+var SNEXT={cook:'lower',lower:'upper',upper:'bed'};
+var SLNAME={cook:'煮好',lower:'下層冷藏',upper:'上層冷藏',bed:'臥式冰箱'};
+var MVCLS={cook:'mb-lower',lower:'mb-upper',upper:'mb-bed',bed:'mb-wash'};
+var MVLBL={cook:'⬇️ 移入下層冷藏',lower:'⬆️ 移入上層冷藏',upper:'🛏️ 移入臥式冰箱',bed:'🧼 清洗完成'};
+
+var _detailId=null;
+function openDetail(id){
+  _detailId=id;
+  var a=findActive(id); if(!a) return;
+  buildDetailBody(a);
+  openOv('detail');
+}
+function buildDetailBody(a){
+  document.getElementById('detail-title').textContent=a.item+' · '+a.barrel+(a.weight?' · '+a.weight+'kg':'');
+  var html='';
+  if(a.weight){
+    html+='<div style="background:var(--bluel);border-radius:var(--r2);padding:9px 12px;margin-bottom:10px;font-size:13px;color:var(--blue);font-weight:600">⚖️ 重量：'+a.weight+' kg</div>';
+  }
+  STAGES.forEach(function(k){
+    var done=a[k].t;
+    html+='<div class="detail-step">'
+      +'<div class="ds-left">'
+        +'<div class="ds-label">'+SLBL[k]+'</div>'
+        +(done?'<div class="ds-time">'+fmtTime(a[k].t)+'</div><div class="ds-person">'+(a[k].p||'未指定')+'</div>'
+               :'<div class="ds-empty">尚未記錄</div>')
       +'</div>'
-      +(!washed?'<button class="btn btn-b btn-sm" onclick="teaWash(\''+r.id+'\')">🫧 清洗</button>':'<span style="color:var(--g);font-size:13px;font-weight:700">✓ 完成</span>')
-      +'<button class="btn btn-red btn-sm" onclick="teaDelete(\''+r.id+'\')">✕</button>'
+      +(done?'<div class="ds-right">'
+          +'<button class="ds-edit-btn" onclick="editStepTime(\''+k+'\')">改時間</button>'
+          +'<button class="ds-edit-btn" onclick="editStepPerson(\''+k+'\')">改人員</button>'
+        +'</div>':'')
+    +'</div>';
+  });
+  // 移動鈕
+  html+='<button class="move-btn '+MVCLS[a.stage]+'" onclick="moveNext('+a.id+')">'+MVLBL[a.stage]+'</button>';
+  // 刪除
+  html+='<button onclick="delActive('+a.id+')" style="width:100%;margin-top:8px;padding:10px;border-radius:var(--r);border:1px solid var(--bd);background:var(--white);font-size:13px;color:var(--red);cursor:pointer;font-family:inherit">刪除此記錄</button>';
+  document.getElementById('detail-body').innerHTML=html;
+}
+
+function editStepTime(key){
+  var a=findActive(_detailId); if(!a) return;
+  openTimePicker('修改時間', a[key].t||nowStr(), function(v){
+    a[key].t=v; save(); pushActive(a); renderAll(); buildDetailBody(a); openOv('detail');
+  });
+}
+function editStepPerson(key){
+  var a=findActive(_detailId); if(!a) return;
+  openPersonPicker('修改人員', a[key].p, function(p){
+    a[key].p=p; save(); pushActive(a); renderAll(); buildDetailBody(a); openOv('detail');
+  });
+}
+function moveNext(id){
+  var a=findActive(id); if(!a) return;
+  var next=SNEXT[a.stage];
+  if(!next){
+    closeOv('detail');
+    doWash(id);
+    return;
+  }
+  // 先關 detail，再開人員選擇
+  closeOv('detail');
+  setTimeout(function(){
+    openPersonPicker('移入「'+SLNAME[next]+'」人員','',function(p){
+      a=findActive(id); if(!a) return;
+      a[next]={t:nowStr(),p:p}; a.stage=next;
+      save(); pushActive(a); renderAll(); renderTrack();
+      buildDetailBody(a); openOv('detail');
+      showToast('✓ 已移入：'+SLNAME[next]);
+    });
+  },50);
+}
+
+function doWash(id){
+  var a=findActive(id); if(!a) return;
+  // 步驟1：確認是否真的要清洗
+  showWashConfirm(id);
+}
+
+function showWashConfirm(id){
+  var a=findActive(id); if(!a) return;
+  // 用 detail overlay 顯示確認畫面
+  document.getElementById('detail-title').textContent='確認清洗 — '+a.item+' '+a.barrel;
+  document.getElementById('detail-body').innerHTML=
+    '<div style="text-align:center;padding:20px 0 10px">'
+      +'<div style="font-size:48px;margin-bottom:12px">🧼</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px">確認要清洗這個桶子嗎？</div>'
+      +'<div style="font-size:13px;color:var(--ink3);margin-bottom:20px">清洗後記錄將移至總表，無法復原</div>'
+    +'</div>'
+    +'<button onclick="confirmDoWash('+id+')" style="width:100%;padding:14px;background:var(--red);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px">🧼 確認清洗</button>'
+    +'<button onclick="cancelWash('+id+')" style="width:100%;padding:12px;background:var(--white);color:var(--ink2);border:1.5px solid var(--bd);border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">← 返回上一步</button>';
+  openOv('detail');
+}
+
+function cancelWash(id){
+  // 返回：重新開啟詳情
+  closeOv('detail');
+  setTimeout(function(){ openDetail(id); },50);
+}
+
+function confirmDoWash(id){
+  var a=findActive(id); if(!a) return;
+  closeOv('detail');
+  // 選擇清洗人員
+  openPersonPicker('選擇清洗人員','',function(p){
+    a.wash={t:nowStr(),p:p};
+    var t1=toTs(a.lower.t),t2=toTs(a.wash.t);
+    var durMs=0,dur='';
+    if(t1&&t2&&t2>t1){ durMs=t2-t1; dur=fmtDurLong(durMs); }
+    var rec=JSON.parse(JSON.stringify(a));
+    rec.durMs=durMs; rec.dur=dur; rec.finishedAt=nowStr();
+    _washedIds[String(id)]=Date.now();
+    saveWashedIds();
+    logs.unshift(rec);
+    actives=actives.filter(function(x){ return String(x.id)!==String(id); });
+    localSave();
+    pushFinish(rec, durMs, dur);
+    renderAll(); renderTrack(); buildSumFilters();
+    showWashResult(rec, dur);
+  });
+}
+
+function showWashResult(rec, dur){
+  var html='<div style="text-align:center;padding:10px 0 14px">'
+    +'<div style="font-size:40px;margin-bottom:8px">✅</div>'
+    +'<div style="font-size:18px;font-weight:900;color:var(--g);margin-bottom:4px">清洗完成！</div>'
+    +'<div style="font-size:14px;color:var(--ink2);margin-bottom:16px">'+rec.item+' · '+rec.barrel+'</div>'
+  +'</div>'
+  // 時間軸
+  +'<div style="background:var(--bg);border-radius:var(--r);padding:12px;margin-bottom:12px">'
+  +[
+    {key:'cook', label:'🍳 煮好'},
+    {key:'lower', label:'⬇️ 進下層'},
+    {key:'upper', label:'⬆️ 進上層'},
+    {key:'bed',   label:'🛏️ 進臥式'},
+    {key:'wash',  label:'🧼 清洗'},
+  ].filter(function(s){ return rec[s.key]&&rec[s.key].t; }).map(function(s){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)">'
+      +'<span style="font-size:12px;color:var(--ink3)">'+s.label+'</span>'
+      +'<span style="font-size:12px;font-weight:600;color:var(--ink)">'+fmtTime(rec[s.key].t)
+        +(rec[s.key].p?' <span style="color:var(--ink3)">'+rec[s.key].p+'</span>':'')
+      +'</span></div>';
+  }).join('')
+  +'</div>'
+  // 總時長
+  +(dur?'<div style="background:var(--gl);border-radius:var(--r);padding:14px;text-align:center;border:1px solid var(--gm);margin-bottom:4px">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--g);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">TOTAL DURATION（進下層→清洗）</div>'
+    +'<div style="font-size:28px;font-weight:900;color:var(--g);letter-spacing:-.5px">'+dur+'</div>'
+  +'</div>':'');
+
+  document.getElementById('detail-title').textContent='清洗完成';
+  document.getElementById('detail-body').innerHTML=html
+    +'<button style="width:100%;margin-top:12px;padding:13px;background:var(--g);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit" onclick="closeOv(\'detail\')">關閉</button>'
+    +'<button style="width:100%;margin-top:8px;padding:11px;background:var(--white);color:var(--amber);border:1.5px solid #E8C060;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" onclick="undoWash('+rec.id+')">↩ 撤銷清洗（放回臥式冰箱）</button>';
+  openOv('detail');
+}
+
+function undoWash(id){
+  if(!confirm('確定撤銷清洗，將此桶放回臥式冰箱？')) return;
+  // 從 logs 找回記錄
+  var rec=logs.find(function(r){ return String(r.id)===String(id); });
+  if(!rec){ showToast('找不到記錄，無法撤銷'); return; }
+  // 清除 wash 記錄，放回 bed 階段
+  var restored=JSON.parse(JSON.stringify(rec));
+  restored.wash={t:'',p:''};
+  restored.stage='bed';
+  delete restored.durMs; delete restored.dur; delete restored.finishedAt;
+  // 從 logs 移除，加回 actives
+  logs=logs.filter(function(r){ return String(r.id)!==String(id); });
+  delete _washedIds[String(id)]; saveWashedIds();
+  actives.push(restored);
+  localSave();
+  // 通知 Sheets（把完成記錄刪除，重新存進行中）
+  pushDeleteLog(id);
+  pushActive(restored);
+  closeOv('detail');
+  renderAll(); renderTrack(); buildSumFilters();
+  showToast('↩ 已撤銷，放回臥式冰箱');
+}
+function delActive(id){
+  if(!confirm('確定刪除？')) return;
+  actives=actives.filter(function(a){ return String(a.id)!==String(id); });
+  localSave(); pushDeleteActive(id); closeOv('detail'); renderAll(); renderTrack(); showToast('已刪除');
+}
+
+// ═══════════════════════════════════
+// 渲染看板
+// ═══════════════════════════════════
+function barrelNum(b){
+  var m=String(b).match(/(\d+)/);
+  return m?parseInt(m[1]):0;
+}
+function sortActives(list){
+  // 品項依 items 陣列的固定順序排列，同品項內桶號按數字升序
+  return list.slice().sort(function(a,b){
+    var ai=items.findIndex(function(it){return it.name===a.item;});
+    var bi=items.findIndex(function(it){return it.name===b.item;});
+    if(ai<0) ai=999; if(bi<0) bi=999;
+    if(ai!==bi) return ai-bi;
+    return barrelNum(a.barrel)-barrelNum(b.barrel);
+  });
+}
+
+function renderAll(){
+  STAGES.forEach(function(s){
+    var list=actives.filter(function(a){ return a.stage===s; });
+    document.getElementById('cnt-'+s).textContent=list.length;
+    var el=document.getElementById('zone-'+s);
+    var sorted=sortActives(list);
+    el.innerHTML=sorted.length?sorted.map(buildBoardCard).join(''):'<div class="zone-empty">目前無</div>';
+  });
+  renderFlavorSummary();
+}
+
+function renderFlavorSummary(){
+  var el = document.getElementById('flavor-summary-body');
+  if(!el) return;
+
+  // 收集所有口味
+  var flavorSet = {};
+  actives.forEach(function(a){ flavorSet[a.item]=true; });
+  var flavors = Object.keys(flavorSet).sort();
+  if(!flavors.length){ el.innerHTML='<div style="color:var(--ink3);font-size:12px">目前無進行中的桶子</div>'; return; }
+
+  var zones = [
+    {key:'cook',  label:'🍳 煮好'},
+    {key:'lower', label:'⬇️ 下層'},
+    {key:'upper', label:'⬆️ 上層'},
+    {key:'bed',   label:'🛏️ 臥式'},
+  ];
+
+  // 計算每個口味在每個區塊的數量
+  var data = {};
+  flavors.forEach(function(f){
+    data[f] = {};
+    var total = 0;
+    zones.forEach(function(z){
+      var cnt = actives.filter(function(a){ return a.item===f && a.stage===z.key; }).length;
+      data[f][z.key] = cnt;
+      total += cnt;
+    });
+    data[f].total = total;
+  });
+
+  // 各區塊總計
+  var zoneTotals = {};
+  var grandTotal = 0;
+  zones.forEach(function(z){
+    zoneTotals[z.key] = actives.filter(function(a){ return a.stage===z.key; }).length;
+    grandTotal += zoneTotals[z.key];
+  });
+
+  // 建立表格
+  var html = '<table style="border-collapse:collapse;font-size:12px;min-width:360px">';
+
+  // 表頭
+  html += '<tr>';
+  html += '<th style="padding:4px 10px;background:#1A3A5C;color:#fff;text-align:left;border-radius:4px 0 0 0">口味</th>';
+  zones.forEach(function(z){
+    html += '<th style="padding:4px 10px;background:#1A3A5C;color:#fff;text-align:center;white-space:nowrap">'+z.label+'</th>';
+  });
+  html += '<th style="padding:4px 10px;background:var(--g);color:#fff;text-align:center;border-radius:0 4px 0 0">合計</th>';
+  html += '</tr>';
+
+  // 各口味列
+  flavors.forEach(function(f, fi){
+    var bg = fi%2===0 ? 'var(--white)' : '#f7f9fc';
+    html += '<tr style="background:'+bg+'">';
+    html += '<td style="padding:5px 10px;font-weight:700;color:var(--ink)">'+f+'</td>';
+    zones.forEach(function(z){
+      var cnt = data[f][z.key];
+      html += '<td style="padding:5px 10px;text-align:center;color:'+(cnt>0?'var(--ink)':'var(--bd)')+'">'+
+        (cnt>0?'<b>'+cnt+'</b>':'—')+'</td>';
+    });
+    html += '<td style="padding:5px 10px;text-align:center;font-weight:900;color:var(--g)">'+data[f].total+'</td>';
+    html += '</tr>';
+  });
+
+  // 總計列
+  html += '<tr style="background:#eaeff7">';
+  html += '<td style="padding:5px 10px;font-weight:700;color:var(--ink3);font-size:11px">合計</td>';
+  zones.forEach(function(z){
+    html += '<td style="padding:5px 10px;text-align:center;font-weight:700;color:var(--ink)">'+zoneTotals[z.key]+'</td>';
+  });
+  html += '<td style="padding:5px 10px;text-align:center;font-weight:900;color:var(--g);font-size:14px">'+grandTotal+'</td>';
+  html += '</tr>';
+
+  html += '</table>';
+  el.innerHTML = html;
+}
+function fmtTime(t){
+  if(!t) return '';
+  // 處理 ISO 格式（從 Sheets 同步回來的）：2026-05-24T02:36:00.000Z → 台灣時間
+  if(t.indexOf('T')>0){
+    var d=new Date(t);
+    if(!isNaN(d)){
+      var pad=function(n){return String(n).padStart(2,'0');};
+      return (d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    }
+  }
+  // 本地格式 2026/05/24 10:36 → 取 05/24 10:36
+  return t.slice(5);
+}
+function buildBoardCard(a){
+  var latestKey=STAGES.slice().reverse().find(function(k){ return a[k].t; });
+  var latestTime=latestKey?fmtTime(a[latestKey].t):'';
+  var timerStr='';
+  if(a.lower.t){
+    var ms=Date.now()-toTs(a.lower.t);
+    if(ms>0) timerStr='⏱ '+fmtDur(ms);
+  }
+  return '<div class="bc" onclick="openDetail('+a.id+')">'
+    +'<div class="bc-name">'+a.item+'</div>'
+    +'<div class="bc-barrel">'+a.barrel+'</div>'
+    +(a.weight?'<div class="bc-weight">⚖️ '+a.weight+' kg</div>':'')
+    +(latestTime?'<div class="bc-latest"><b>'+latestTime+'</b>'+(latestKey&&a[latestKey].p?' · '+a[latestKey].p:'')+'</div>':'')
+    +(timerStr?'<div class="bc-timer">'+timerStr+'</div>':'')
+  +'</div>';
+}
+
+// ═══════════════════════════════════
+// 追蹤表
+// ═══════════════════════════════════
+function renderTrack(){
+  var zones=['lower','upper','bed'];
+  zones.forEach(function(s){
+    var list=actives.filter(function(a){ return a.stage===s; });
+    var sorted=sortActives(list);
+    document.getElementById('tcnt-'+s).textContent=sorted.length;
+    var el=document.getElementById('tz-'+s);
+    if(!sorted.length){ el.innerHTML='<div class="tz-empty">目前無</div>'; return; }
+    el.innerHTML=sorted.map(function(a){ return buildTrackCard(a,s); }).join('');
+  });
+}
+function buildTrackCard(a,zone){
+  var startKey=zone; // 從進入此區塊開始計時
+  var since=a[startKey]?a[startKey].t:'';
+  var durStr='—';
+  if(since){
+    var ms=Date.now()-toTs(since);
+    if(ms>0) durStr=fmtDurLong(ms);
+  }
+  return '<div class="track-card" onclick="openDetail('+a.id+')">'
+    +'<div class="tc-name">'+a.item+'</div>'
+    +'<div class="tc-barrel">'+a.barrel+(a.weight?' · '+a.weight+'kg':'')+'</div>'
+    +(since?'<div class="tc-since">進入 <b>'+since.slice(5)+'</b></div>':'')
+    +'<div class="tc-dur">'+durStr+'</div>'
+  +'</div>';
+}
+function renderTrackTimers(){
+  // 只更新時間，不重建 DOM（避免閃爍）— 簡單起見直接重渲
+  if(document.getElementById('page-track').classList.contains('on')) renderTrack();
+}
+
+// ═══════════════════════════════════
+// 總表
+// ═══════════════════════════════════
+function buildSumFilters(){
+  var sel=document.getElementById('sum-fi'); if(!sel) return;
+  var cv=sel.value;
+  sel.innerHTML='<option value="">全部品項</option>'+items.map(function(it){ return '<option>'+it.name+'</option>'; }).join('');
+  sel.value=cv;
+  // 年份
+  var years=[...new Set(logs.map(function(r){ return getLogYear(r); }).filter(Boolean))].sort().reverse();
+  var fy=document.getElementById('sum-fy'); if(fy){ var cyv=fy.value; fy.innerHTML='<option value="">全部年份</option>'+years.map(function(y){return '<option>'+y+'</option>';}).join(''); fy.value=cyv; }
+  // 月份（格式 MM，如 05）
+  var months=[...new Set(logs.map(function(r){ return getLogMonth(r); }).filter(Boolean))].sort().reverse();
+  var fm=document.getElementById('sum-fm'); if(fm){ var cmv=fm.value; fm.innerHTML='<option value="">全部月份</option>'+months.map(function(m){return '<option value="'+m+'">'+parseInt(m)+'月</option>';}).join(''); fm.value=cmv; }
+}
+function getLogDate(r){
+  var t=r.finishedAt||(r.wash&&r.wash.t)||'';
+  if(!t) return '';
+  if(t.indexOf('T')>0){ var d=new Date(t); return isNaN(d)?'':d.getFullYear()+'-'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate(); }
+  return t.slice(0,10).replace(/\//g,'-');
+}
+function getLogYear(r){ var d=getLogDate(r); return d?d.slice(0,4):''; }
+function getLogMonth(r){ var d=getLogDate(r); return d?d.slice(5,7):''; }
+function renderSummary(){
+  var fi=document.getElementById('sum-fi').value;
+  var fy=document.getElementById('sum-fy')?document.getElementById('sum-fy').value:'';
+  var fm=document.getElementById('sum-fm')?document.getElementById('sum-fm').value:'';
+  var fd=document.getElementById('sum-fd')?document.getElementById('sum-fd').value:'';
+  var arr=logs.filter(function(r){
+    if(fi&&r.item!==fi) return false;
+    if(fy&&getLogYear(r)!==fy) return false;
+    if(fm&&getLogMonth(r)!==fm) return false;
+    if(fd){ var d=getLogDate(r); if(d!==fd) return false; }
+    return true;
+  });
+  var withDur=arr.filter(function(r){ return r.durMs>0; });
+  var avg=withDur.length?withDur.reduce(function(s,r){ return s+r.durMs; },0)/withDur.length:0;
+  document.getElementById('stat-row').innerHTML=
+    '<div class="sc"><div class="sl">完成記錄</div><div class="sv">'+arr.length+'</div></div>'
+    +'<div class="sc"><div class="sl">平均時長</div><div class="sv">'+(avg>0?fmtDur(avg):'—')+'</div></div>'
+    +'<div class="sc"><div class="sl">品項種類</div><div class="sv">'+[...new Set(arr.map(function(r){return r.item;}))].length+'</div></div>';
+  var tbody=document.getElementById('sum-tbody');
+  if(!arr.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--ink3)">尚無完成記錄</td></tr>'; updateSelCount(); return; }
+  function fmtT(t){
+    if(!t) return '—';
+    if(t.indexOf('T')>0){ var d=new Date(t); if(isNaN(d)) return t; var p=function(n){return String(n).padStart(2,'0');}; return (d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+    return t.slice(5,16);
+  }
+  function tc(r,k){ var t=fmtT(r[k]?r[k].t:''),p=r[k]?r[k].p||'':''; return '<span style="font-size:11px">'+t+(p?'<br><span style="color:var(--ink3)">'+p+'</span>':'')+'</span>'; }
+  tbody.innerHTML=arr.map(function(r){
+    return '<tr>'
+      +'<td><input type="checkbox" class="row-chk" data-id="'+r.id+'" onchange="updateSelCount()"></td>'
+      +'<td class="td-g">'+r.item+'</td><td><span class="bdg bg-a">'+r.barrel+'</span></td>'
+      +'<td style="color:var(--blue);font-weight:600">'+(r.weight?r.weight+'kg':'—')+'</td>'
+      +'<td>'+tc(r,'cook')+'</td><td>'+tc(r,'lower')+'</td><td>'+tc(r,'upper')+'</td><td>'+tc(r,'bed')+'</td><td>'+tc(r,'wash')+'</td>'
+      +'<td class="td-dur">'+(r.dur||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  var ca=document.getElementById('chk-all'); if(ca) ca.checked=false;
+  updateSelCount();
+}
+function updateSelCount(){ var n=document.querySelectorAll('.row-chk:checked').length; var el=document.getElementById('sel-count'); if(el) el.textContent=n+' 筆已選'; }
+function checkAll(checked){ document.querySelectorAll('.row-chk').forEach(function(c){ c.checked=checked; }); updateSelCount(); }
+function toggleSelectAll(){
+  var all=document.querySelectorAll('.row-chk'); var checked=document.querySelectorAll('.row-chk:checked').length;
+  var ns=checked<all.length; all.forEach(function(c){ c.checked=ns; });
+  var ca=document.getElementById('chk-all'); if(ca) ca.checked=ns;
+  var btn=document.getElementById('sel-all-btn'); if(btn) btn.textContent=ns?'取消全選':'全選';
+  updateSelCount();
+}
+function delSelected(){
+  var ids=[]; document.querySelectorAll('.row-chk:checked').forEach(function(c){ ids.push(c.dataset.id); });
+  if(!ids.length){ showToast('請先勾選要刪除的記錄'); return; }
+  if(!confirm('確定刪除選取的 '+ids.length+' 筆記錄？')) return;
+  ids.forEach(function(id){ logs=logs.filter(function(r){ return String(r.id)!==String(id); }); pushDeleteLog(id); });
+  localSave(); renderSummary(); buildSumFilters(); showToast('已刪除 '+ids.length+' 筆記錄');
+}
+function clearAllLogs(){ if(!confirm('確定要清除所有完成記錄嗎？')) return; logs=[]; localSave(); renderSummary(); showToast('已清除所有完成記錄'); }
+function delLog(id){ if(!confirm('確定刪除？'))return; logs=logs.filter(function(r){return String(r.id)!==String(id);}); localSave(); pushDeleteLog(id); renderSummary(); showToast('已刪除'); }
+
+// ═══════════════════════════════════
+// 手動重新同步
+// ═══════════════════════════════════
+function syncFromSheets(){
+  if(!API_URL){ showToast('尚未設定 API_URL'); return; }
+  setStatus('同步中…');
+  api({action:'jellyGetConfig'},function(d,e){
+    if(d&&d.ok){ items=d.items; persons=d.persons; }
+  });
+  api({action:'jellyGetActives'},function(d,e){
+    if(d&&d.ok){ actives=d.data; renderAll(); renderTrack(); }
+  });
+  api({action:'jellyGetLogs'},function(d,e){
+    if(d&&d.ok){ logs=d.data; localSave(); setStatus('已同步 ✓'); showToast('✓ 同步完成'); }
+    else { setStatus('同步失敗'); showToast('⚠ 同步失敗，使用本地資料'); }
+  });
+}
+
+// ═══════════════════════════════════
+// 管理
+// ═══════════════════════════════════
+function openMgmt(type){ if(type==='item') buildItemList(); else buildPersonList(); openOv('mgmt-'+type); }
+
+function buildItemList(){
+  var el=document.getElementById('ml-item');
+  if(!items.length){ el.innerHTML='<div style="color:var(--ink3);text-align:center;padding:12px;font-size:13px">尚無品項</div>'; return; }
+  el.innerHTML=items.map(function(it,i){
+    var chips=it.barrels.map(function(b,bi){
+      return '<span class="bchip">'+b+'<button class="bchip-del" onclick="delBarrel('+i+','+bi+',\''+esc(it.name)+'\',\''+esc(b)+'\')">✕</button></span>';
+    }).join('');
+    return '<div class="mgmt-row" style="flex-direction:column;align-items:stretch">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        +'<span class="mgmt-name">'+it.name+'</span>'
+        +'<button class="mgmt-del" onclick="delItem('+i+',\''+esc(it.name)+'\')">刪除品項</button>'
+      +'</div>'
+      +'<div class="barrel-chips">'+(chips||'<span style="font-size:12px;color:var(--ink4)">尚無桶號</span>')+'</div>'
+      +'<div class="add-barrel-row"><input class="ab-inp" id="ab-'+i+'" placeholder="新增桶號"><button class="ab-btn" onclick="addBarrel('+i+',\''+esc(it.name)+'\')">新增桶</button></div>'
     +'</div>';
   }).join('');
 }
+function delItem(i, name){
+  if(!confirm('確定刪除品項「'+name+'」？'))return;
+  items.splice(i,1); localSave(); buildItemList(); buildSumFilters();
+  api({action:'jellyDelItem', name:name}, null);
+  showToast('已刪除品項');
+}
+function addBarrel(i, itemName){
+  var inp=document.getElementById('ab-'+i); var v=inp.value.trim();
+  if(!v){showToast('請輸入桶號');return;}
+  if(items[i].barrels.indexOf(v)!==-1){showToast('已存在');return;}
+  items[i].barrels.push(v); localSave(); buildItemList();
+  api({action:'jellyAddBarrel', item:itemName, barrel:v}, null);
+  showToast('✓ 已新增桶號：'+v); inp.value='';
+}
+function delBarrel(i, bi, itemName, barrelName){
+  if(!confirm('確定刪除桶號「'+barrelName+'」？'))return;
+  items[i].barrels.splice(bi,1); localSave(); buildItemList();
+  api({action:'jellyDelBarrel', item:itemName, barrel:barrelName}, null);
+  showToast('已刪除桶號');
+}
+function addItem(){
+  var v=document.getElementById('ai-item').value.trim();
+  if(!v){showToast('請輸入品項名稱');return;}
+  if(items.find(function(x){return x.name===v;})){showToast('已存在');return;}
+  items.push({name:v,barrels:[]}); localSave(); buildItemList(); buildSumFilters();
+  api({action:'jellyAddItem', name:v}, null);
+  document.getElementById('ai-item').value=''; showToast('✓ 已新增品項');
+}
+
+function buildPersonList(){
+  var el=document.getElementById('ml-person');
+  if(!persons.length){ el.innerHTML='<div style="color:var(--ink3);text-align:center;padding:12px;font-size:13px">尚無人員</div>'; return; }
+  el.innerHTML=persons.map(function(v,i){
+    return '<div class="mgmt-row">'
+      +'<span class="mgmt-name">'+v+'</span>'
+      +'<button class="mgmt-del" onclick="delPerson('+i+',\''+esc(v)+'\')">刪除</button>'
+    +'</div>';
+  }).join('');
+}
+function delPerson(i, name){
+  if(!confirm('確定刪除「'+name+'」？'))return;
+  persons.splice(i,1); localSave(); buildPersonList();
+  api({action:'jellyDelPerson', name:name}, null);
+  showToast('已刪除');
+}
+function addPerson(){
+  var v=document.getElementById('ai-person').value.trim();
+  if(!v){showToast('請輸入姓名');return;}
+  if(persons.indexOf(v)!==-1){showToast('已存在');return;}
+  persons.push(v); localSave(); buildPersonList();
+  api({action:'jellyAddPerson', name:v}, null);
+  document.getElementById('ai-person').value=''; showToast('✓ 已新增：'+v);
+}
+
+// ═══════════════════════════════════
+// 頁籤
+// ═══════════════════════════════════
+function showPage(p){
+  ['board','track','summary'].forEach(function(n){
+    document.getElementById('page-'+n).className='page'+(n===p?' on':'');
+    document.getElementById('tab-'+n).className='tab'+(n===p?' on':'');
+  });
+  if(p==='track') renderTrack();
+  if(p==='summary'){ buildSumFilters(); renderSummary(); }
+}
+
+// ═══════════════════════════════════
+// 工具
+// ═══════════════════════════════════
+function nowStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function toTs(s){ if(!s)return null; if(s.indexOf('T')>0){var t1=new Date(s);return isNaN(t1)?null:t1;} var t=new Date(s.replace(/\//g,'-').replace(' ','T')); return isNaN(t)?null:t; }
+function fmtDur(ms){ var h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000); return h>0?h+'h'+m+'m':m+'分'; }
+function fmtDurLong(ms){ var days=Math.floor(ms/86400000); var h=Math.floor((ms%86400000)/3600000); var m=Math.floor((ms%3600000)/60000); return (days>0?days+'天':'')+(h>0?h+'小時':'')+(m+'分'); }
+function findActive(id){ return actives.find(function(a){ return String(a.id)===String(id); }); }
+function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
 </script>
 </body>
 </html>
