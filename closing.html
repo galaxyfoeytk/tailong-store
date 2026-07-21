@@ -323,36 +323,6 @@ canvas{width:100%!important}
         <button onclick="saveClosingConfig()" style="padding:7px 16px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">儲存設定</button>
       </div>
     </details>
-    <!-- 茶製記錄 -->
-    <div class="section" id="tea-section">
-      <div class="section-head">🍵 茶製記錄（烏龍茶 / 紅茶 / 青茶）</div>
-      <div class="section-body">
-        <div id="tea-list" style="margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
-          <div class="field"><label>桶號</label>
-            <select id="tea-barrel" style="width:100%;padding:10px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;background:var(--white)">
-              <option value="1">1號桶</option>
-              <option value="2">2號桶</option>
-              <option value="3">3號桶</option>
-            </select>
-          </div>
-          <div class="field"><label>茶種</label>
-            <select id="tea-type" style="width:100%;padding:10px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;background:var(--white)">
-              <option value="烏龍茶">🍵 烏龍茶</option>
-              <option value="紅茶">☕ 紅茶</option>
-              <option value="青茶">🌿 青茶</option>
-            </select>
-          </div>
-          <div class="field"><label>煮好時間</label>
-            <input type="time" id="tea-cook-time" style="width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px">
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="teaLogAdd()" style="flex:1;padding:11px;border-radius:var(--r2);border:none;background:var(--g);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">＋ 記錄煮好時間</button>
-          <button onclick="teaLogLoadToday()" style="padding:11px 14px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;cursor:pointer;font-family:inherit">🔄 載入今日</button>
-        </div>
-      </div>
-    </div>
 
     <button class="test-line-btn" onclick="previewTestNotify()">📋 預覽 / 測試 LINE 訊息</button>
     <button class="submit-btn" onclick="submitForm()">📤 送出收班記錄</button>
@@ -462,132 +432,11 @@ var PRODUCTS = [
 var _charts = {};
 
 // ── 初始化 ─────────────────────────────────────────
-// ── 茶製記錄 ────────────────────────────────────────────────
-var teaRecords = [];  // 今日茶製記錄
-
-function todayStr(){
-  var d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-function nowTimeStr(){
-  var d=new Date();
-  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-}
-
-function teaLogLoadToday(){
-  var date = todayStr();
-  api({action:'teaLogGetAll', date:date}, function(d){
-    if(d&&d.ok&&d.data){
-      teaRecords = d.data;
-      renderTeaList();
-      showToast('✓ 今日茶製記錄已載入');
-    }
-  });
-}
-
-function teaLogAdd(){
-  var barrel   = document.getElementById('tea-barrel').value;
-  var teaType  = document.getElementById('tea-type').value;
-  var cookTime = document.getElementById('tea-cook-time').value;
-  if(!cookTime){ showToast('請填入煮好時間'); return; }
-  var person = document.getElementById('f-person').value || '';
-  var date   = document.getElementById('f-date').value || todayStr();
-  var id     = String(Date.now());
-  apiPost({action:'teaLogSave', id:id, date:date, barrel:barrel, teaType:teaType,
-    cookTime:cookTime, washTime:'', durationMin:0, person:person, note:''},
-    function(d){
-      if(d&&d.ok){
-        teaRecords.unshift({id:id, date:date, barrel:barrel, teaType:teaType,
-          cookTime:cookTime, washTime:'', durationMin:0, person:person});
-        renderTeaList();
-        showToast('✓ 已記錄 '+teaType+' '+barrel+'號桶 煮好 '+cookTime);
-        // 重設時間為現在
-        document.getElementById('tea-cook-time').value = nowTimeStr();
-      } else {
-        showToast('❌ 記錄失敗');
-      }
-    }
-  );
-}
-
-function teaLogWash(id){
-  var rec = teaRecords.find(function(r){ return String(r.id)===String(id); });
-  if(!rec){ showToast('找不到記錄'); return; }
-  var washTime = nowTimeStr();
-  // 計算使用時長
-  var cookParts = (rec.cookTime||'').split(':');
-  var washParts = washTime.split(':');
-  var durationMin = 0;
-  if(cookParts.length===2 && washParts.length===2){
-    var cookMin = parseInt(cookParts[0])*60 + parseInt(cookParts[1]);
-    var washMin = parseInt(washParts[0])*60 + parseInt(washParts[1]);
-    durationMin = washMin - cookMin;
-    if(durationMin < 0) durationMin += 24*60; // 跨日
-  }
-  apiPost({action:'teaLogSave', id:id, date:rec.date, barrel:rec.barrel, teaType:rec.teaType,
-    cookTime:rec.cookTime, washTime:washTime, durationMin:durationMin,
-    person:rec.person, note:rec.note||''},
-    function(d){
-      if(d&&d.ok){
-        rec.washTime = washTime;
-        rec.durationMin = durationMin;
-        renderTeaList();
-        var h = Math.floor(durationMin/60), m = durationMin%60;
-        showToast('✓ 已記錄清洗時間　使用 '+h+'小時'+m+'分');
-      }
-    }
-  );
-}
-
-function teaLogDelete(id){
-  if(!confirm('確定刪除此茶製記錄？')) return;
-  api({action:'teaLogDelete', id:id}, function(d){
-    if(d&&d.ok){
-      teaRecords = teaRecords.filter(function(r){ return String(r.id)!==String(id); });
-      renderTeaList();
-      showToast('已刪除');
-    }
-  });
-}
-
-function renderTeaList(){
-  var el = document.getElementById('tea-list');
-  if(!el) return;
-  if(!teaRecords.length){
-    el.innerHTML='<div style="text-align:center;color:var(--ink3);font-size:13px;padding:8px 0">今日尚無茶製記錄</div>';
-    return;
-  }
-  var teaIcons = {烏龍茶:'🍵', 紅茶:'☕', 青茶:'🌿'};
-  el.innerHTML = teaRecords.map(function(r){
-    var icon = teaIcons[r.teaType]||'🍵';
-    var duration = '';
-    if(r.durationMin > 0){
-      var h=Math.floor(r.durationMin/60), m=r.durationMin%60;
-      duration = ' ⏱ '+h+'h'+m+'m';
-    }
-    var washed = !!r.washTime;
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(washed?'var(--gl)':'var(--bg)')+';border-radius:var(--r2);border:1px solid '+(washed?'var(--gm)':'var(--bd)')+';margin-bottom:6px">'
-      +'<span style="font-size:18px">'+icon+'</span>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:13px;font-weight:700">'+r.barrel+'號桶　'+r.teaType+'</div>'
-        +'<div style="font-size:12px;color:var(--ink3)">煮好：'+r.cookTime+(r.washTime?'　清洗：'+r.washTime+duration:'　尚未清洗')+'</div>'
-      +'</div>'
-      +(!washed ? '<button onclick="teaLogWash(''+r.id+'')" style="padding:6px 12px;border:none;border-radius:var(--r2);background:var(--b);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">🫧 記錄清洗</button>' : '<span style="color:var(--g);font-size:12px;font-weight:700">✓ 已清洗</span>')
-      +'<button onclick="teaLogDelete(''+r.id+'')" style="padding:6px 8px;border:none;border-radius:var(--r2);background:var(--redl);color:var(--red);font-size:12px;cursor:pointer;font-family:inherit">✕</button>'
-    +'</div>';
-  }).join('');
-}
-
 window.onload = function(){
   var d = new Date(), pad = function(n){ return String(n).padStart(2,'0'); };
   var today = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   document.getElementById('f-date').value = today;
   document.getElementById('today-label').textContent = today;
-  // 茶製記錄：初始化時間為現在，並載入今日記錄
-  var tInp = document.getElementById('tea-cook-time');
-  if(tInp) tInp.value = pad(d.getHours())+':'+pad(d.getMinutes());
-  teaLogLoadToday();
   loadClosingConfig();
 
   // 人員下拉
