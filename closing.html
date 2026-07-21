@@ -177,6 +177,32 @@ canvas{width:100%!important}
           <select id="f-person"><option value="">— 選擇 —</option></select>
         </div>
       </div>
+      <div style="margin-top:10px;padding:10px 12px;background:var(--amberl,#FFF3E0);border-radius:var(--r2);border:1.5px solid var(--amber,#FF8F00)">
+        <div style="font-size:12px;font-weight:700;color:var(--amber,#E65100);margin-bottom:8px">🧾 是否有進貨收據？（必填）</div>
+        <div style="display:flex;gap:10px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:15px;font-weight:700">
+            <input type="radio" name="has-receipt" id="receipt-yes" value="yes" onchange="onReceiptChange()">
+            <span>✅ 有</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:15px;font-weight:700">
+            <input type="radio" name="has-receipt" id="receipt-no" value="no" onchange="onReceiptChange()">
+            <span>❌ 沒有</span>
+          </label>
+        </div>
+        <div id="receipt-inventory-q" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--amber,#FF8F00)">
+          <div style="font-size:12px;font-weight:700;color:var(--b);margin-bottom:8px">📦 是否已填寫進貨盤點？</div>
+          <div style="display:flex;gap:10px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:700">
+              <input type="radio" name="has-inv" id="inv-yes" value="yes">
+              <span>✅ 已填</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;font-weight:700">
+              <input type="radio" name="has-inv" id="inv-no" value="no">
+              <span>⬜ 未填</span>
+            </label>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -779,6 +805,19 @@ function submitForm(){
   if(!person) { showToast('請選擇人員'); return; }
   if(!revenue){ showToast('請填入總營業額'); return; }
   if(!getNum('f-hours')){ showToast('請填入今日時數'); return; }
+  // 收據必填
+  var receiptYes = document.getElementById('receipt-yes');
+  var receiptNo  = document.getElementById('receipt-no');
+  if(!receiptYes.checked && !receiptNo.checked){ showToast('請選擇是否有進貨收據'); return; }
+  // 有收據但未選進貨盤點
+  if(receiptYes.checked){
+    var invYes = document.getElementById('inv-yes');
+    var invNo  = document.getElementById('inv-no');
+    if(!invYes.checked && !invNo.checked){ showToast('請選擇是否已填寫進貨盤點'); return; }
+    if(invNo.checked){
+      if(!confirm('⚠️ 進貨盤點尚未填寫\n確定要繼續送出收班記錄嗎？')){ return; }
+    }
+  }
 
   // 驗證今日電表是否已記錄
   var elecOk = false;
@@ -891,11 +930,16 @@ function doActualSubmit(date, person){
     showToast('✓ 收班記錄已儲存！');
     // 先儲存完成，再問是否要發送 LINE
     setTimeout(function(){
-      if(confirm('收班記錄已儲存 ✓\n\n是否現在發送 LINE 通知給群組？')){
+      if(confirm('收班記錄已儲存 ✓\n\n是否現在發送 LINE 通知給群組？\n\n📌 記得 @家暉哥')){
         sendClosingLineNotify(params);
       }
     }, 400);
     // 清空數值欄位
+    document.getElementById('receipt-yes').checked=false;
+    document.getElementById('receipt-no').checked=false;
+    document.getElementById('inv-yes').checked=false;
+    document.getElementById('inv-no').checked=false;
+    document.getElementById('receipt-inventory-q').style.display='none';
     ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-panda-cnt','f-panda-amt','f-hours'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.value = '';
     });
@@ -905,6 +949,12 @@ function doActualSubmit(date, person){
     });
     recalcAll();
   });
+}
+
+function onReceiptChange(){
+  var yes = document.getElementById('receipt-yes');
+  var q   = document.getElementById('receipt-inventory-q');
+  if(yes && q) q.style.display = yes.checked ? 'block' : 'none';
 }
 
 function weatherIcon(w){
