@@ -494,6 +494,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 </div>
 
 <!-- 歷史記錄 overlay -->
+
 <div class="ov" id="ov-hist">
   <div class="sh" style="max-height:92dvh;overflow-y:auto;display:flex;flex-direction:column">
     <div class="sh-handle"></div>
@@ -760,6 +761,18 @@ function pullFromCloud(force){
 }
 
 // 存品項到本機 + 雲端（防抖：最後一次操作 800ms 後才打 API）
+// 自動備份（防抖，3秒後觸發，避免每個動作都打 API）
+var _backupTimer = null;
+function autoBackup(){
+  clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(function(){
+    var recData   = localStorage.getItem('inv3_records') || '[]';
+    var itemsData = localStorage.getItem('inv3_items')   || '[]';
+    apiPost({action:'backupRecords', key:'inv_records', data:recData},   function(){});
+    apiPost({action:'backupRecords', key:'inv_items',   data:itemsData}, function(){});
+  }, 3000);
+}
+
 function saveItems(){
   // 1. 立即存本機（不等 API）
   localStorage.setItem('inv3_items', JSON.stringify(items));
@@ -770,13 +783,13 @@ function saveItems(){
     _syncLocked = true;
     var ts = Date.now();
     var snapshot = JSON.parse(JSON.stringify(items));
-    // 用獨立分頁存，避免 cfgSet 的大小限制和版本覆蓋問題
     apiPost({action:'invItemSaveAll', items:JSON.stringify(snapshot)}, function(d){
       _syncLocked = false;
       if(d && d.ok){
         _syncVer = ts;
         localStorage.setItem('inv3_ver', String(ts));
         setSyncStatus('ok');
+        autoBackup(); // ← 品項設定變更後自動備份
       } else {
         setSyncStatus('error');
         showToast('⚠️ 雲端同步失敗，設定已存在本機');
@@ -789,6 +802,7 @@ function saveRecords(){
   var trimmed = records.slice(0, 50);
   localStorage.setItem('inv3_records', JSON.stringify(trimmed));
   cfgSet('inv:records', trimmed);
+  autoBackup(); // ← 盤點記錄變更後自動備份
 }
 function getItemsForMode(mode){
   if(mode==='monthly') return items;
@@ -1217,6 +1231,13 @@ function finishCount(){
   saveRecords();
   pushToSheets(rec,modeItems,actionItems);
   if(rec.mode !== 'daily') sendLineInventoryNotify(rec,modeItems,actionItems);
+  // 月盤完成後自動備份到 Sheets
+  if(rec.mode === 'monthly'){
+    setTimeout(function(){
+      apiPost({action:'backupRecords', key:'inv_records', data:localStorage.getItem('inv3_records')||'[]'}, function(){});
+      apiPost({action:'backupRecords', key:'inv_items',   data:localStorage.getItem('inv3_items')||'[]'},   function(){});
+    }, 2000);
+  }
   showPage('result');
 }
 
@@ -2075,6 +2096,9 @@ function editMonthlyRecFromSheets(recId){
   window._editingMonthlyPerson=rec.person;
   openOv('monthly-edit');
 }
+
+
+
 
 
 function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}

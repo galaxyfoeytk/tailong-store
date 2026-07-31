@@ -246,7 +246,7 @@ canvas{width:100%!important}
           <select id="f-demo-focus">
             <option value="">— 選 —</option>
             <option>原味風凍</option><option>芋香風凍</option><option>檸夏風凍</option>
-            <option>輕春風凍</option><option>清涼風凍</option><option>冬玫風凍</option><option>其他</option>
+            <option>輕春風凍</option><option>清涼風凍</option><option>冬玫風凍</option><option>桂花風凍</option><option>其他</option>
           </select>
         </div>
         <div class="field"><label>試飲杯總數</label><input id="f-demo-cups" placeholder="0" oninput="recalcAll()" type="text" readonly onfocus="npOpen(this,'試飲杯總數')"></div>
@@ -428,6 +428,7 @@ var PRODUCTS = [
   {key:'youth',    name:'輕春風凍', color:'#1A6B3C'},
   {key:'cool',     name:'清涼風凍', color:'#2A8FA8'},
   {key:'dongmei',  name:'冬玫風凍', color:'#C0395A'},
+  {key:'guihua',  name:'桂花風凍', color:'#D4820A'},
 ];
 var _charts = {};
 
@@ -550,7 +551,7 @@ function recalcAll(){
   var totalCups = seal + cream + eco;
 
   // 3. 取寄杯數（先算，因為均杯單價需要用到）
-  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool + take.dongmei;
+  var takeCups = take.original + take.aromatic + take.ningxia + take.youth + take.cool + take.dongmei + take.guihua;
 
   // 寄杯組
   var depOrig  = getNum('f-dep-orig');
@@ -572,7 +573,8 @@ function recalcAll(){
                   (buy.ningxia  + take.ningxia)  +
                   (buy.youth    + take.youth)    +
                   (buy.cool     + take.cool)     +
-                  (buy.dongmei  + take.dongmei);
+                  (buy.dongmei  + take.dongmei)  +
+                  (buy.guihua   + take.guihua);
 
   // 6. 仙草凍/總佔比 = (原味總數 + 風味總數) / 總杯數
   var jellyTotal = origTotal + flavTotal;
@@ -766,6 +768,8 @@ function doActualSubmit(date, person){
     takeCool:     getNum('f-take-cool'),
     buyDongmei:   getNum('f-buy-dongmei'),
     takeDongmei:  getNum('f-take-dongmei'),
+    buyGuihua:    getNum('f-buy-guihua'),
+    takeGuihua:   getNum('f-take-guihua'),
     newCustomer:  getNum('f-new'),
     returnCustomer: getNum('f-return'),
     jelloReturn:  getNum('f-jello-return'),
@@ -777,6 +781,13 @@ function doActualSubmit(date, person){
     if(err){ showToast('❌ 連線失敗：'+String(err).slice(0,80)); return; }
     if(!d||!d.ok){ showToast('❌ 後端錯誤：'+(d&&d.error?d.error:'未知錯誤')); return; }
     showToast('✓ 收班記錄已儲存！');
+    // 自動備份到 Sheets
+    (function(){
+      try{
+        var histData = localStorage.getItem('closing_history') || '[]';
+        apiPost({action:'backupRecords', key:'closing_history', data:histData}, function(){});
+      }catch(e){}
+    })();
     // 先儲存完成，再問是否要發送 LINE
     setTimeout(function(){
       if(confirm('收班記錄已儲存 ✓\n\n是否現在發送 LINE 通知給群組？\n\n📌 記得 @家暉哥')){
@@ -789,7 +800,7 @@ function doActualSubmit(date, person){
     document.getElementById('inv-yes').checked=false;
     document.getElementById('inv-no').checked=false;
     document.getElementById('receipt-inventory-q').style.display='none';
-    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-panda-cnt','f-panda-amt','f-hours'].forEach(function(id){
+    ['f-receipt','f-seal','f-cream','f-eco','f-demo-cups','f-demo-convert','f-new','f-return','f-jello-return','f-jello-direct','f-dep-orig','f-dep-flav','f-dep-super','f-delivery-cnt','f-delivery-cups','f-delivery-amt','f-panda-cnt','f-panda-amt','f-hours','f-buy-guihua','f-take-guihua'].forEach(function(id){
       var el = document.getElementById(id); if(el) el.value = '';
     });
     PRODUCTS.forEach(function(p){
@@ -831,6 +842,7 @@ function resendLineNotify(id){
       buyYouth:r.buyYouth, takeYouth:r.takeYouth,
       buyCool:r.buyCool, takeCool:r.takeCool,
       buyDongmei:r.buyDongmei||0, takeDongmei:r.takeDongmei||0,
+      buyGuihua:r.buyGuihua||0, takeGuihua:r.takeGuihua||0,
       newCustomer:r.newCustomer, returnCustomer:r.returnCustomer,
       jelloReturn:r.jelloReturn, jelloDirect:r.jelloDirect,
       hours:r.hours||0,
@@ -1069,12 +1081,12 @@ function closeMsgModal(e){
 function buildClosingMsgBase(p){
   var n = function(k){ return parseFloat(p[k]||0)||0; };
   var totalCups  = n('sealMachine')+n('creamTop')+n('ecoCup');
-  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool')+n('takeDongmei');
+  var takeCups   = n('takeOriginal')+n('takeAromatic')+n('takeNingxia')+n('takeYouth')+n('takeCool')+n('takeDongmei')+n('takeGuihua');
   var depAmt     = n('depOrig')*650+n('depFlav')*750+n('depSuper')*1400;
   var dineInCups = totalCups-takeCups;
   var avgPrice   = dineInCups>0 ? Math.round((n('revenue')-depAmt)/dineInCups*10)/10 : 0;
   var origTotal  = n('buyOriginal')+n('takeOriginal');
-  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool')+n('buyDongmei')+n('takeDongmei');
+  var flavTotal  = n('buyAromatic')+n('takeAromatic')+n('buyNingxia')+n('takeNingxia')+n('buyYouth')+n('takeYouth')+n('buyCool')+n('takeCool')+n('buyDongmei')+n('takeDongmei')+n('buyGuihua')+n('takeGuihua');
   var receipt    = n('receiptCount');
   function pct(a,b){ return b>0?(a/b*100).toFixed(1)+'%':'—'; }
 
@@ -1299,6 +1311,7 @@ function previewTestNotify(){
     buyYouth:n('f-buy-youth'), takeYouth:n('f-take-youth'),
     buyCool:n('f-buy-cool'), takeCool:n('f-take-cool'),
     buyDongmei:n('f-buy-dongmei'), takeDongmei:n('f-take-dongmei'),
+    buyGuihua:n('f-buy-guihua'), takeGuihua:n('f-take-guihua'),
     newCustomer:n('f-new'), returnCustomer:n('f-return'),
     jelloReturn:n('f-jello-return'), jelloDirect:n('f-jello-direct'),
     deliveryCnt:n('f-delivery-cnt'), deliveryCups:n('f-delivery-cups'), deliveryAmt:n('f-delivery-amt'),
@@ -1622,7 +1635,7 @@ function calcTotalCups(r){
 }
 // 取寄杯數
 function calcTakeCups(r){
-  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0)+(r.takeDongmei||0);
+  return (r.takeOriginal||0)+(r.takeAromatic||0)+(r.takeNingxia||0)+(r.takeYouth||0)+(r.takeCool||0)+(r.takeDongmei||0)+(r.takeGuihua||0);
 }
 // 原味總數
 function calcOrigTotal(r){
@@ -1634,7 +1647,8 @@ function calcFlavTotal(r){
          (r.buyNingxia||0) +(r.takeNingxia||0)+
          (r.buyYouth||0)   +(r.takeYouth||0)+
          (r.buyCool||0)    +(r.takeCool||0)+
-         (r.buyDongmei||0) +(r.takeDongmei||0);
+         (r.buyDongmei||0)+(r.takeDongmei||0)+
+         (r.buyGuihua||0) +(r.takeGuihua||0);
 }
 
 function delRecord(id){
