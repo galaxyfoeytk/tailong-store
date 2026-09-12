@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="電表記錄">
+<title>電表記錄</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF0D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:15px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:linear-gradient(135deg,#142E4A,#1E4A78);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.brand-name{color:#fff;font-size:16px;font-weight:900}
+.brand-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.home-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.home-btn:active{background:rgba(255,255,255,.3)}
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:500;cursor:pointer;color:var(--ink3);border:none;background:transparent;font-family:inherit;border-bottom:2.5px solid transparent}
+.tab.on{color:var(--b);font-weight:700;border-bottom-color:var(--b)}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:10px 12px 28px}
+.page.on{display:block}
+
+/* 統計卡 */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center}
+.stat-lbl{font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.stat-val{font-size:22px;font-weight:900;color:var(--b);margin-top:4px}
+.stat-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+
+/* 記錄列表 */
+.rec-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:8px;overflow:hidden}
+.rc-head{background:var(--b);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.rc-date{color:#fff;font-size:15px;font-weight:700}
+.rc-reading{color:rgba(255,255,255,.85);font-size:13px}
+.rc-body{padding:10px 14px;display:flex;align-items:center;gap:12px}
+.rc-usage{font-size:24px;font-weight:900;color:var(--b)}
+.rc-unit{font-size:13px;color:var(--ink3);margin-top:2px}
+.rc-note{flex:1;font-size:12px;color:var(--amber);background:var(--amberl);border-radius:6px;padding:5px 8px}
+.rc-del{padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--white);color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.rc-del:active{background:var(--redl)}
+.rc-edit{padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--white);color:var(--b);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.rc-edit:active{background:var(--bl)}
+
+/* 編輯 overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;padding:16px 14px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sh-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1}
+.sh-ok{width:100%;margin-top:12px;padding:13px;background:var(--b);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;margin-top:12px}
+.edit-inp{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.edit-inp:focus{border-color:var(--bm)}
+
+/* 新增表單 */
+.blk{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.blk-title{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field-label{font-size:12px;font-weight:600;color:var(--ink3);margin-bottom:5px;display:block}
+.field input,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--bm)}
+.field textarea{resize:none;height:70px}
+.save-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+.save-btn:active{opacity:.8}
+
+/* 月份篩選 */
+.month-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.month-chips::-webkit-scrollbar{display:none}
+.mchip{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.mchip.on{background:var(--b);color:#fff;border-color:var(--b)}
+.mchip:active{opacity:.7}
+
+/* 圖表 */
+.chart-wrap{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.chart-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.bar-chart{display:flex;align-items:flex-end;gap:4px;height:120px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.bar-chart::-webkit-scrollbar{display:none}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
+.bar{width:28px;border-radius:4px 4px 0 0;background:var(--bm);min-height:4px;transition:height .2s;cursor:pointer;position:relative}
+.bar.high{background:var(--red)}
+.bar.low{background:var(--gm)}
+.bar-lbl{font-size:9px;color:var(--ink3);white-space:nowrap}
+.bar-val{font-size:9px;color:var(--ink2);font-weight:600}
+
+/* 特殊記錄 */
+.note-item{display:flex;gap:10px;padding:9px 12px;background:var(--amberl);border-radius:var(--r2);border:1px solid #F5C050;margin-bottom:6px;align-items:flex-start}
+.note-date{font-size:12px;font-weight:700;color:var(--amber);white-space:nowrap;flex-shrink:0}
+.note-text{font-size:13px;color:var(--amber)}
+
+/* 製冰機時段 */
+.ice-slot{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+.ice-slot input[type=time]{flex:1;padding:9px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;color:var(--ink);background:var(--white);outline:none}
+.ice-slot input[type=time]:focus{border-color:var(--bm)}
+.ice-slot-sep{font-size:13px;color:var(--ink3);font-weight:600;flex-shrink:0}
+.ice-slot-del{width:30px;height:30px;border:1px solid var(--bd);border-radius:50%;background:var(--white);color:var(--red);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;line-height:1}
+.ice-slot-del:active{background:var(--redl)}
+/* 記錄卡片額外資訊 */
+.rc-extras{padding:6px 14px 10px;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--bg)}
+.rc-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:8px;font-size:12px;font-weight:600}
+.rc-tag.ice{background:#E3F2FD;color:#1565C0}
+.rc-tag.jelly{background:#E8F5E9;color:#2E7D32}
+.rc-tag.note{background:var(--amberl);color:var(--amber)}
+
+.empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:500;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+.np-backdrop{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45)}
+.np-backdrop.show{display:block}
+.np-wrap{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;z-index:501;padding:12px 14px 32px;max-width:540px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.15);transform:translateY(100%);transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.np-wrap.show{transform:translateY(0)}
+.np-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.np-label-row{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;margin-bottom:4px}
+.np-display{font-size:38px;font-weight:900;color:var(--ink);letter-spacing:-.5px;min-height:48px;margin-bottom:10px}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+.npk{padding:15px;border-radius:8px;border:none;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:#f3f6fa;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.npk:active{background:#dde3ea;transform:scale(.94)}
+.npk-del{background:#fff8e1;color:#f59c00}
+.npk-clear{background:#fdecea;color:#d32f2f;font-size:13px;font-weight:800}
+.np-ok{width:100%;padding:14px;background:linear-gradient(135deg,#1A3A5C,#2A5A8C);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;touch-action:manipulation}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="brand-name">⚡ 電表記錄</div>
+    <div class="brand-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <button class="home-btn" onclick="if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}">🏠 主頁</button>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-list" onclick="showPage('list')">📋 電表</button>
+  <button class="tab" id="tab-add" onclick="showPage('add')">➕ 新增</button>
+  <button class="tab" id="tab-ice" onclick="showPage('ice')">🧊 製冰機</button>
+  <button class="tab" id="tab-stats" onclick="showPage('stats')">📊 統計</button>
+</div>
+
+<div class="pages">
+
+<!-- 記錄列表 -->
+<div class="page on" id="page-list">
+  <div class="month-chips" id="month-chips"></div>
+  <div class="stat-row" id="list-stats"></div>
+  <div id="list-content"></div>
+</div>
+
+<!-- 新增記錄 -->
+<div class="page" id="page-add">
+  <div class="blk">
+    <div class="blk-title">新增電表記錄</div>
+    <div class="field">
+      <label class="field-label">日期</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label class="field-label">電表讀數（度）</label>
+      <input type="text" id="f-reading" placeholder="例：65810" readonly onfocus="npOpen(this,'電表讀數')">
+    </div>
+    <!-- 仙草凍桶數 -->
+    <div class="field">
+      <label class="field-label">🫙 前一天煮的仙草凍桶數</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="f-jelly" placeholder="自動查詢，或手動輸入" readonly onfocus="npOpen(this,'仙草凍桶數')" style="flex:1;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+        <button type="button" id="jelly-query-btn" onclick="queryYesterdayJelly()" style="padding:10px 14px;border:1.5px solid var(--bd);border-radius:var(--r2);background:var(--bl);color:var(--b);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔍 查詢</button>
+      </div>
+      <div id="jelly-query-result" style="font-size:12px;color:var(--ink3);margin-top:4px;min-height:16px"></div>
+    </div>
+    <!-- 備注 -->
+    <div class="field">
+      <label class="field-label">備注（選填）</label>
+      <textarea id="f-note" placeholder="其他特殊說明"></textarea>
+    </div>
+  </div>
+  <button class="save-btn" onclick="doSave()">✓ 儲存電表記錄</button>
+</div>
+
+<!-- 製冰機記錄 -->
+<div class="page" id="page-ice">
+  <div class="blk">
+    <div class="blk-title">🧊 新增製冰機記錄</div>
+    <div class="field">
+      <label class="field-label">日期</label>
+      <input type="date" id="ice-date">
+    </div>
+    <div class="field">
+      <label class="field-label">開關機時段（可多組，最多 3 組）</label>
+      <div id="ice-add-slots"></div>
+      <button type="button" onclick="addIceAddSlot()" style="margin-top:6px;padding:7px 14px;border:1.5px dashed var(--bd);border-radius:var(--r2);background:var(--white);color:var(--bm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">＋ 新增時段</button>
+    </div>
+    <div class="field">
+      <label class="field-label">備注（選填）</label>
+      <input type="text" id="ice-note" placeholder="例：清洗保養" style="width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+    </div>
+  </div>
+  <button class="save-btn" style="background:linear-gradient(135deg,#1565C0,#1976D2)" onclick="saveIceRecord()">✓ 儲存製冰機記錄</button>
+
+  <!-- 製冰機記錄列表 -->
+  <div style="margin-top:14px">
+    <div class="month-chips" id="ice-month-chips"></div>
+    <div id="ice-list-content"></div>
+  </div>
+</div>
+
+<!-- 統計 -->
+<div class="page" id="page-stats">
+  <div class="stat-row" id="stats-cards"></div>
+  <div class="chart-wrap">
+    <div class="chart-title">每日用電（度）</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+  <div class="blk">
+    <div class="blk-title">特殊狀況記錄</div>
+    <div id="notes-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- 編輯電表記錄 overlay -->
+<div class="ov" id="ov-edit">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">修改電表記錄 <button class="sh-close" onclick="closeEdit()">✕</button></div>
+    <div class="sec-lbl" style="margin-top:0">日期</div>
+    <input type="date" id="edit-date" class="edit-inp">
+    <div class="sec-lbl">電表讀數（度）</div>
+    <input type="text" id="edit-reading" class="edit-inp" readonly onfocus="npOpen(this,'電表讀數')">
+    <div class="sec-lbl">🫙 前一天仙草凍桶數</div>
+    <input type="text" id="edit-jelly" class="edit-inp" readonly onfocus="npOpen(this,'仙草凍桶數')" placeholder="桶數">
+    <div class="sec-lbl">備注</div>
+    <textarea id="edit-note" class="edit-inp" style="resize:none;height:60px" placeholder="備注說明（可留空）"></textarea>
+    <button class="sh-ok" onclick="saveEdit()">✓ 儲存修改</button>
+  </div>
+</div>
+
+<!-- 編輯製冰機記錄 overlay -->
+<div class="ov" id="ov-ice-edit">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title">修改製冰機記錄 <button class="sh-close" onclick="closeIceEdit()">✕</button></div>
+    <div class="sec-lbl" style="margin-top:0">日期</div>
+    <input type="date" id="ice-edit-date" class="edit-inp">
+    <div class="sec-lbl">開關機時段</div>
+    <div id="ice-edit-slots"></div>
+    <button type="button" onclick="addIceEditSlot()" style="margin:6px 0 10px;padding:7px 14px;border:1.5px dashed var(--bd);border-radius:var(--r2);background:var(--white);color:var(--bm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">＋ 新增時段</button>
+    <div class="sec-lbl">備注</div>
+    <input type="text" id="ice-edit-note" class="edit-inp" placeholder="備注（可留空）">
+    <button class="sh-ok" style="background:linear-gradient(135deg,#1565C0,#1976D2)" onclick="saveIceEdit()">✓ 儲存修改</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ══════════════════════════════
+// 初始資料
+// ══════════════════════════════
+var INIT_DATA=[
+  {date:'2026-05-10',reading:63703,note:''},
+  {date:'2026-05-11',reading:63807,note:''},
+  {date:'2026-05-12',reading:63928,note:''},
+  {date:'2026-05-13',reading:64020,note:''},
+  {date:'2026-05-14',reading:64155,note:''},
+  {date:'2026-05-15',reading:64326,note:'18:12 看表'},
+  {date:'2026-05-16',reading:64485,note:''},
+  {date:'2026-05-17',reading:64644,note:''},
+  {date:'2026-05-18',reading:64809,note:''},
+  {date:'2026-05-19',reading:64927,note:''},
+  {date:'2026-05-20',reading:65051,note:''},
+  {date:'2026-05-21',reading:65206,note:'09:30 看表'},
+  {date:'2026-05-22',reading:65270,note:''},
+  {date:'2026-05-23',reading:65398,note:''},
+  {date:'2026-05-24',reading:65532,note:'10:05 開製冰機、17:00 關製冰機'},
+  {date:'2026-05-25',reading:65680,note:''},
+  {date:'2026-05-26',reading:65810,note:'09:45 開製冰機'},
+];
+
+var records;
+
+var _np = {el:null, label:'', val:'0'};
+function npOpen(el, label){
+  _np.el = el; _np.label = label;
+  _np.val = (el.value && el.value !== '0') ? String(el.value) : '0';
+  document.getElementById('np-lbl').textContent = label;
+  document.getElementById('np-disp').textContent = _np.val;
+  document.getElementById('np-bd').classList.add('show');
+  document.getElementById('np-wrap').classList.add('show');
+  setTimeout(function(){ el.blur(); }, 10);
+}
+function npClose(){
+  document.getElementById('np-bd').classList.remove('show');
+  document.getElementById('np-wrap').classList.remove('show');
+}
+function npK(k){
+  var v = _np.val === '0' ? '' : _np.val;
+  if(k==='C')      { _np.val = '0'; }
+  else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
+  else if(k==='.'){ if(v.indexOf('.')===-1) _np.val = (v||'0')+'.'; }
+  else if(k==='-'){ _np.val = _np.val.startsWith('-') ? _np.val.slice(1) : '-'+_np.val; }
+  else             { if(v.replace('-','').replace('.','').length >= 6) return; _np.val = (v||'')+k; }
+  document.getElementById('np-disp').textContent = _np.val;
+}
+function npDone(){
+  if(_np.el){ _np.el.value = _np.val === '0' ? '' : _np.val; }
+  npClose();
+}
+
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+function api(params, cb){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e);});
+}
+
+function loadData(){
+  try{
+    var raw=localStorage.getItem('elec_v1');if(!raw)throw 0;
+    records=JSON.parse(raw);
+  }catch(e){
+    records=INIT_DATA.map(function(r,i){return{id:i+1,date:r.date,reading:r.reading,note:r.note};});
+    saveData();
+  }
+}
+function saveData(){ try{localStorage.setItem('elec_v1',JSON.stringify(records));}catch(e){} }
+// elec 記錄由 elecSave/elecDelete API 直接寫 Sheets，saveData 只更新本機快取
+
+// 從 Sheets 同步（以 Sheets 為主，但絕不用空資料覆蓋本地）
+function syncFromSheets(){
+  api({action:'elecGetAll'},function(d,e){
+    if(e||!d||!d.ok) return; // API 失敗，保留本地
+    if(!d.data||!d.data.length) return; // Sheets 回傳空，保留本地
+    // 轉換格式
+    var sheetsRecs = d.data.map(function(r){
+      return {
+        id: r.id,
+        date: String(r.date).replace(/\//g,'-').slice(0,10),
+        reading: parseInt(r.reading)||0,
+        note: r.note||'',
+        jellyCount: r.jellyCount||0,
+        iceMachineHours: parseFloat(r.iceMachineHours)||0,
+        noteText: r.noteText||''
+      };
+    });
+    // 過濾掉日期格式不對的
+    sheetsRecs = sheetsRecs.filter(function(r){ return r.date.match(/^\d{4}-\d{2}-\d{2}$/); });
+    if(!sheetsRecs.length) return; // 過濾後為空，保留本地
+    // 合併：Sheets有的用Sheets，本地新增的保留
+    var sheetsIds={};
+    sheetsRecs.forEach(function(r){ sheetsIds[String(r.id)]=true; });
+    var localOnly=records.filter(function(r){ return !sheetsIds[String(r.id)]; });
+    records = sheetsRecs.concat(localOnly);
+    saveData();
+    var months=getMonths();
+    selMonth=months[months.length-1]||'';
+    buildMonthChips(); renderList(); renderStats();
+  });
+}
+
+// 若本地是空的，先用內建資料補回
+function ensureData(){
+  if(!records||!records.length){
+    records=INIT_DATA.map(function(r,i){return{id:i+1,date:r.date,reading:r.reading,note:r.note};});
+    saveData();
+  }
+}
+
+// ══════════════════════════════
+// 計算用電
+// ══════════════════════════════
+function calcUsage(){
+  var sorted=records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  return sorted.map(function(r,i){
+    var usage=null;
+    var reset=false;
+    if(i>0){
+      usage=r.reading-sorted[i-1].reading;
+      if(usage<0){ reset=true; usage=null; } // 電表歸零/換新，用電量不計算
+    }
+    return Object.assign({},r,{usage:usage,reset:reset});
+  });
+}
+function getMonths(){
+  var months={};
+  records.forEach(function(r){ var m=r.date.slice(0,7); months[m]=true; });
+  return Object.keys(months).sort();
+}
+
+// ══════════════════════════════
+// 篩選月份
+// ══════════════════════════════
+var selMonth='';
+window.onload=function(){
+  loadData();
+  loadIceData();
+  ensureData();
+  var months=getMonths();
+  selMonth=months[months.length-1]||'';
+  buildMonthChips();
+  renderList();
+  renderStats();
+  document.getElementById('f-date').value=todayStr();
+  document.getElementById('ice-date').value=todayStr();
+  syncFromSheets();
+  syncIceFromSheets();
+};
+
+function buildMonthChips(){
+  var months=getMonths();
+  document.getElementById('month-chips').innerHTML=months.map(function(m){
+    return '<button class="mchip'+(m===selMonth?' on':'')+'" onclick="pickMonth(\''+m+'\')">'
+      +m.replace('-','/')+'</button>';
+  }).join('');
+}
+function pickMonth(m){ selMonth=m; buildMonthChips(); renderList(); }
+
+// ══════════════════════════════
+// 列表
+// ══════════════════════════════
+function renderList(){
+  var data=calcUsage().filter(function(r){ return r.date.startsWith(selMonth); });
+  var el=document.getElementById('list-content');
+  if(!data.length){el.innerHTML='<div class="empty">此月份尚無記錄</div>';renderListStats([]);return;}
+
+  // 月統計
+  renderListStats(data);
+
+  // 倒序顯示（最新在上）
+  var rev=data.slice().reverse();
+  el.innerHTML=rev.map(function(r){
+    var usageHtml='';
+    if(r.reset){
+      usageHtml='<div class="rc-usage" style="font-size:13px;color:var(--amber);font-weight:700;line-height:1.3">🔄 電表<br>重置</div>'
+        +'<div class="rc-unit" style="color:var(--amber)">歸零</div>';
+    } else if(r.usage!==null){
+      var cls=r.usage>180?'color:var(--red);font-weight:900':r.usage<80?'color:var(--gm);font-weight:900':'';
+      usageHtml='<div class="rc-usage" style="'+cls+'">'+r.usage+'</div>'
+        +'<div class="rc-unit">度</div>';
+    } else {
+      usageHtml='<div class="rc-usage" style="font-size:16px;color:var(--ink3)">首筆</div>'
+        +'<div class="rc-unit">無前日</div>';
+    }
+    // 顯示標籤
+    var unpacked = unpackNote(r.note);
+    var tags = '';
+    // 1. 製冰機（優先 Sheets 新欄位 → 整合函式解析）
+    if(r.iceMachineHours > 0){
+      tags += '<span class="rc-tag ice">🧊 製冰機 '+r.iceMachineHours+' 時</span>';
+    } else {
+      var iceData = getIceDataForDate(r.date);
+      if(iceData && iceData.slots && iceData.slots.length){
+        var iceMins = calcIceMins(iceData.slots);
+        var iceLabel = iceData.slots.map(function(s){ return s.on+(s.off?' ~ '+s.off:'起'); }).join('、');
+        var srcMark = iceData.source==='note' ? '（備注）' : '';
+        tags += '<span class="rc-tag ice">🧊 '+iceLabel+(iceMins?' '+fmtMins(iceMins):'')+srcMark+'</span>';
+      }
+    }
+    // 2. 仙草凍（優先 Sheets 新欄位 → JSON 備注）
+    var jellyShow = r.jellyCount > 0 ? r.jellyCount : unpacked.jelly;
+    if(jellyShow !== null && jellyShow !== undefined && jellyShow !== 0){
+      tags += '<span class="rc-tag jelly">🫙 前日煮 '+jellyShow+' 桶</span>';
+    }
+    // 3. 純文字備注
+    var noteShow = r.noteText || unpacked.note;
+    if(noteShow){
+      tags += '<span class="rc-tag note">📌 '+noteShow+'</span>';
+    }
+    return '<div class="rec-card">'
+      +'<div class="rc-head">'
+        +'<span class="rc-date">'+fmtDate(r.date)+'</span>'
+        +'<span class="rc-reading">電表 '+r.reading.toLocaleString()+' 度</span>'
+      +'</div>'
+      +'<div class="rc-body">'
+        +usageHtml
+        +'<div style="flex:1"></div>'
+        +'<button class="rc-edit" data-id="'+r.id+'" onclick="event.stopPropagation();openEdit(this.dataset.id)">修改</button>'
+        +'<button class="rc-del" data-id="'+r.id+'" onclick="event.stopPropagation();delRec(this.dataset.id)">刪除</button>'
+      +'</div>'
+      +(tags ? '<div class="rc-extras">'+tags+'</div>' : '')
+    +'</div>';
+  }).join('');
+}
+function renderListStats(data){
+  var withUsage=data.filter(function(r){return r.usage!==null;});
+  var total=withUsage.reduce(function(s,r){return s+r.usage;},0);
+  var avg=withUsage.length?Math.round(total/withUsage.length):0;
+  var max=withUsage.length?Math.max.apply(null,withUsage.map(function(r){return r.usage;})):0;
+  document.getElementById('list-stats').innerHTML=
+    '<div class="stat-card"><div class="stat-lbl">本月總用電</div><div class="stat-val">'+total+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">日均用電</div><div class="stat-val">'+avg+'</div><div class="stat-sub">度／天</div></div>';
+}
+
+// ══════════════════════════════
+// 製冰機時段 UI 工具
+// ══════════════════════════════
+function _makeIceSlot(containerId, on, off){
+  var container = document.getElementById(containerId);
+  if(container.children.length >= 3){ showToast('最多 3 個時段'); return; }
+  var div = document.createElement('div');
+  div.className = 'ice-slot';
+  div.innerHTML =
+    '<input type="time" class="ice-on" value="'+(on||'')+'">'+
+    '<span class="ice-slot-sep">→</span>'+
+    '<input type="time" class="ice-off" value="'+(off||'')+'" placeholder="關機（可空）">'+
+    '<button class="ice-slot-del" onclick="this.parentNode.remove()">×</button>';
+  container.appendChild(div);
+}
+function addIceAddSlot(on, off){ _makeIceSlot('ice-add-slots', on, off); }
+function addIceEditSlot(on, off){ _makeIceSlot('ice-edit-slots', on, off); }
+
+function getIceSlotsFrom(containerId){
+  var slots = [];
+  var container = document.getElementById(containerId);
+  if(!container) return slots;
+  Array.from(container.querySelectorAll('.ice-slot')).forEach(function(div){
+    var on  = div.querySelector('.ice-on').value.trim();
+    var off = div.querySelector('.ice-off').value.trim();
+    if(on) slots.push({on:on, off:off});
+  });
+  return slots;
+}
+function calcIceMins(slots){
+  var total = 0;
+  (slots||[]).forEach(function(s){
+    if(!s.on || !s.off) return;
+    var on  = s.on.split(':').map(Number);
+    var off = s.off.split(':').map(Number);
+    var mins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+    if(mins > 0) total += mins;
+  });
+  return total;
+}
+function fmtMins(mins){
+  if(!mins) return '';
+  var h = Math.floor(mins/60), m = mins%60;
+  return h > 0 ? h+'時'+(m?m+'分':'') : m+'分';
+}
+
+// ══════════════════════════════
+// 舊格式備注解析（電表備注中的製冰機文字）
+// 支援：0930開製冰機、09:45 開製冰機、10:05 開製冰機、17:00 關製冰機 等
+// ══════════════════════════════
+function parseIceFromNote(noteText){
+  if(!noteText) return [];
+  var parts = String(noteText).split(/[,，、；;]/);
+  var events = [];
+  parts.forEach(function(part){
+    part = part.trim();
+    if(!part) return;
+    var hasIce = /製冰|冰機/i.test(part);
+    if(!hasIce) return;
+    var isOpen  = /開|start/i.test(part);
+    var isClose = /關|stop|end/i.test(part);
+    var timeMatch = part.match(/(\d{1,2})[:：]?(\d{2})/);
+    if(!timeMatch) return;
+    var h = parseInt(timeMatch[1]), m = parseInt(timeMatch[2]);
+    if(h > 23 || m > 59) return;
+    var timeStr = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    events.push({ time:timeStr, isOpen:isOpen, isClose:isClose });
+  });
+  var slots = [];
+  var openTime = null;
+  events.forEach(function(ev){
+    if(ev.isOpen && !ev.isClose){ openTime = ev.time; }
+    else if(ev.isClose && openTime){ slots.push({on:openTime, off:ev.time}); openTime=null; }
+    else if(ev.isOpen){ if(openTime) slots.push({on:openTime, off:''}); openTime=ev.time; }
+    else if(ev.isClose && !openTime){ slots.push({on:'', off:ev.time}); }
+  });
+  if(openTime) slots.push({on:openTime, off:''});
+  return slots;
+}
+
+// 整合查詢某日製冰機資料（優先新系統，沒有則解析舊備注）
+function getIceDataForDate(date){
+  var iceRec = iceRecords.find(function(r){ return r.date===date; });
+  if(iceRec && iceRec.slots && iceRec.slots.length)
+    return { source:'new', slots:iceRec.slots, note:iceRec.note||'' };
+  var elecRec = records.find(function(r){ return r.date===date; });
+  if(elecRec && elecRec.note){
+    var raw = elecRec.note;
+    var noteText = '';
+    try { var obj=JSON.parse(raw); noteText=obj.note||''; } catch(e){ noteText=raw; }
+    var slots = parseIceFromNote(noteText);
+    if(slots.length) return { source:'note', slots:slots, note:noteText };
+  }
+  return null;
+}
+
+// ══════════════════════════════
+// note 欄位打包 / 解包（電表用）
+// ══════════════════════════════
+function packNote(jellyCount, noteText){
+  var obj = {};
+  var j = parseInt(jellyCount);
+  if(!isNaN(j) && j >= 0) obj.jelly = j;
+  if(noteText) obj.note = noteText;
+  if(!Object.keys(obj).length) return '';
+  return JSON.stringify(obj);
+}
+function unpackNote(raw){
+  if(!raw) return {jelly:null, note:''};
+  try {
+    var obj = JSON.parse(raw);
+    // 舊格式可能有 ice 欄位，忽略即可
+    return {
+      jelly: obj.jelly !== undefined ? obj.jelly : null,
+      note:  obj.note || ''
+    };
+  } catch(e) {
+    return {jelly:null, note:raw};
+  }
+}
+
+// ══════════════════════════════
+// 製冰機記錄（localStorage 獨立儲存）
+// ══════════════════════════════
+var iceRecords = [];
+function loadIceData(){
+  try {
+    var raw = localStorage.getItem('ice_v1');
+    if(!raw) throw 0;
+    iceRecords = JSON.parse(raw);
+  } catch(e) { iceRecords = []; }
+}
+function saveIceData(){ try{ localStorage.setItem('ice_v1', JSON.stringify(iceRecords)); }catch(e){} }
+
+// 從 Sheets 同步製冰機記錄（以 Sheets 為主）
+function syncIceFromSheets(){
+  api({action:'iceGetAll'}, function(d, e){
+    if(e||!d||!d.ok||!d.data||!d.data.length) return;
+    var sheetsRecs = d.data.map(function(r){
+      return {
+        id: String(r.id),
+        date: String(r.date).replace(/\//g,'-').slice(0,10),
+        slots: typeof r.slots === 'string' ? JSON.parse(r.slots||'[]') : (r.slots||[]),
+        note: r.note||''
+      };
+    }).filter(function(r){ return r.date.match(/^\d{4}-\d{2}-\d{2}$/); });
+    if(!sheetsRecs.length) return;
+    var sheetsIds={};
+    sheetsRecs.forEach(function(r){ sheetsIds[r.id]=true; });
+    var localOnly = iceRecords.filter(function(r){ return !sheetsIds[String(r.id)]; });
+    iceRecords = sheetsRecs.concat(localOnly);
+    saveIceData();
+    var months=getIceMonths();
+    if(!selIceMonth) selIceMonth=months[months.length-1]||'';
+    buildIceMonthChips(); renderIceList();
+  });
+}
+
+function getIceMonths(){
+  var m = {};
+  iceRecords.forEach(function(r){ m[r.date.slice(0,7)] = true; });
+  return Object.keys(m).sort();
+}
+var selIceMonth = '';
+
+function buildIceMonthChips(){
+  var months = getIceMonths();
+  if(!months.length){ document.getElementById('ice-month-chips').innerHTML=''; return; }
+  document.getElementById('ice-month-chips').innerHTML = months.map(function(m){
+    return '<button class="mchip'+(m===selIceMonth?' on':'')+'" onclick="pickIceMonth(\''+m+'\')">'+m.replace('-','/')+'</button>';
+  }).join('');
+}
+function pickIceMonth(m){ selIceMonth=m; buildIceMonthChips(); renderIceList(); }
+
+function saveIceRecord(){
+  var date = document.getElementById('ice-date').value;
+  var slots = getIceSlotsFrom('ice-add-slots');
+  var note  = document.getElementById('ice-note').value.trim();
+  if(!date){ showToast('請選擇日期'); return; }
+  if(!slots.length){ showToast('請至少填一組開機時間'); return; }
+  // 覆蓋同日
+  var existing = iceRecords.find(function(r){ return r.date === date; });
+  iceRecords = iceRecords.filter(function(r){ return r.date !== date; });
+  var newId = existing ? existing.id : String(Date.now());
+  iceRecords.push({ id: newId, date: date, slots: slots, note: note });
+  saveIceData();
+  // 同步到 Sheets
+  api({action:'iceSave', id:newId, date:date, slots:JSON.stringify(slots), note:note}, null);
+  // 清空表單
+  document.getElementById('ice-date').value = todayStr();
+  document.getElementById('ice-add-slots').innerHTML = '';
+  document.getElementById('ice-note').value = '';
+  var months = getIceMonths();
+  selIceMonth = date.slice(0,7);
+  buildIceMonthChips();
+  renderIceList();
+  showToast('✓ 已儲存製冰機記錄');
+}
+
+function renderIceList(){
+  var el = document.getElementById('ice-list-content');
+  var data = iceRecords.filter(function(r){ return r.date.startsWith(selIceMonth); });
+  data.sort(function(a,b){ return a.date.localeCompare(b.date); }); // 正序，方便圖表
+
+  if(!data.length){ el.innerHTML='<div class="empty">此月份尚無製冰機記錄</div>'; return; }
+
+  // ── 計算統計 ──
+  var totalMins = 0;
+  var daysWithTime = 0;
+  data.forEach(function(r){
+    var m = calcIceMins(r.slots||[]);
+    totalMins += m;
+    if(m > 0) daysWithTime++;
+  });
+  var iceDays = data.length;
+  var avgMins = daysWithTime > 0 ? Math.round(totalMins / daysWithTime) : 0;
+  var totalHours = (totalMins / 60).toFixed(1);
+  var avgHours   = (avgMins / 60).toFixed(1);
+
+  // ── 長條圖（每日開機時數）──
+  var maxMins = 0;
+  data.forEach(function(r){ var m=calcIceMins(r.slots||[]); if(m>maxMins) maxMins=m; });
+  var barHtml = '';
+  if(daysWithTime > 0){
+    barHtml = '<div class="chart-wrap" style="margin-bottom:10px">'
+      +'<div class="chart-title">每日開機時數（小時）</div>'
+      +'<div class="bar-chart" id="ice-bar-chart">'
+      + data.map(function(r){
+          var m = calcIceMins(r.slots||[]);
+          var h = (m/60).toFixed(1);
+          var barPct = maxMins > 0 ? Math.max(Math.round((m/maxMins)*100), m>0?4:0) : 0;
+          var cls = m > 480 ? 'high' : m > 0 && m < 60 ? 'low' : '';
+          return '<div class="bar-col">'
+            +'<div class="bar-val">'+(m>0?h:'—')+'</div>'
+            +'<div class="bar '+cls+'" style="height:'+barPct+'px" title="'+fmtDate(r.date)+': '+(m>0?h+'時':'未記錄')+'"></div>'
+            +'<div class="bar-lbl">'+r.date.slice(8)+'日</div>'
+          +'</div>';
+        }).join('')
+      +'</div></div>';
+  }
+
+  // ── 組合 HTML ──
+  var rev = data.slice().reverse(); // 列表倒序（新的在上）
+  el.innerHTML =
+    // 月統計三欄
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">'
+    +'<div class="stat-card"><div class="stat-lbl">開機天數</div><div class="stat-val" style="color:#1565C0">'+iceDays+'</div><div class="stat-sub">天（本月）</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">本月總時數</div><div class="stat-val" style="color:#1565C0">'+totalHours+'</div><div class="stat-sub">小時</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">平均每次</div><div class="stat-val" style="color:#1565C0">'+(daysWithTime>0?avgHours:'—')+'</div><div class="stat-sub">小時／天</div></div>'
+    +'</div>'
+    // 長條圖
+    + barHtml
+    // 記錄列表
+    + rev.map(function(r){
+        var mins = calcIceMins(r.slots||[]);
+        var hours = (mins/60).toFixed(2);
+        // 每個時段的開機時數
+        var slotRows = (r.slots||[]).map(function(s){
+          var slotMins = 0;
+          if(s.on && s.off){
+            var on=s.on.split(':').map(Number), off=s.off.split(':').map(Number);
+            slotMins = (off[0]*60+off[1]) - (on[0]*60+on[1]);
+            if(slotMins < 0) slotMins = 0;
+          }
+          var slotHours = slotMins > 0 ? '（'+( slotMins/60).toFixed(2)+' 時）' : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);font-size:13px">'
+            +'<span>🕐 '+s.on+(s.off?' → '+s.off:'<span style="color:var(--amber)"> 未記錄關機</span>')+'</span>'
+            +(slotMins>0?'<span style="font-weight:700;color:#1565C0">'+slotHours+'</span>':'<span style="color:var(--amber);font-size:11px">未記錄</span>')
+          +'</div>';
+        }).join('');
+        var headBg = mins > 0
+          ? 'background:linear-gradient(135deg,#1565C0,#1976D2)'
+          : 'background:linear-gradient(135deg,#B85C00,#D97706)'; // 無時數用橘色警示
+        return '<div class="rec-card" style="margin-bottom:8px">'
+          +'<div class="rc-head" style="'+headBg+'">'
+            +'<span class="rc-date">'+fmtDate(r.date)+'</span>'
+            +'<span class="rc-reading">'+(mins>0?'共開機 '+hours+' 時（'+fmtMins(mins)+'）':'⚠️ 未記錄關機時間')+'</span>'
+          +'</div>'
+          +'<div style="padding:8px 14px">'+slotRows+'</div>'
+          +(r.note?'<div style="padding:0 14px 8px;font-size:12px;color:var(--amber)">📌 '+r.note+'</div>':'')
+          +'<div style="padding:0 14px 10px;display:flex;gap:8px;justify-content:flex-end">'
+            +'<button class="rc-edit" onclick="openIceEdit(\''+r.id+'\')">修改</button>'
+            +'<button class="rc-del" onclick="delIceRec(\''+r.id+'\')">刪除</button>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+}
+
+function delIceRec(id){
+  if(!confirm('確定刪除？')) return;
+  iceRecords = iceRecords.filter(function(r){ return String(r.id) !== String(id); });
+  saveIceData();
+  api({action:'iceDelete', id:id}, null);
+  buildIceMonthChips(); renderIceList();
+  showToast('已刪除');
+}
+
+var editIceId = null;
+function openIceEdit(id){
+  var r = iceRecords.find(function(x){ return String(x.id) === String(id); });
+  if(!r) return;
+  editIceId = id;
+  document.getElementById('ice-edit-date').value = r.date;
+  document.getElementById('ice-edit-note').value = r.note||'';
+  var ec = document.getElementById('ice-edit-slots');
+  ec.innerHTML = '';
+  (r.slots||[]).forEach(function(s){ addIceEditSlot(s.on, s.off); });
+  document.getElementById('ov-ice-edit').classList.add('show');
+}
+function closeIceEdit(){
+  document.getElementById('ov-ice-edit').classList.remove('show');
+  editIceId = null;
+}
+function saveIceEdit(){
+  var r = iceRecords.find(function(x){ return String(x.id) === String(editIceId); });
+  if(!r){ closeIceEdit(); return; }
+  var date  = document.getElementById('ice-edit-date').value;
+  var slots = getIceSlotsFrom('ice-edit-slots');
+  var note  = document.getElementById('ice-edit-note').value.trim();
+  if(!date){ showToast('請填寫日期'); return; }
+  if(!slots.length){ showToast('請至少填一組開機時間'); return; }
+  r.date = date; r.slots = slots; r.note = note;
+  saveIceData();
+  api({action:'iceSave', id:r.id, date:date, slots:JSON.stringify(slots), note:note}, null);
+  selIceMonth = date.slice(0,7);
+  buildIceMonthChips(); renderIceList();
+  closeIceEdit();
+  showToast('✓ 已修改');
+}
+
+// ══════════════════════════════
+// 查詢前一天仙草凍桶數
+// ══════════════════════════════
+function queryYesterdayJelly(){
+  var date = document.getElementById('f-date').value;
+  if(!date){ showToast('請先選擇日期'); return; }
+  var yDate = new Date(date);
+  yDate.setDate(yDate.getDate() - 1);
+  var yStr = yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+  var btn = document.getElementById('jelly-query-btn');
+  var resultEl = document.getElementById('jelly-query-result');
+  btn.textContent = '查詢中...'; btn.disabled = true;
+  resultEl.textContent = '';
+  api({action:'jellyGetTodayLogs', date:yStr}, function(d, e){
+    btn.textContent = '🔍 查詢'; btn.disabled = false;
+    if(e || !d || !d.ok){ resultEl.textContent = '查詢失敗，請手動輸入'; resultEl.style.color='var(--red)'; return; }
+    var total = d.data ? d.data.length : 0;
+    document.getElementById('f-jelly').value = total;
+    if(total > 0){
+      var summary = Object.keys(d.summary||{}).map(function(k){ return k+' '+d.summary[k].count+'桶'; }).join('、');
+      resultEl.textContent = yStr+' 共 '+total+' 桶（'+summary+'）';
+      resultEl.style.color = 'var(--g)';
+    } else {
+      resultEl.textContent = yStr+' 無仙草凍完成記錄';
+      resultEl.style.color = 'var(--ink3)';
+    }
+  });
+}
+
+// ══════════════════════════════
+// 新增電表記錄
+// ══════════════════════════════
+function doSave(){
+  var date    = document.getElementById('f-date').value;
+  var reading = document.getElementById('f-reading').value.trim();
+  var jellyVal= document.getElementById('f-jelly').value.trim();
+  var noteText= document.getElementById('f-note').value.trim();
+  if(!date){ showToast('請選擇日期'); return; }
+  if(!reading||isNaN(reading)){ showToast('請填寫電表讀數'); return; }
+  var rv = parseInt(reading);
+  var sorted = records.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  var prev = sorted.filter(function(r){ return r.date<date; }).pop();
+  if(prev){
+    var diff = rv - prev.reading;
+    if(diff < 0){
+      if(!confirm('⚠️ 電表讀數異常\n今日：'+rv+' 度\n前一筆（'+prev.date+'）：'+prev.reading+' 度\n差異：'+diff+' 度\n\n是否電表歸零或換新表？確定繼續？')) return;
+    } else if(diff > 500){
+      if(!confirm('⚠️ 用電量異常偏高\n今日：'+rv+' 度\n前一筆（'+prev.date+'）：'+prev.reading+' 度\n差異：+'+diff+' 度\n確定繼續？')) return;
+    }
+  }
+  var dup = records.find(function(r){ return r.date===date; });
+  if(dup){ if(!confirm('此日期已有記錄（'+dup.reading+'度），確定覆蓋？')) return; records=records.filter(function(r){ return r.date!==date; }); }
+  var note = packNote(jellyVal, noteText);
+  var newId = Date.now();
+  records.push({id:newId, date:date, reading:rv, note:note});
+  saveData();
+  // 取製冰機當天時數（整合新系統 + 舊備注）
+  var _iceData = getIceDataForDate(date);
+  var _iceMins = _iceData ? calcIceMins(_iceData.slots) : 0;
+  var _iceHours = _iceMins > 0 ? Math.round(_iceMins/15)*0.25 : 0;
+  api({action:'elecSave', date:date, reading:rv,
+    jellyCount: jellyVal||0,
+    iceMachineHours: _iceHours,
+    noteText: noteText,
+    note:note, id:newId}, null);
+  document.getElementById('f-reading').value='';
+  document.getElementById('f-note').value='';
+  document.getElementById('f-jelly').value='';
+  document.getElementById('jelly-query-result').textContent='';
+  document.getElementById('f-date').value=todayStr();
+  buildMonthChips();
+  selMonth=date.slice(0,7);
+  buildMonthChips();
+  renderList(); renderStats();
+  showPage('list');
+  showToast('✓ 已儲存：'+fmtDate(date)+' '+rv+'度');
+}
+function delRec(id){
+  if(!confirm('確定刪除？'))return;
+  records=records.filter(function(r){return String(r.id)!==String(id);});
+  saveData();
+  api({action:'elecDelete',id:id},null);
+  buildMonthChips(); renderList(); renderStats(); showToast('已刪除');
+}
+
+// ══════════════════════════════
+// 統計頁（純電表）
+// ══════════════════════════════
+function renderStats(){
+  var data=calcUsage();
+  var withUsage=data.filter(function(r){return r.usage!==null;});
+  var months=getMonths();
+  var curMonth=selMonth||months[months.length-1]||'';
+  var monthData=withUsage.filter(function(r){return r.date.startsWith(curMonth);});
+  var total=monthData.reduce(function(s,r){return s+r.usage;},0);
+  var avg=monthData.length?Math.round(total/monthData.length):0;
+  var max=monthData.length?Math.max.apply(null,monthData.map(function(r){return r.usage;})):0;
+  var min=monthData.length?Math.min.apply(null,monthData.map(function(r){return r.usage;})):0;
+
+  document.getElementById('stats-cards').innerHTML=
+    '<div class="stat-card"><div class="stat-lbl">本月總用電</div><div class="stat-val">'+total+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">日均用電</div><div class="stat-val">'+avg+'</div><div class="stat-sub">度／天</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">最高單日</div><div class="stat-val" style="color:var(--red)">'+max+'</div><div class="stat-sub">度</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">最低單日</div><div class="stat-val" style="color:var(--gm)">'+min+'</div><div class="stat-sub">度</div></div>';
+
+  // 長條圖
+  if(monthData.length){
+    var maxV=Math.max.apply(null,monthData.map(function(r){return r.usage;}));
+    document.getElementById('bar-chart').innerHTML=monthData.map(function(r){
+      var h=maxV>0?Math.round((r.usage/maxV)*100):4;
+      var cls=r.usage>180?'high':r.usage<80?'low':'';
+      return '<div class="bar-col">'
+        +'<div class="bar-val">'+r.usage+'</div>'
+        +'<div class="bar '+cls+'" style="height:'+h+'px"></div>'
+        +'<div class="bar-lbl">'+r.date.slice(8)+'日</div>'
+      +'</div>';
+    }).join('');
+  }
+
+  // 製冰機 vs 用電分析（整合新系統 + 舊備注格式）
+  var iceUsages=[], noIceUsages=[];
+  // 每日製冰機時數 table（用於詳細列表）
+  var iceMinsTable = {};
+  monthData.forEach(function(r){
+    var iceData = getIceDataForDate(r.date);
+    if(iceData && iceData.slots && iceData.slots.length){
+      var mins = calcIceMins(iceData.slots);
+      iceUsages.push({usage:r.usage, mins:mins, date:r.date, source:iceData.source});
+      iceMinsTable[r.date] = mins;
+    } else {
+      noIceUsages.push(r.usage);
+    }
+  });
+  var avgArr = function(arr){ return arr.length ? Math.round(arr.reduce(function(s,v){return s+v;},0)/arr.length) : null; };
+  var iceUsageArr = iceUsages.map(function(x){ return x.usage; });
+  var iceAvg = avgArr(iceUsageArr), noIceAvg = avgArr(noIceUsages);
+  var iceDiff = (iceAvg!==null && noIceAvg!==null) ? iceAvg-noIceAvg : null;
+  // 製冰機月總時數
+  var iceTotalMins = 0;
+  Object.keys(iceMinsTable).forEach(function(d){ iceTotalMins += iceMinsTable[d]; });
+
+  // 仙草凍桶數 vs 用電分析
+  var jellyCorr = [];
+  monthData.forEach(function(r){
+    var u = unpackNote(r.note);
+    if(u.jelly !== null) jellyCorr.push({jelly:u.jelly, usage:r.usage, date:r.date});
+  });
+
+  // 製冰機每日詳細列表（按日期正序）
+  var iceDetailHtml = '';
+  if(iceUsages.length){
+    iceUsages.sort(function(a,b){ return a.date.localeCompare(b.date); });
+    iceDetailHtml = '<div style="margin-top:10px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">每日開機時數明細</div>'
+      + iceUsages.map(function(x){
+          var h = x.mins > 0 ? (x.mins/60).toFixed(2)+'h' : '未記錄';
+          var srcTag = x.source==='note'
+            ? '<span style="font-size:10px;background:var(--amberl);color:var(--amber);padding:1px 5px;border-radius:4px;margin-left:4px">備注解析</span>'
+            : '<span style="font-size:10px;background:#E3F2FD;color:#1565C0;padding:1px 5px;border-radius:4px;margin-left:4px">製冰機系統</span>';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);font-size:13px">'
+            +'<span>'+fmtDate(x.date)+srcTag+'</span>'
+            +'<span><b style="color:#1565C0">'+h+'</b><span style="color:var(--ink3);font-size:11px;margin-left:4px">用電 '+x.usage+'度</span></span>'
+          +'</div>';
+        }).join('')
+    +'</div>';
+  }
+
+  document.getElementById('notes-list').innerHTML =
+    // 製冰機統計卡（三欄）
+    '<div class="blk-title" style="margin:0 0 8px">🧊 製冰機 vs 用電</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="stat-card"><div class="stat-lbl">有開製冰機</div><div class="stat-val" style="color:#1565C0">'+(iceAvg!==null?iceAvg:'—')+'</div><div class="stat-sub">度均 ('+iceUsages.length+'天)</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">未開製冰機</div><div class="stat-val">'+(noIceAvg!==null?noIceAvg:'—')+'</div><div class="stat-sub">度均 ('+noIceUsages.length+'天)</div></div>'
+    +'<div class="stat-card"><div class="stat-lbl">月總開機</div><div class="stat-val" style="color:#1565C0">'+(iceTotalMins>0?(iceTotalMins/60).toFixed(1):'—')+'</div><div class="stat-sub">小時</div></div>'
+    +'</div>'
+    +(iceDiff!==null ? '<div style="text-align:center;font-size:13px;padding:4px 0 6px">製冰機約 <strong style="color:'+(iceDiff>0?'var(--red)':'var(--gm)')+'">'+( iceDiff>0?'+':'')+iceDiff+' 度</strong> ／天</div>' : '')
+    + iceDetailHtml
+    // 仙草凍相關
+    +(jellyCorr.length ?
+      '<div class="blk-title" style="margin:12px 0 6px">🫙 仙草凍桶數記錄</div>'
+      +'<div style="font-size:12px;color:var(--ink3);margin-bottom:6px">前一天桶數 → 當日用電</div>'
+      + jellyCorr.map(function(j){ return '<div class="note-item"><span class="note-date">'+fmtDate(j.date)+'</span><span class="note-text">'+j.jelly+' 桶 → 用電 '+j.usage+' 度</span></div>'; }).join('')
+    : '');
+}
+
+// ══════════════════════════════
+// 頁籤 & 工具
+// ══════════════════════════════
+function showPage(p){
+  ['list','add','ice','stats'].forEach(function(n){
+    document.getElementById('page-'+n).className='page'+(n===p?' on':'');
+    document.getElementById('tab-'+n).className='tab'+(n===p?' on':'');
+  });
+  if(p==='stats') renderStats();
+  if(p==='list')  renderList();
+  if(p==='ice'){
+    var months = getIceMonths();
+    if(!selIceMonth) selIceMonth = months[months.length-1]||'';
+    buildIceMonthChips(); renderIceList();
+  }
+}
+function fmtDate(d){ return d.slice(5).replace('-','/'); }
+function todayStr(){ var d=new Date(),p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+
+// ══════════════════════════════
+// 修改電表記錄
+// ══════════════════════════════
+var editId=null;
+function openEdit(id){
+  var r=records.find(function(x){return String(x.id)===String(id);});
+  if(!r) return;
+  editId=id;
+  document.getElementById('edit-date').value=r.date;
+  document.getElementById('edit-reading').value=r.reading;
+  var unpacked = unpackNote(r.note);
+  document.getElementById('edit-note').value = unpacked.note;
+  document.getElementById('edit-jelly').value = unpacked.jelly !== null ? unpacked.jelly : '';
+  document.getElementById('ov-edit').classList.add('show');
+}
+function closeEdit(){
+  document.getElementById('ov-edit').classList.remove('show');
+  editId=null;
+}
+function saveEdit(){
+  var r=records.find(function(x){return String(x.id)===String(editId);});
+  if(!r){closeEdit();return;}
+  var date    = document.getElementById('edit-date').value;
+  var reading = parseInt(document.getElementById('edit-reading').value);
+  var jellyVal= document.getElementById('edit-jelly').value.trim();
+  var noteText= document.getElementById('edit-note').value.trim();
+  if(!date){showToast('請填寫日期');return;}
+  if(isNaN(reading)||reading<=0){showToast('請填寫正確的電表讀數');return;}
+  var note = packNote(jellyVal, noteText);
+  r.date=date; r.reading=reading; r.note=note;
+  saveData();
+  var _iceData2 = getIceDataForDate(date);
+  var _iceMins2 = _iceData2 ? calcIceMins(_iceData2.slots) : 0;
+  var _iceHours2 = _iceMins2 > 0 ? Math.round(_iceMins2/15)*0.25 : 0;
+  api({action:'elecSave', date:date, reading:reading,
+    jellyCount: jellyVal||0,
+    iceMachineHours: _iceHours2,
+    noteText: noteText,
+    note:note, id:editId}, null);
+  buildMonthChips();
+  selMonth=date.slice(0,7);
+  buildMonthChips();
+  renderList(); renderStats();
+  closeEdit();
+  showToast('✓ 已修改：'+fmtDate(date)+' '+reading+'度');
+}
+document.addEventListener('click',function(e){
+  if(e.target===document.getElementById('ov-edit')) closeEdit();
+  if(e.target===document.getElementById('ov-ice-edit')) closeIceEdit();
+});
+
+// ── LINE 通知 ────────────────────────────────────────────────
+function sendElecLineNotify(date, reading, note){
+  var sorted = records.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  var prev = sorted.filter(function(r){ return r.date < date; }).pop();
+  var usage = prev ? reading - prev.reading : null;
+  var isReset = usage !== null && usage < 0;
+  var curMonth = date.slice(0, 7);
+  var data = calcUsage();
+  var monthData = data.filter(function(r){
+    return r.date.startsWith(curMonth) && r.usage !== null && r.usage >= 0;
+  });
+  var monthTotal = monthData.reduce(function(s,r){ return s+r.usage; }, 0);
+  var monthAvg   = monthData.length ? Math.round(monthTotal/monthData.length) : 0;
+  var lines = ['⚡ 電表記錄 ─────────────','📅 '+date,'本日讀數：'+reading+' 度'];
+  if(usage !== null){
+    if(isReset) lines.push('🔄 電表重置（前一筆：'+prev.reading+'度）');
+    else lines.push('昨日用電：'+usage+' 度'+(usage>500?' ⚠️偏高':''));
+  }
+  lines.push('本月累積：'+monthTotal+' 度');
+  lines.push('每日平均：'+monthAvg+' 度');
+  var u = unpackNote(note);
+  if(u.jelly !== null) lines.push('🫙 前日仙草凍：'+u.jelly+' 桶');
+  if(u.note) lines.push('備注：'+u.note);
+  api({action:'sendLine', msg:lines.join('\n')}, function(d){
+    if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+  });
+}
+
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+</script>
+
+<!-- 數字小鍵盤 -->
+<div class="np-backdrop" id="np-bd" onclick="npClose()"></div>
+<div class="np-wrap" id="np-wrap">
+  <div class="np-handle"></div>
+  <div class="np-label-row" id="np-lbl"></div>
+  <div class="np-display" id="np-disp">0</div>
+  <div class="np-grid">
+    <button class="npk" onclick="npK('7')">7</button>
+    <button class="npk" onclick="npK('8')">8</button>
+    <button class="npk" onclick="npK('9')">9</button>
+    <button class="npk" onclick="npK('4')">4</button>
+    <button class="npk" onclick="npK('5')">5</button>
+    <button class="npk" onclick="npK('6')">6</button>
+    <button class="npk" onclick="npK('1')">1</button>
+    <button class="npk" onclick="npK('2')">2</button>
+    <button class="npk" onclick="npK('3')">3</button>
+    <button class="npk npk-clear" onclick="npK('C')">清除</button>
+    <button class="npk" onclick="npK('0')">0</button>
+    <button class="npk npk-del" onclick="npK('DEL')">⌫</button>
+  </div>
+  <button class="np-ok" onclick="npDone()">✓ 確認</button>
+</div>
+</body>
+</html>

@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>盤點系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#C07000;--amberl:#FFF3D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* 頂部 */
+.topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-title{color:#fff;font-size:15px;font-weight:900}
+.top-sub{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.tib{background:rgba(255,255,255,.18);border:none;color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:16px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.tib:active{opacity:.7}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding:12px 12px 40px}
+.page.on{display:block}
+
+/* 模式卡片 */
+.mode-cards{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.mode-card{background:var(--white);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;border:2px solid var(--bd);transition:transform .1s}
+.mode-card:active{transform:scale(.98)}
+.mc-daily{border-color:var(--bm)}
+.mc-weekly{border-color:var(--purple)}
+.mc-monthly{border-color:var(--gm)}
+.mc-icon{font-size:30px;width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mc-icon-daily{background:var(--bl)}
+.mc-icon-weekly{background:var(--purplel)}
+.mc-icon-monthly{background:var(--gl)}
+.mc-name{font-size:16px;font-weight:900}
+.mc-desc{font-size:12px;color:var(--ink3);margin-top:3px}
+.mc-daily .mc-name{color:var(--b)}
+.mc-weekly .mc-name{color:var(--purple)}
+.mc-monthly .mc-name{color:var(--g)}
+
+/* 設定頁 */
+.setup-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.slbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.pb{padding:10px 4px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);text-align:center}
+.pb.on{background:var(--b);color:#fff;border-color:var(--b)}
+.pb:active{opacity:.7}
+.date-inp{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;outline:none;color:var(--ink)}
+.date-inp:focus{border-color:var(--bm)}
+.start-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff}
+.start-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
+.start-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.start-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
+
+/* 進度 */
+.prog-wrap{background:var(--white);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;border:1px solid var(--bd)}
+.prog-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.prog-info{font-size:13px;font-weight:700}
+.prog-pct{font-size:18px;font-weight:900;color:var(--b)}
+.prog-bar{height:6px;background:var(--bd);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s;background:linear-gradient(90deg,var(--bm),var(--gm))}
+
+/* 品項卡 */
+.cat-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 6px;display:flex;align-items:center;gap:6px}
+.cat-cnt{background:var(--bl);color:var(--b);padding:2px 7px;border-radius:7px;font-size:10px}
+.item-card{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:11px 13px;margin-bottom:6px;cursor:pointer;transition:border-color .12s,background .12s}
+.item-card.filled-ok{border-color:var(--gm);background:var(--gl)}
+.item-card.filled-low{border-color:var(--red);background:var(--redl)}
+.item-card.filled-zero{border-color:var(--amber);background:var(--amberl)}
+.item-card-daily{background:var(--white);border-radius:var(--r2);border:1.5px solid var(--bd);padding:11px 13px;margin-bottom:6px;transition:border-color .12s,background .12s}
+.item-card-daily.ok{border-color:var(--gm);background:var(--gl)}
+.item-card-daily.need{border-color:var(--red);background:var(--redl)}
+.daily-btns{display:flex;gap:8px;margin-top:8px}
+.daily-btn{flex:1;padding:9px 0;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);transition:all .12s}
+.daily-btn.ok.active{background:var(--g);border-color:var(--g);color:#fff}
+.daily-btn.need.active{background:var(--red);border-color:var(--red);color:#fff}
+.ic-std{font-size:12px;color:var(--ink3);font-weight:500}
+.ic-top{display:flex;align-items:center;justify-content:space-between}
+.ic-name{font-size:14px;font-weight:600}
+.ic-total{font-size:16px;font-weight:900;color:var(--ink3)}
+.ic-total.ok{color:var(--g)}
+.ic-total.low{color:var(--red)}
+.ic-total.zero{color:var(--amber)}
+.ic-sub{font-size:11px;color:var(--ink3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.ic-threshold{color:var(--red);font-weight:600}
+.ic-units-row{font-size:11px;color:var(--ink2);margin-top:3px}
+
+/* 完成按鈕 */
+.finish-btn{width:100%;padding:14px;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;margin-top:12px}
+.fb-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
+.fb-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.fb-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
+
+/* 結果頁 */
+.result-banner{border-radius:var(--r);padding:16px;text-align:center;color:#fff;margin-bottom:12px}
+.rb-daily{background:linear-gradient(135deg,var(--b),var(--bm))}
+.rb-weekly{background:linear-gradient(135deg,#5B2D8E,#8B5DBE)}
+.rb-monthly{background:linear-gradient(135deg,var(--g),var(--gm))}
+.rb-icon{font-size:36px;margin-bottom:6px}
+.rb-title{font-size:18px;font-weight:900;margin-bottom:4px}
+.rb-sub{font-size:12px;opacity:.8}
+.result-section{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden}
+.rs-head{padding:10px 13px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.rs-head.action{background:var(--amberl);color:var(--amber)}
+.rs-head.red{background:var(--redl);color:var(--red)}
+.rs-head.ok{background:var(--gl);color:var(--g)}
+.rs-head.info{background:var(--bl);color:var(--b)}
+.rs-row{padding:10px 13px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.rs-name{font-size:14px;font-weight:600}
+.rs-detail{font-size:11px;color:var(--ink3);margin-top:2px}
+.rs-qty{font-size:15px;font-weight:900}
+.rs-qty.action{color:var(--amber)}
+.rs-qty.red{color:var(--red)}
+.rs-qty.ok{color:var(--g)}
+.rs-qty.info{color:var(--b)}
+.new-btn{width:100%;padding:14px;background:var(--white);color:var(--b);border:2px solid var(--b);border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+
+/* 數量輸入 overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:300;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:540px;padding:14px 14px 32px;max-height:92dvh;overflow-y:auto}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:16px;font-weight:900;margin-bottom:4px}
+.sh-hint{font-size:12px;color:var(--ink3);background:var(--bg);border-radius:var(--r2);padding:8px 11px;margin-bottom:14px;line-height:1.6}
+.unit-row{display:grid;grid-template-columns:70px 1fr 50px;gap:8px;align-items:center;margin-bottom:8px}
+.ur-lbl{font-size:12px;font-weight:700;color:var(--ink3);text-align:right}
+.ur-inp{padding:13px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:20px;font-weight:700;text-align:center;font-family:inherit;color:var(--ink);outline:none;width:100%}
+.ur-inp:focus{border-color:var(--bm)}
+.ur-unit{font-size:13px;font-weight:600;color:var(--ink2)}
+.total-row{background:var(--gl);border-radius:var(--r2);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.tr-lbl{font-size:12px;font-weight:700;color:var(--g)}
+.tr-val{font-size:22px;font-weight:900;color:var(--g)}
+.sh-ok{width:100%;padding:14px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+
+/* 設定 overlay */
+.cfg-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.cfg-tab{padding:7px 12px;border-radius:16px;border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.cfg-tab.on-daily{background:var(--b);color:#fff;border-color:var(--b)}
+.cfg-tab.on-weekly{background:var(--purple);color:#fff;border-color:var(--purple)}
+.cfg-tab.on-monthly{background:var(--g);color:#fff;border-color:var(--g)}
+.cfg-item-row{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 12px;margin-bottom:6px}
+.cir-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cir-name{font-size:14px;font-weight:700}
+.cir-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.cir-field{display:flex;flex-direction:column;gap:3px}
+.cfl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.04em}
+.cf-inp{padding:8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;width:100%}
+.cf-inp:focus{border-color:var(--bm)}
+.cir-conv{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink3);flex-wrap:wrap;margin-top:4px}
+.cir-conv-block{background:var(--bg);border-radius:var(--r2);padding:9px 11px;margin-top:6px;border:1px solid var(--bd)}
+.cir-conv-row{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--ink2);margin-bottom:6px}
+.cir-conv-row:last-child{margin-bottom:0}
+.cir-conv-lbl{font-size:10px;font-weight:700;color:var(--white);background:var(--b);border-radius:5px;padding:2px 6px;flex-shrink:0;letter-spacing:.04em;min-width:36px;text-align:center}
+.cc-inp{width:52px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;text-align:center;outline:none}
+.cc-inp:focus{border-color:var(--bm)}
+.mode-toggles{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.mt-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--bd);background:var(--white);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink3)}
+.mt-btn.on{background:var(--b);color:#fff;border-color:var(--b)}
+.add-inp{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;margin-bottom:8px}
+.add-inp:focus{border-color:var(--bm)}
+.btn{padding:9px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px}
+.btn-p{background:var(--b);color:#fff}
+.btn-d{background:var(--red);color:#fff}
+.btn-o{background:var(--white);color:var(--ink2);border:1.5px solid var(--bd)}
+.btn-sm{padding:5px 9px;font-size:11px}
+.btn-full{width:100%;justify-content:center;padding:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;white-space:nowrap;font-weight:500}
+.empty{text-align:center;color:var(--ink3);padding:28px;font-size:14px}
+
+/* 品項排序 */
+.cir-row-wrap{display:flex;gap:6px;align-items:flex-start}
+.sort-col{display:flex;flex-direction:column;gap:3px;padding-top:2px;flex-shrink:0}
+.sort-btn{width:26px;height:26px;border-radius:5px;border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
+.sort-btn:disabled{opacity:.22;cursor:default}
+.sort-btn:active:not(:disabled){background:var(--bl)}
+.cfg-item-row{background:var(--bg);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 12px;margin-bottom:6px;flex:1;min-width:0}
+
+/* 品項名稱/分類可編輯 */
+.cir-name-inp{font-size:14px;font-weight:700;border:none;background:transparent;color:var(--ink);font-family:inherit;width:100%;outline:none;padding:1px 4px;border-radius:4px}
+.cir-name-inp:focus{background:var(--white);border:1.5px solid var(--bm)}
+.cir-cat-inp{font-size:11px;color:var(--ink3);border:none;background:transparent;font-family:inherit;width:100%;outline:none;padding:1px 4px;border-radius:4px;margin-top:1px}
+.cir-cat-inp:focus{background:var(--white);border:1.5px solid var(--bm);color:var(--ink2)}
+
+/* 自訂數字小鍵盤 */
+.numpad-wrap{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;z-index:600;transform:translateY(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);padding:12px 14px 32px;max-width:540px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.15)}
+.numpad-wrap.show{transform:translateY(0)}
+.numpad-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 10px}
+.numpad-header{display:flex;align-items:stretch;gap:8px;margin-bottom:8px}
+.numpad-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.numpad-label{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.numpad-display{font-size:36px;font-weight:900;color:var(--ink);letter-spacing:-.5px;min-height:44px;line-height:1}
+.numpad-hint{font-size:11px;color:var(--ink3);margin-bottom:10px;min-height:14px;line-height:1.4}
+.numpad-total{background:var(--gl);border-radius:var(--r2);padding:7px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.nt-lbl{font-size:11px;font-weight:700;color:var(--g)}
+.nt-val{font-size:18px;font-weight:900;color:var(--g)}
+.numpad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.nk{padding:15px 6px;border-radius:var(--r2);border:none;font-size:24px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink);background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.nk:active{background:var(--bd);transform:scale(.95)}
+.nk-del{background:var(--amberl);color:var(--amber);font-size:20px}
+.nk-clear{background:var(--redl);color:var(--red);font-size:13px;font-weight:800}
+.nk-dot{font-size:28px}
+.numpad-ok{width:100%;padding:15px;background:linear-gradient(135deg,var(--b),var(--bm));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.numpad-ok:active{opacity:.85}
+.numpad-backdrop{display:none;position:fixed;inset:0;z-index:599}
+.numpad-backdrop.show{display:block}
+/* 單位切換 tabs */
+.np-unit-tab{flex:1;padding:8px 4px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink3);text-align:center;transition:all .1s;line-height:1.3}
+.np-unit-tab.active{background:var(--b);color:#fff;border-color:var(--b)}
+.np-unit-tab .np-tab-val{font-size:16px;font-weight:900;display:block;color:var(--ink)}
+.np-unit-tab.active .np-tab-val{color:#fff}
+.np-unit-tab .np-tab-lbl{font-size:10px;color:var(--ink3);display:block;margin-top:1px}
+.np-unit-tab.active .np-tab-lbl{color:rgba(255,255,255,.75)}
+/* ── 批量編輯 ── */
+.bulk-ov{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;flex-direction:column}
+.bulk-ov.show{display:flex}
+.bulk-topbar{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.bulk-title{color:#fff;font-size:15px;font-weight:900;flex:1}
+.bulk-tabs{display:flex;gap:4px;background:rgba(0,0,0,.18);border-radius:20px;padding:3px}
+.bulk-tab{padding:5px 11px;border-radius:16px;border:none;background:transparent;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bulk-tab.on{background:#fff;color:var(--b)}
+.bulk-bar{background:var(--white);border-bottom:1px solid var(--bd);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.bulk-save-btn{padding:8px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.bulk-save-btn:active{opacity:.8}
+.bulk-save-btn:disabled{opacity:.4;cursor:default}
+.bulk-cat-head{padding:7px 12px;background:var(--b);color:#fff;font-size:12px;font-weight:700;letter-spacing:.06em;margin-top:8px;border-radius:var(--r3) var(--r3) 0 0}
+.bulk-row{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--white);border:1px solid var(--bd);border-top:none}
+.bulk-row:last-child{border-radius:0 0 var(--r3) var(--r3)}
+.bulk-name-inp{flex:1;padding:5px 8px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--white);min-width:60px}
+.bulk-name-inp:focus{outline:none;border-color:var(--b)}
+.bulk-fields{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bulk-lbl{font-size:11px;color:var(--ink3);white-space:nowrap}
+.bulk-inp{width:52px;padding:5px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center;font-family:inherit}
+.bulk-inp:focus{outline:none;border-color:var(--b)}
+.bulk-move-btn{width:26px;height:26px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink3)}
+.bulk-move-btn:active{background:var(--bl)}
+.bulk-add-btn{padding:8px 14px;background:var(--bl);color:var(--b);border:1.5px solid var(--bm);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.bulk-cancel-btn{padding:8px 14px;background:var(--white);color:var(--ink3);border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.bulk-badge{padding:4px 10px;background:var(--amberl);color:var(--amber);border-radius:10px;font-size:11px;font-weight:700}
+.bulk-body{flex:1;overflow:auto}
+.bt{border-collapse:collapse;width:max-content;min-width:100%}
+.bt thead th{position:sticky;top:0;z-index:2;background:#1A3A5C;color:#fff;padding:8px 9px;font-size:11px;font-weight:700;letter-spacing:.05em;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,.12)}
+.bt thead th.th-grp{background:#0F2640;text-align:center}
+.bt thead th.th-fix{position:sticky;left:0;z-index:3;background:#0F2640}
+.bt tbody tr:nth-child(even) td{background:#f7f9fc}
+.bt tbody tr:hover td{background:#eef3fa}
+.bt tbody tr.row-changed td{background:#FFFBEA !important}
+.bt tbody tr.row-new td{background:#EDF7EE !important}
+.bt td{padding:3px 4px;border-bottom:1px solid var(--bd);border-right:1px solid #e4eaf2;vertical-align:middle}
+.bt td.td-fix{position:sticky;left:0;z-index:1;background:inherit;padding:3px 6px;min-width:80px}
+.bt-inp{width:100%;padding:5px 6px;border:1.5px solid transparent;border-radius:4px;font-size:13px;font-family:inherit;background:transparent;color:var(--ink);outline:none}
+.bt-inp:focus{border-color:var(--bm);background:#fff}
+.bt-inp.w-name{width:110px}
+.bt-inp.w-cat{width:80px}
+.bt-inp.w-unit{width:48px}
+.bt-inp.w-num{width:58px;text-align:right}
+.bt-chk{width:17px;height:17px;cursor:pointer;accent-color:var(--b);display:block;margin:0 auto}
+.bt-del{border:none;background:none;color:var(--ink4);font-size:15px;cursor:pointer;padding:3px 6px;border-radius:4px}
+.bt-del:hover{color:var(--red);background:var(--redl)}
+.bt-sort{border:1px solid var(--bd);background:#fff;color:var(--ink3);font-size:10px;cursor:pointer;border-radius:3px;padding:2px 5px;line-height:1}
+.bt-sort:disabled{opacity:.2;cursor:default}
+.bt-sort:active:not(:disabled){background:var(--bl)}
+/* 記錄頁簽 */
+.hist-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.hist-tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:700}
+/* 月盤總表 */
+.ms-table{width:100%;border-collapse:collapse;font-size:12px}
+.ms-table th{position:sticky;top:0;background:#1A3A5C;color:#fff;padding:7px 8px;text-align:right;white-space:nowrap;border-right:1px solid rgba(255,255,255,.12);font-size:11px;font-weight:700;z-index:2}
+.ms-table th:first-child{text-align:left;position:sticky;left:0;z-index:3;background:#0F2640;min-width:90px}
+.ms-table th.th-total{background:var(--g)}
+.ms-table td{padding:6px 8px;border-bottom:1px solid var(--bd);border-right:1px solid #eaeff7;text-align:right;color:var(--ink2);vertical-align:middle}
+.ms-table td:first-child{position:sticky;left:0;background:var(--white);text-align:left;font-weight:600;color:var(--ink);z-index:1}
+.ms-table tr:nth-child(even) td{background:#f7f9fc}
+.ms-table tr:nth-child(even) td:first-child{background:#f7f9fc}
+.ms-table tr.cat-row td{background:#eaeff7!important;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;padding:5px 8px}
+.ms-table td.total-col{font-weight:700;color:var(--g);background:var(--gl)!important}
+.ms-table td.usage-col{font-weight:700;color:var(--b)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="top-title">📋 盤點系統</div>
+    <div class="top-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center">
+    <span id="sync-status" style="font-size:11px;color:rgba(255,255,255,.6)">🔄</span>
+    <button class="tib" onclick="showHist()">📂 記錄</button>
+    <button class="tib" onclick="openBulk()">⚙️ 批量設定</button>
+    <button class="tib" onclick="openCfg()">＋ 新增</button>
+    <button class="tib" onclick="goHome2()">🏠</button>
+  </div>
+</div>
+<div class="pages">
+
+<!-- 主選單 -->
+<div class="page on" id="page-home">
+  <div style="padding:6px 0 12px;font-size:14px;font-weight:700;color:var(--ink2)">選擇盤點類型</div>
+  <div class="mode-cards">
+    <div class="mode-card mc-daily" onclick="showSetup('daily')">
+      <div class="mc-icon mc-icon-daily">📅</div>
+      <div>
+        <div class="mc-name">每日盤補貨</div>
+        <div class="mc-desc">快速盤點 · 計算需補貨量 · 亮紅提醒不足品項</div>
+      </div>
+    </div>
+    <div class="mode-card mc-weekly" onclick="showSetup('weekly')">
+      <div class="mc-icon mc-icon-weekly">📆</div>
+      <div>
+        <div class="mc-name">每週盤叫貨</div>
+        <div class="mc-desc">週補盤點 · 計算需叫貨量 · 大中小單位換算</div>
+      </div>
+    </div>
+    <div class="mode-card mc-monthly" onclick="showSetup('monthly')">
+      <div class="mc-icon mc-icon-monthly">📊</div>
+      <div>
+        <div class="mc-name">月盤點</div>
+        <div class="mc-desc">全品項詳細盤 · 大中小+重量換算 · 最小單位總計</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 設定頁 -->
+<div class="page" id="page-setup">
+  <div class="setup-card" id="setup-badge" style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+    <span style="font-size:22px" id="setup-icon"></span>
+    <div style="flex:1"><div style="font-size:15px;font-weight:900" id="setup-label"></div>
+    <div style="font-size:12px;color:var(--ink3)" id="setup-item-count"></div></div>
+    <button onclick="showPage('home')" style="padding:5px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--white);color:var(--ink3);font-size:12px;cursor:pointer;font-family:inherit">← 返回</button>
+  </div>
+  <div class="setup-card">
+    <div class="slbl">盤點人員</div>
+    <div class="pgrid" id="person-grid"></div>
+  </div>
+  <div class="setup-card">
+    <div class="slbl">日期</div>
+    <input type="date" id="setup-date" class="date-inp">
+  </div>
+  <button class="start-btn" id="start-btn" onclick="startCount()" style="margin-top:4px"></button>
+</div>
+
+<!-- 盤點頁 -->
+<div class="page" id="page-count">
+  <div class="prog-wrap">
+    <div class="prog-meta">
+      <div class="prog-info" id="prog-info"></div>
+      <div class="prog-pct" id="prog-pct">0%</div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div id="count-body"></div>
+  <button class="finish-btn" id="finish-btn" onclick="finishCount()" disabled style="opacity:.4"></button>
+</div>
+
+<!-- 結果頁 -->
+<div class="page" id="page-result">
+  <div class="result-banner" id="result-banner">
+    <div class="rb-icon" id="rb-icon"></div>
+    <div class="rb-title" id="rb-title"></div>
+    <div class="rb-sub" id="rb-sub"></div>
+  </div>
+  <div id="result-body"></div>
+  <button class="new-btn" onclick="showPage('home')">← 返回主選單</button>
+</div>
+
+</div><!-- /pages -->
+
+<!-- 數量輸入 overlay -->
+<div class="ov" id="ov-num">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title" id="num-title"></div>
+    <div class="sh-hint" id="num-hint"></div>
+    <div id="num-unit-rows"></div>
+    <div class="total-row">
+      <div class="tr-lbl">最小單位總計</div>
+      <div class="tr-val"><span id="num-total">0</span> <span id="num-total-unit" style="font-size:13px;font-weight:400;color:var(--g)"></span></div>
+    </div>
+    <button class="sh-ok" onclick="confirmNum()">✓ 確認數量</button>
+  </div>
+</div>
+
+<!-- 批量編輯 overlay（全頁面） -->
+<div class="bulk-ov" id="bulk-ov">
+  <div class="bulk-topbar">
+    <div class="bulk-title">⚙️ 批量設定</div>
+    <div class="bulk-tabs" id="bulk-tabs"></div>
+  </div>
+  <div class="bulk-bar">
+    <button class="bulk-save-btn" id="bulk-save-btn" onclick="bulkSave()">💾 儲存全部</button>
+    <button onclick="resetToDefaults()" style="padding:8px 14px;background:var(--amberl,#FFF3E0);color:var(--amber,#E65100);border:1.5px solid var(--amber,#E65100);border-radius:var(--r2);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-left:6px">↩ 還原預設</button>
+    <button class="bulk-add-btn" onclick="bulkAddRow()">＋ 新增品項</button>
+    <span class="bulk-badge" id="bulk-badge" style="display:none"></span>
+    <div style="flex:1"></div>
+    <button class="bulk-cancel-btn" onclick="closeBulk()">✕ 關閉</button>
+  </div>
+  <div class="bulk-body" id="bulk-body"></div>
+</div>
+
+<!-- 品項設定 overlay -->
+<!-- LINE 預覽 overlay -->
+<div class="ov" id="ov-line-preview">
+  <div class="sh" style="max-height:85dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:900">📲 LINE 通知預覽</div>
+      <button onclick="closeOv('line-preview')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <pre id="line-preview-text" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.7;background:var(--bg);border-radius:var(--r2);padding:14px;border:1px solid var(--bd);max-height:50dvh;overflow-y:auto"></pre>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button id="line-preview-send-btn" onclick="sendInvLineFromPreview()" style="flex:1;padding:13px;border-radius:var(--r2);border:none;background:#1A6B3C;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">✓ 確認發送</button>
+      <button onclick="closeOv('line-preview')" style="padding:13px 18px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 月盤記錄編輯 overlay -->
+<div class="ov" id="ov-monthly-edit">
+  <div class="sh" style="max-height:92dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:15px;font-weight:900">✏️ 編輯月盤記錄</div>
+      <button onclick="closeOv('monthly-edit')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <div id="monthly-edit-meta" style="font-size:12px;color:var(--ink3);margin-bottom:12px"></div>
+    <div id="monthly-edit-body"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button id="monthly-edit-save-btn" onclick="saveMonthlyEditOv()" style="flex:1;padding:13px;border-radius:var(--r2);border:none;background:var(--b);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💾 儲存修改</button>
+      <button onclick="closeOv('monthly-edit')" style="padding:13px 18px;border-radius:var(--r2);border:1.5px solid var(--bd);background:var(--white);color:var(--ink2);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov-cfg">
+  <div class="sh" style="max-height:90dvh;overflow-y:auto">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:15px;font-weight:900">品項設定</div>
+      <button onclick="closeOv('cfg')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <div class="cfg-tabs" id="cfg-tabs"></div>
+    <div id="cfg-body"></div>
+    <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">新增品項</div>
+      <input class="add-inp" id="ni-name" placeholder="品項名稱 *">
+      <input class="add-inp" id="ni-cat" placeholder="分類（如：耗材、食材）">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><div class="cfl" style="margin-bottom:3px">小單位 *</div><input class="cf-inp" id="ni-sn" placeholder="如：包"></div>
+        <div><div class="cfl" style="margin-bottom:3px">中單位</div><input class="cf-inp" id="ni-mn" placeholder="如：箱"></div>
+        <div><div class="cfl" style="margin-bottom:3px">大單位</div><input class="cf-inp" id="ni-ln" placeholder="如：棧板"></div>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r2);padding:10px 11px;margin-bottom:8px;border:1px solid var(--bd)">
+        <div style="font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">換算設定</div>
+        <div class="cir-conv-row" style="margin-bottom:7px">
+          <span class="cir-conv-lbl">中→小</span>
+          <span style="font-size:13px;color:var(--ink2)">1 中 = </span>
+          <input class="cc-inp" id="ni-ms" type="number" placeholder="?">
+          <span style="font-size:13px;color:var(--ink2)"> 小</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1箱=12包，填12）</span>
+        </div>
+        <div class="cir-conv-row" style="margin-bottom:7px">
+          <span class="cir-conv-lbl">大→中</span>
+          <span style="font-size:13px;color:var(--ink2)">1 大 = </span>
+          <input class="cc-inp" id="ni-lm" type="number" placeholder="?">
+          <span style="font-size:13px;color:var(--ink2)"> 中</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1棧=10箱，填10）</span>
+        </div>
+        <div class="cir-conv-row">
+          <span class="cir-conv-lbl">特殊</span>
+          <input class="cc-inp" id="ni-wu" placeholder="單位名" style="width:52px">
+          <span style="font-size:13px;color:var(--ink2);margin:0 4px">　1小 = </span>
+          <input class="cc-inp" id="ni-sw" type="number" placeholder="?">
+          <span style="font-size:11px;color:var(--ink3);margin-left:6px">（如：1包=100g，填g和100）</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-daily" checked> 日盤</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-weekly" checked> 週盤</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" id="ni-monthly" checked> 月盤（月盤=全部）</label>
+      </div>
+      <button class="btn btn-p btn-full" onclick="addNewItem()">＋ 新增品項</button>
+    </div>
+  </div>
+</div>
+
+<!-- 歷史記錄 overlay -->
+
+<div class="ov" id="ov-hist">
+  <div class="sh" style="max-height:92dvh;overflow-y:auto;display:flex;flex-direction:column">
+    <div class="sh-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-shrink:0">
+      <div style="font-size:15px;font-weight:900">盤點記錄</div>
+      <button onclick="closeOv('hist')" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3)">✕</button>
+    </div>
+    <!-- 頁簽 -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:12px;flex-shrink:0">
+      <button class="hist-tab on" id="htab-all" onclick="switchHistTab('all')">全部記錄</button>
+      <button class="hist-tab" id="htab-monthly" onclick="switchHistTab('monthly')">📊 月盤總表</button>
+    </div>
+    <!-- 全部記錄 -->
+    <div id="hist-all-panel" style="flex:1;overflow-y:auto">
+      <div id="hist-body"></div>
+    </div>
+    <!-- 月盤總表 -->
+    <div id="hist-monthly-panel" style="display:none;flex:1;overflow-y:auto">
+      <!-- 月份選擇 -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <select id="hist-month-sel" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;flex:1"></select>
+        <button onclick="renderMonthSummary()" style="padding:7px 14px;background:var(--g);color:#fff;border:none;border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">查看</button>
+      </div>
+      <div id="month-summary-body"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 自訂數字小鍵盤 -->
+<div class="numpad-backdrop" id="np-backdrop" onclick="npClose()"></div>
+<div class="numpad-wrap" id="numpad-wrap">
+  <div class="numpad-handle"></div>
+  <!-- 品項名稱 + 換算提示 -->
+  <div style="margin-bottom:8px">
+    <div class="numpad-label" id="np-label">數量</div>
+    <div class="numpad-hint" id="np-hint"></div>
+  </div>
+  <!-- 單位切換列：點哪格就切到那個單位 -->
+  <div id="np-unit-tabs" style="display:none;gap:6px;margin-bottom:10px"></div>
+  <!-- 目前輸入的值 -->
+  <div class="numpad-display" id="np-display">0</div>
+  <!-- 小單位合計 -->
+  <div class="numpad-total" id="np-total-row" style="display:none;margin-top:8px">
+    <span class="nt-lbl">小單位合計</span>
+    <span class="nt-val"><span id="np-total">0</span> <span id="np-total-unit" style="font-size:13px;font-weight:500"></span></span>
+  </div>
+  <div class="numpad-grid" style="margin-top:10px">
+    <button class="nk" onclick="npKey('7')">7</button>
+    <button class="nk" onclick="npKey('8')">8</button>
+    <button class="nk" onclick="npKey('9')">9</button>
+    <button class="nk" onclick="npKey('4')">4</button>
+    <button class="nk" onclick="npKey('5')">5</button>
+    <button class="nk" onclick="npKey('6')">6</button>
+    <button class="nk" onclick="npKey('1')">1</button>
+    <button class="nk" onclick="npKey('2')">2</button>
+    <button class="nk" onclick="npKey('3')">3</button>
+    <button class="nk nk-dot" onclick="npKey('.')">.</button>
+    <button class="nk" onclick="npKey('0')">0</button>
+    <button class="nk nk-del" onclick="npKey('DEL')">⌫</button>
+  </div>
+  <button class="nk nk-clear" onclick="npKey('C')" style="width:100%;border-radius:var(--r2);padding:10px;margin-bottom:10px;font-size:13px;font-weight:800">清除</button>
+  <button class="numpad-ok" id="np-ok-btn" onclick="npConfirm()">✓ 確認</button>
+</div>
+<script>
+var API_URL='https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+// ── 預設品項資料 ─────────────────────────────────────────────
+// modes: 'D'=日盤, 'W'=週盤 (月盤=全部)
+// sn=小, mn=中, ln=大, ms=1中=幾小, lm=1大=幾中
+// wu=重量單位, sw=1小=幾重量
+// daily: {min, target} 低標/補至目標
+// weekly: {min, target}
+var DEFAULT_ITEMS=[
+  // 耗材
+  {id:'invoice',    name:'發票',      cat:'耗材', modes:'DW', sn:'本',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:2,target:6},   weekly:{min:5,target:20}},
+  {id:'sticker',    name:'貼紙',      cat:'耗材', modes:'DW', sn:'捲',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'lid_flat',   name:'就口杯蓋',  cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'lid_dome',   name:'一般杯蓋',  cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'cup_sleeve', name:'熱杯套',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:20,lm:0, wu:'',   sw:0, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'straw_big',  name:'大吸管',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'straw_sm',   name:'小吸管',    cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:0.33,target:1},weekly:{min:1,target:3}},
+  {id:'cup_norm',   name:'一般杯',    cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:25,lm:0, wu:'',   sw:0, daily:{min:10,target:99}, weekly:{min:3,target:8}},
+  {id:'cup_taste',  name:'試飲杯',    cat:'耗材', modes:'DW', sn:'條',  mn:'箱', ln:'',   ms:20,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'holder_2',   name:'2杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'holder_4',   name:'4杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'holder_6',   name:'6杯架',     cat:'耗材', modes:'DW', sn:'個',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:5,target:20},  weekly:{min:10,target:30}},
+  {id:'bag_1',      name:'1杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_2',      name:'2杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_4',      name:'4杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'bag_6',      name:'6杯袋',     cat:'耗材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:50,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'seal_film',  name:'封口膜',    cat:'耗材', modes:'DW', sn:'捲',  mn:'箱', ln:'',   ms:10,lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  // 食材
+  {id:'pwd_nut',    name:'堅果奶蓋粉',cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'pwd_spec',   name:'特製奶蓋粉',cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:2,target:5},   weekly:{min:3,target:8}},
+  {id:'pwd_tea',    name:'麵茶粉',    cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:12,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'sugar',      name:'糖',        cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:6}},
+  {id:'tea_red',    name:'紅茶',      cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_oolong', name:'烏龍茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_grn_b',  name:'大青茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:10,lm:0, wu:'g',  sw:20,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'tea_grn_s',  name:'小青茶',    cat:'食材', modes:'DW', sn:'包',  mn:'袋', ln:'',   ms:20,lm:0, wu:'g',  sw:10,daily:{min:0.5,target:1}, weekly:{min:1,target:3}},
+  {id:'sea_salt',   name:'海鹽',      cat:'食材', modes:'DW', sn:'罐',  mn:'',   ln:'',   ms:0, lm:0, wu:'g',  sw:200,daily:{min:1,target:3},  weekly:{min:2,target:5}},
+  {id:'tapioca',    name:'樹薯粉',    cat:'食材', modes:'DW', sn:'包',  mn:'箱', ln:'',   ms:10,lm:0, wu:'kg', sw:1, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'enzyme',     name:'酵素',      cat:'食材', modes:'DW', sn:'瓶',  mn:'',   ln:'',   ms:0, lm:0, wu:'',   sw:0, daily:{min:1,target:3},   weekly:{min:2,target:5}},
+  {id:'fructose',   name:'果糖',      cat:'食材', modes:'DW', sn:'瓶',  mn:'箱', ln:'',   ms:12,lm:0, wu:'',   sw:0, daily:{min:1,target:2},   weekly:{min:2,target:4}},
+  // 飲品原料
+  {id:'milk_fresh', name:'鮮奶',      cat:'飲品原料', modes:'DW', sn:'瓶', mn:'箱',ln:'',ms:12,lm:0, wu:'ml', sw:946,daily:{min:3,target:6},  weekly:{min:5,target:12}},
+  {id:'milk_oat',   name:'燕麥奶',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'ml', sw:946,daily:{min:3,target:6},  weekly:{min:5,target:12}},
+  {id:'cream',      name:'鮮奶油',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:12,lm:0, wu:'ml', sw:500,daily:{min:1,target:3},  weekly:{min:2,target:6}},
+  {id:'jelly_juice',name:'仙草原汁',  cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'',   sw:0,  daily:{min:0,target:1},  weekly:{min:1,target:3}},
+  {id:'winter_mel', name:'冬瓜汁',    cat:'飲品原料', modes:'DW', sn:'罐', mn:'箱',ln:'',ms:6, lm:0, wu:'',   sw:0,  daily:{min:0,target:1},  weekly:{min:1,target:3}},
+  // 特殊原料（僅週盤+月盤）
+  {id:'herb',       name:'青草',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'pandan',     name:'斑斕',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'lemon_gr',   name:'檸檬草',    cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'glutin',     name:'糯香',      cat:'特殊原料', modes:'W',  sn:'包', mn:'',  ln:'', ms:0, lm:0, wu:'g',  sw:100,daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'taro_cube',  name:'芋心角',    cat:'特殊原料', modes:'W',  sn:'包', mn:'箱',ln:'', ms:6, lm:0, wu:'kg', sw:1,  daily:{min:0,target:0},  weekly:{min:2,target:4}},
+  // 茶葉原料（僅週盤+月盤）
+  {id:'jelly_dry',  name:'仙草乾',    cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:5, lm:0, wu:'kg', sw:1,  daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'tea_ruby',   name:'紅玉',      cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:10,lm:0, wu:'g',  sw:50, daily:{min:0,target:0},  weekly:{min:1,target:3}},
+  {id:'tea_camel',  name:'茶花烏龍',  cat:'茶葉原料', modes:'W',  sn:'包', mn:'袋',ln:'', ms:10,lm:0, wu:'g',  sw:50, daily:{min:0,target:0},  weekly:{min:1,target:3}},
+];
+
+var PERSONS=['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文']; // 初始預設值，啟動時從Sheets覆蓋
+var items=[],counts={},selPerson='',curMode='daily',curItemId='',records=[],cfgMode='daily';
+
+// ── 通用雲端 cfg helper ──────────────────
+// ══════════════════════════════════════════════════════
+// 資料層 — 雲端優先，跨設備同步
+// 策略：
+//   寫入：本機先存（即時），同時推雲端（確認）
+//   讀取：以雲端版本號判斷是否需要更新
+//   同步：頁面載入 + 每 30 秒輪詢一次
+// ══════════════════════════════════════════════════════
+
+var _syncVer = 0;       // 本機目前對應的雲端版本
+var _saveTimer = null;  // 防抖計時器，避免每次輸入都打 API
+var _syncLocked = false; // 存檔進行中，暫緩同步覆蓋
+
+// ── API 工具 ──────────────────────────────────────────
+// GET：小資料（讀取、短參數）
+// POST：大資料（cfgSet items 等）
+function api(params, cb){
+  var qs = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  // 超過 1500 字元自動改 POST，避免 URL 長度限制
+  if(qs.length > 1500){
+    apiPost(params, cb);
+  } else {
+    fetch(API_URL+'?'+qs)
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if(cb) cb(d, null); })
+      .catch(function(e){ if(cb) cb(null, e); });
+  }
+}
+function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
+  fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ if(cb) cb(d, null); })
+    .catch(function(e){ if(cb) cb(null, e); });
+}
+
+function cfgSet(key, value, cb){
+  // cfgSet 固定走 POST（value 可能很大）
+  var strVal = (typeof value === 'string') ? value : JSON.stringify(value);
+  apiPost({action:'cfgSet', key:key, value:strVal}, cb || null);
+}
+function cfgGet(key, cb){
+  api({action:'cfgGet', key:key}, function(d){
+    if(d && d.ok && d.value != null){
+      var raw = d.value;
+      if(typeof raw === 'string'){
+        try{ cb(JSON.parse(raw)); return; }catch(e){}
+        cb(raw);
+      } else {
+        cb(raw);
+      }
+      return;
+    }
+    cb(null);
+  });
+}
+
+function setSyncStatus(state){
+  // state: 'ok' | 'saving' | 'error' | 'syncing'
+  var el = document.getElementById('sync-status');
+  if(!el) return;
+  var map = { ok:'☁️', saving:'💾', error:'⚠️', syncing:'🔄' };
+  el.textContent = map[state] || '☁️';
+}
+
+// ── 初始化 ────────────────────────────────────────────
+window.onload = function(){
+  loadLocal();
+  document.getElementById('setup-date').value = todayStr();
+  buildPersonGrid();
+  pullFromCloud(true); // 首次強制拉
+  // 每 30 秒輪詢一次（讓其他設備的修改能同步過來）
+  setInterval(function(){ if(!_syncLocked) pullFromCloud(false); }, 30000);
+};
+
+// 從 localStorage 快速載入（開畫面用，不會白屏）
+function loadLocal(){
+  try{
+    var r = localStorage.getItem('inv3_items');
+    var p = r ? JSON.parse(r) : null;
+    items = (p && Array.isArray(p) && p.length > 0) ? p : JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  } catch(e){ items = JSON.parse(JSON.stringify(DEFAULT_ITEMS)); }
+  try{
+    var r2 = localStorage.getItem('inv3_records');
+    records = r2 ? JSON.parse(r2) : [];
+  } catch(e){ records = []; }
+  try{ _syncVer = parseInt(localStorage.getItem('inv3_ver') || '0'); } catch(e){ _syncVer = 0; }
+}
+
+// 從雲端拉最新資料
+// force=true：不管版本號都覆蓋；force=false：只有雲端版本較新才覆蓋
+function pullFromCloud(force){
+  setSyncStatus('syncing');
+  // 同步人員名單（統一來源）
+  api({action:'getEmps'}, function(d){
+    if(d&&d.ok&&d.data&&d.data.length>0){
+      PERSONS=d.data;
+      buildPersonGrid();
+    }
+  });
+  api({action:'invItemGetAll'}, function(d){
+    if(_syncLocked) return;
+    if(d && d.ok && d.data && d.data.length > 0){
+      // 獨立分頁回傳的資料，合併 DEFAULT_ITEMS 的設定值（若 extra 是空的）
+      items = d.data.map(function(item){
+        var def = DEFAULT_ITEMS.find(function(d){ return d.id === item.id; });
+        if(def){
+          // 若 daily/weekly 是空物件，用預設值補上
+          if(!item.daily || !Object.keys(item.daily).length) item.daily = def.daily || {};
+          if(!item.weekly || !Object.keys(item.weekly).length) item.weekly = def.weekly || {};
+          if(!item.monthly || !Object.keys(item.monthly).length) item.monthly = def.monthly || {};
+        }
+        return item;
+      });
+      localStorage.setItem('inv3_items', JSON.stringify(items));
+      renderCfgBody();
+    } else if(d && d.ok && d.data && d.data.length === 0 && !force){
+      // Sheets 是空的但不是強制拉（代表尚未部署新版 AS），維持本機資料
+    }
+    setSyncStatus('ok');
+    buildPersonGrid();
+  });
+  cfgGet('inv:records', function(v){
+    if(v && Array.isArray(v)){
+      records = v;
+      try{ localStorage.setItem('inv3_records', JSON.stringify(v)); } catch(e){}
+    }
+  });
+}
+
+// 存品項到本機 + 雲端（防抖：最後一次操作 800ms 後才打 API）
+// 自動備份（防抖，3秒後觸發，避免每個動作都打 API）
+var _backupTimer = null;
+function autoBackup(){
+  clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(function(){
+    var recData   = localStorage.getItem('inv3_records') || '[]';
+    var itemsData = localStorage.getItem('inv3_items')   || '[]';
+    apiPost({action:'backupRecords', key:'inv_records', data:recData},   function(){});
+    apiPost({action:'backupRecords', key:'inv_items',   data:itemsData}, function(){});
+  }, 3000);
+}
+
+function saveItems(){
+  // 1. 立即存本機（不等 API）
+  localStorage.setItem('inv3_items', JSON.stringify(items));
+  setSyncStatus('saving');
+  // 2. 防抖：連續修改只發一次 API
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function(){
+    _syncLocked = true;
+    var ts = Date.now();
+    var snapshot = JSON.parse(JSON.stringify(items));
+    apiPost({action:'invItemSaveAll', items:JSON.stringify(snapshot)}, function(d){
+      _syncLocked = false;
+      if(d && d.ok){
+        _syncVer = ts;
+        localStorage.setItem('inv3_ver', String(ts));
+        setSyncStatus('ok');
+        autoBackup(); // ← 品項設定變更後自動備份
+      } else {
+        setSyncStatus('error');
+        showToast('⚠️ 雲端同步失敗，設定已存在本機');
+      }
+    });
+  }, 800);
+}
+
+function saveRecords(){
+  var trimmed = records.slice(0, 50);
+  localStorage.setItem('inv3_records', JSON.stringify(trimmed));
+  cfgSet('inv:records', trimmed);
+  autoBackup(); // ← 盤點記錄變更後自動備份
+}
+function getItemsForMode(mode){
+  if(mode==='monthly') return items;
+  return items.filter(function(i){ return i.modes&&i.modes.indexOf(mode==='daily'?'D':'W')>-1; });
+}
+
+// ── 人員 ──────────────────────────────────────────────────────
+function buildPersonGrid(){
+  document.getElementById('person-grid').innerHTML=PERSONS.map(function(p){
+    return '<button class="pb'+(p===selPerson?' on':'')+'" onclick="pickP(\''+p+'\')">' +p+'</button>';
+  }).join('');
+}
+function pickP(p){selPerson=p;buildPersonGrid();}
+
+// ── 開始流程 ──────────────────────────────────────────────────
+function showSetup(mode){
+  curMode=mode;
+  var cfg={
+    daily:  {icon:'📅',label:'每日盤補貨',cls:'start-daily'},
+    weekly: {icon:'📆',label:'每週盤叫貨',cls:'start-weekly'},
+    monthly:{icon:'📊',label:'月盤點',    cls:'start-monthly'},
+  };
+  var c=cfg[mode];
+  document.getElementById('setup-icon').textContent=c.icon;
+  document.getElementById('setup-label').textContent=c.label;
+  var cnt=getItemsForMode(mode).length;
+  document.getElementById('setup-item-count').textContent=cnt+' 個品項';
+  document.getElementById('start-btn').className='start-btn '+c.cls;
+  document.getElementById('start-btn').textContent='▶ 開始'+c.label;
+  showPage('setup');
+}
+
+function startCount(){
+  if(!selPerson){showToast('請選擇人員');return;}
+  if(!document.getElementById('setup-date').value){showToast('請選擇日期');return;}
+  counts={};
+  if(curMode==='monthly'){
+    curMonthlyLoc='現場';
+    renderMonthlyLocPage();
+  } else {
+    renderCountPage();
+  }
+  showPage('count');
+}
+
+// ── 盤點頁 ─────────────────────────────────────────────────────
+function renderCountPage(){
+  var modeItems=getItemsForMode(curMode);
+  var done=Object.keys(counts).length;
+  var pct=modeItems.length?Math.round(done/modeItems.length*100):0;
+  var modeLabels={daily:'每日盤補貨',weekly:'每週盤叫貨',monthly:'月盤點'};
+  document.getElementById('prog-info').textContent=modeLabels[curMode]+' · '+selPerson;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  var fb=document.getElementById('finish-btn');
+  fb.disabled=done<modeItems.length;
+  fb.style.opacity=done>=modeItems.length?1:0.4;
+  fb.textContent=curMode==='daily'?'✓ 完成，查看補貨清單':curMode==='weekly'?'✓ 完成，查看需叫貨':'✓ 完成月盤點';
+  fb.className='finish-btn fb-'+(curMode==='daily'?'daily':curMode==='weekly'?'weekly':'monthly');
+
+  var cats=[...new Set(modeItems.map(function(i){return i.cat;}))];
+  var html='';
+
+  if(curMode==='daily'){
+    // 日盤：判斷式，只顯示標準量，兩個按鈕
+    cats.forEach(function(cat){
+      var ci=modeItems.filter(function(i){return i.cat===cat;});
+      html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+      ci.forEach(function(item){
+        var status=counts[item.id]; // undefined=未判斷, 'ok'=充足, 'need'=需補貨
+        var cfg=item.daily||{};
+        var stdLabel=(cfg.std!=null?cfg.std:cfg.min||0)+getUnitLabel(item,cfg.stdUnit||'s');
+        var cardCls=status==='ok'?'item-card-daily ok':status==='need'?'item-card-daily need':'item-card-daily';
+        html+='<div class="'+cardCls+'">'
+          +'<div class="ic-top"><span class="ic-name">'+item.name+'</span>'
+          +'<span class="ic-std">標準 '+stdLabel+'</span></div>'
+          +'<div class="daily-btns">'
+          +'<button class="daily-btn ok'+(status==='ok'?' active':'')+'" onclick="setDailyStatus(\''+item.id+'\',\'ok\')">✅ 充足</button>'
+          +'<button class="daily-btn need'+(status==='need'?' active':'')+'" onclick="setDailyStatus(\''+item.id+'\',\'need\')">⚠ 需補貨</button>'
+          +'</div>'
+          +'</div>';
+      });
+    });
+  } else {
+    // 週盤/月盤：原有數字輸入流程
+    cats.forEach(function(cat){
+      var ci=modeItems.filter(function(i){return i.cat===cat;});
+      html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+      ci.forEach(function(item){
+        var c=counts[item.id];
+        var filled=c!==undefined;
+        var total=filled?calcTotal(item,c):null;
+        var status='';
+        var cls='';
+        if(filled&&curMode!=='monthly'){
+          var cfg=item[curMode];
+          if(cfg){
+            var minInSmall=unitToSmall(item,cfg.min,cfg.minUnit||'s');
+            if(total<minInSmall){cls='filled-low';status='⚠ 不足';}
+            else if(total===0){cls='filled-zero';}
+            else{cls='filled-ok';}
+          }
+        } else if(filled){cls='filled-ok';}
+        var totalCls=!filled?'':cls==='filled-low'?'low':cls==='filled-zero'?'zero':'ok';
+        html+='<div class="item-card '+cls+'" onclick="openNumOv(\''+item.id+'\')">'
+          +'<div class="ic-top">'
+            +'<span class="ic-name">'+item.name+'</span>'
+            +'<span class="ic-total '+totalCls+'">'+(filled?(total+' '+item.sn):'—')+'</span>'
+          +'</div>';
+        if(filled&&c){
+          var parts=[];
+          if(item.ln&&c.l) parts.push(c.l+item.ln);
+          if(item.mn&&c.m) parts.push(c.m+item.mn);
+          if(c.s!==undefined) parts.push(c.s+item.sn);
+          if(item.wu&&c.w) parts.push(c.w+item.wu);
+          if(parts.length>1) html+='<div class="ic-units-row">'+parts.join(' + ')+'</div>';
+        }
+        if(curMode!=='monthly'&&item[curMode]){
+          var t=item[curMode];
+          var minLbl=t.min+getUnitLabel(item,t.minUnit||'s');
+          var tgtLbl=t.target+getUnitLabel(item,t.targetUnit||'s');
+          html+='<div class="ic-sub"><span class="ic-threshold">低標:'+minLbl+'</span><span>補至:'+tgtLbl+'</span>';
+          if(status) html+='<span style="color:var(--red);font-weight:700">'+status+'</span>';
+          html+='</div>';
+        }
+        html+='</div>';
+      });
+    });
+  }
+  document.getElementById('count-body').innerHTML=html;
+}
+function setDailyStatus(id, status){
+  counts[id]=status;
+  renderCountPage();
+}
+
+function calcTotal(item,c){
+  var total=(parseFloat(c.s)||0);
+  if(item.mn&&item.ms>0) total+=(parseFloat(c.m)||0)*item.ms;
+  if(item.ln&&item.lm>0&&item.ms>0) total+=(parseFloat(c.l)||0)*item.lm*item.ms;
+  else if(item.ln&&item.lm>0) total+=(parseFloat(c.l)||0)*item.lm;
+  return Math.round(total*100)/100;
+}
+
+// ── 月盤地點 ─────────────────────────────────────────────────
+// 每個品項可設定要在哪些地點盤點：'S'=現場, 'W'=倉庫
+// 月盤按地點分開填寫，最後合計
+
+var MONTHLY_LOCS=['現場','倉庫'];
+
+function getItemLocsForMonthly(item){
+  // 預設：有 locs 欄位就用，否則預設兩個都要
+  return item.locs||'SW';
+}
+
+function startCountMonthly(){
+  // 月盤：先選地點
+  counts={};
+  curMonthlyLoc='現場';
+  renderMonthlyLocPage();
+  showPage('count');
+}
+
+var curMonthlyLoc='現場';
+
+function renderMonthlyLocPage(){
+  var date=document.getElementById('setup-date').value;
+  var locsLeft=MONTHLY_LOCS.filter(function(loc){
+    var key=loc==='現場'?'S':'W';
+    // 有任一品項需要此地點
+    return items.some(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+  });
+
+  document.getElementById('prog-info').textContent='月盤點 '+curMonthlyLoc+' · '+selPerson;
+
+  var locItems=items.filter(function(i){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    return getItemLocsForMonthly(i).indexOf(key)>-1;
+  });
+
+  var locKey=curMonthlyLoc==='現場'?'S':'W';
+  var doneInLoc=locItems.filter(function(i){
+    return counts[locKey+'_'+i.id]!==undefined;
+  }).length;
+  var pct=locItems.length?Math.round(doneInLoc/locItems.length*100):100;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+
+  // 頂部地點切換
+  var fb=document.getElementById('finish-btn');
+  var allLocsDone=MONTHLY_LOCS.every(function(loc){
+    var key=loc==='現場'?'S':'W';
+    var li=items.filter(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+    return li.every(function(i){return counts[key+'_'+i.id]!==undefined;});
+  });
+  fb.disabled=!allLocsDone;
+  fb.style.opacity=allLocsDone?1:0.4;
+  fb.textContent='✓ 完成月盤點，查看結果';
+  fb.className='finish-btn fb-monthly';
+
+  var html='<div style="display:flex;gap:8px;margin-bottom:14px">';
+  MONTHLY_LOCS.forEach(function(loc){
+    var key=loc==='現場'?'S':'W';
+    var li=items.filter(function(i){return getItemLocsForMonthly(i).indexOf(key)>-1;});
+    var done=li.filter(function(i){return counts[key+'_'+i.id]!==undefined;}).length;
+    var on=loc===curMonthlyLoc;
+    html+='<button onclick="switchMonthlyLoc(\''+loc+'\')" style="flex:1;padding:10px;border-radius:var(--r2);border:2px solid '+(on?'var(--g)':'var(--bd)')+';background:'+(on?'var(--g)':'var(--white)')+';color:'+(on?'#fff':'var(--ink2)')+';font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">'
+      +(loc==='現場'?'🏪':'📦')+' '+loc+'<br><span style="font-size:11px;opacity:.8">'+done+'/'+li.length+'</span></button>';
+  });
+  html+='</div>';
+
+  var cats=[...new Set(locItems.map(function(i){return i.cat;}))];
+  cats.forEach(function(cat){
+    var ci=locItems.filter(function(i){return i.cat===cat;});
+    html+='<div class="cat-lbl">'+cat+' <span class="cat-cnt">'+ci.length+'</span></div>';
+    ci.forEach(function(item){
+      var key=curMonthlyLoc==='現場'?'S':'W';
+      var cntKey=key+'_'+item.id;
+      var c=counts[cntKey];
+      var filled=c!==undefined;
+      var total=filled?calcTotal(item,c):null;
+      var cls=filled?'filled-ok':'';
+      var parts=[];
+      if(filled){
+        if(item.ln&&c.l) parts.push(c.l+item.ln);
+        if(item.mn&&c.m) parts.push(c.m+item.mn);
+        if(c.s!==undefined) parts.push(c.s+item.sn);
+        if(item.wu&&c.w) parts.push(c.w+item.wu);
+      }
+      html+='<div class="item-card '+cls+'" onclick="openNumOvMonthly(\''+item.id+'\')" style="cursor:pointer">'
+        +'<div class="ic-top">'
+          +'<span class="ic-name">'+item.name+'</span>'
+          +'<span class="ic-total'+(filled?' ok':'')+'">'+( filled?(total+' '+item.sn):'—')+'</span>'
+        +'</div>'
+        +(filled&&parts.length>1?'<div class="ic-units-row">'+parts.join(' + ')+'</div>':'')
+      +'</div>';
+    });
+  });
+  document.getElementById('count-body').innerHTML=html;
+}
+
+function switchMonthlyLoc(loc){
+  curMonthlyLoc=loc;
+  renderMonthlyLocPage();
+}
+
+
+// ── 開啟數量輸入 overlay（日盤/週盤）──────────────────────────
+
+function recalc(){
+  var item=items.find(function(i){return i.id===curItemId;});
+  if(!item) return;
+  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
+  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
+  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
+  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
+  var wConverted=item.sw>0?(w/item.sw):0;
+  var total=calcTotal(item,{s:s,m:m,l:l})+wConverted;
+  document.getElementById('num-total').textContent=Math.round(total*100)/100;
+}
+function recalcW(){
+  // 重量輸入時也重新計算
+  recalc();
+}
+
+function confirmNum(){
+  var isMonthly=curItemId.startsWith('monthly_');
+  var realId=isMonthly?curItemId.replace('monthly_',''):curItemId;
+  var item=items.find(function(i){return i.id===realId;});
+  if(!item) return;
+  var s=parseFloat(document.getElementById('inp-s')&&document.getElementById('inp-s').value)||0;
+  var m=document.getElementById('inp-m')?(parseFloat(document.getElementById('inp-m').value)||0):0;
+  var l=document.getElementById('inp-l')?(parseFloat(document.getElementById('inp-l').value)||0):0;
+  var w=document.getElementById('inp-w')?(parseFloat(document.getElementById('inp-w').value)||0):0;
+  if(isMonthly){
+    var key=curMonthlyLoc==='現場'?'S':'W';
+    counts[key+'_'+realId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderMonthlyLocPage();
+  } else {
+    counts[curItemId]={s:s,m:m,l:l,w:w};
+    closeOv('num');
+    renderCountPage();
+  }
+  showToast('✓ '+item.name+'：'+calcTotal(item,{s:s,m:m,l:l})+item.sn);
+}
+
+// ── 完成盤點 ──────────────────────────────────────────────────
+function finishCount(){
+  var date=document.getElementById('setup-date').value;
+  var modeItems=getItemsForMode(curMode);
+  var modeLabels={daily:'今日補貨清單',weekly:'本週叫貨清單',monthly:'月盤點結果'};
+  var modeIcons={daily:'📋',weekly:'📦',monthly:'📊'};
+  document.getElementById('rb-icon').textContent=modeIcons[curMode];
+  document.getElementById('rb-title').textContent=modeLabels[curMode];
+  document.getElementById('rb-sub').textContent=date+' · '+selPerson;
+  document.getElementById('result-banner').className='result-banner rb-'+curMode;
+
+  var actionItems=[],okItems=[];
+
+  if(curMode==='daily'){
+    // 日盤：依判斷結果分類
+    modeItems.forEach(function(item){
+      var status=counts[item.id]; // 'ok' or 'need'
+      var cfg=item.daily||{};
+      var refillAmt=cfg.refill!=null?cfg.refill:cfg.target||0;
+      var refillLabel=getUnitLabel(item,cfg.refillUnit||'s');
+      var stdLabel=(cfg.std!=null?cfg.std:cfg.min||0)+getUnitLabel(item,cfg.stdUnit||'s');
+      if(status==='need'){
+        actionItems.push({item:item,need:refillAmt,needUnit:refillLabel,std:stdLabel,status:'need'});
+      } else {
+        okItems.push({item:item,std:stdLabel,status:status});
+      }
+    });
+  } else {
+    modeItems.forEach(function(item){
+      var c=counts[item.id]||{s:0,m:0,l:0,w:0};
+      var total=calcTotal(item,c);
+      var wConverted=item.sw>0?((c.w||0)/item.sw):0;
+      var realTotal=total+wConverted;
+      if(curMode==='monthly'){
+        okItems.push({item:item,c:c,total:realTotal});
+      } else {
+        var cfg=item[curMode];
+        var countUnit=cfg?cfg.countUnit||'s':'s';
+        var targetInSmall=cfg?unitToSmall(item,cfg.target,cfg.targetUnit||'s'):0;
+        var needAmtSmall=cfg?(targetInSmall-realTotal):0;
+        if(needAmtSmall>0){
+          var needInUnit,needUnitLabel;
+          if(countUnit==='l'&&item.lm>0&&item.ms>0){
+            needInUnit=Math.ceil(needAmtSmall/(item.lm*item.ms)); needUnitLabel=item.ln||item.sn;
+          } else if(countUnit==='m'&&item.ms>0){
+            needInUnit=Math.ceil(needAmtSmall/item.ms); needUnitLabel=item.mn||item.sn;
+          } else {
+            needInUnit=Math.ceil(needAmtSmall); needUnitLabel=item.sn;
+          }
+          actionItems.push({item:item,c:c,total:realTotal,need:needInUnit,needUnit:needUnitLabel,countUnit:countUnit});
+        } else {
+          okItems.push({item:item,c:c,total:realTotal});
+        }
+      }
+    });
+  }
+
+  var html='';
+  if(curMode==='daily'){
+    // 日盤結果：補貨清單 + 充足清單
+    if(actionItems.length){
+      html+='<div class="result-section"><div class="rs-head red">⚠ 需補貨 — '+actionItems.length+' 項</div>';
+      actionItems.forEach(function(x){
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+x.item.name+'</div>'
+            +'<div class="rs-detail">標準量 '+x.std+'</div></div>'
+          +'<div class="rs-qty red">補 '+x.need+' '+x.needUnit+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項充足，無需補貨</div></div>';
+    }
+    if(okItems.length){
+      html+='<div class="result-section"><div class="rs-head ok">✓ 充足 — '+okItems.length+' 項</div>';
+      okItems.forEach(function(x){
+        html+='<div class="rs-row"><div class="rs-name">'+x.item.name+'</div>'
+          +'<div class="rs-qty ok">✅ 充足</div></div>';
+      });
+      html+='</div>';
+    }
+  } else if(curMode==='monthly'){
+    var cats=[...new Set(items.map(function(i){return i.cat;}))];
+    cats.forEach(function(cat){
+      var ci=items.filter(function(i){return i.cat===cat;});
+      html+='<div class="result-section"><div class="rs-head info">'+cat+'</div>';
+      ci.forEach(function(item){
+        var cS=counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+        var cW=counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+        var totalS=calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0);
+        var totalW=calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0);
+        var totalAll=Math.round((totalS+totalW)*100)/100;
+        var hasS=getItemLocsForMonthly(item).indexOf('S')>-1;
+        var hasW=getItemLocsForMonthly(item).indexOf('W')>-1;
+        var detail='';
+        if(hasS) detail+='現場:'+Math.round(totalS*100)/100+item.sn;
+        if(hasS&&hasW) detail+=' + ';
+        if(hasW) detail+='倉庫:'+Math.round(totalW*100)/100+item.sn;
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+item.name+'</div>'
+            +(detail?'<div class="rs-detail">'+detail+'</div>':'')
+          +'</div>'
+          +'<div class="rs-qty info">'+totalAll+' '+item.sn+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    });
+  } else {
+    // 週盤
+    if(actionItems.length){
+      html+='<div class="result-section"><div class="rs-head red">⚠ 需叫貨 — '+actionItems.length+' 項</div>';
+      actionItems.forEach(function(x){
+        var needLabel=x.needUnit||x.item.sn;
+        var targetLabel=getUnitLabel(x.item,(x.item[curMode]&&x.item[curMode].targetUnit)||'s');
+        html+='<div class="rs-row">'
+          +'<div><div class="rs-name">'+x.item.name+'</div>'
+            +'<div class="rs-detail">現有 '+Math.round(x.total*100)/100+x.item.sn+' · 需達 '+x.item[curMode].target+targetLabel+'</div></div>'
+          +'<div class="rs-qty red">補 '+x.need+' '+needLabel+'</div>'
+        +'</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div class="result-section"><div class="rs-head ok">✅ 所有品項庫存充足，無需叫貨</div></div>';
+    }
+    if(okItems.length){
+      html+='<div class="result-section"><div class="rs-head ok">✓ 庫存足夠 — '+okItems.length+' 項</div>';
+      okItems.forEach(function(x){
+        html+='<div class="rs-row"><div class="rs-name">'+x.item.name+'</div>'
+          +'<div class="rs-qty ok">'+Math.round(x.total*100)/100+' '+x.item.sn+'</div></div>';
+      });
+      html+='</div>';
+    }
+  }
+  document.getElementById('result-body').innerHTML=html;
+
+  // 儲存記錄
+  var rec={id:Date.now(),mode:curMode,date:date,person:selPerson,counts:JSON.parse(JSON.stringify(counts))};
+  records.unshift(rec);
+  saveRecords();
+  pushToSheets(rec,modeItems,actionItems);
+  if(rec.mode !== 'daily') sendLineInventoryNotify(rec,modeItems,actionItems);
+  // 月盤完成後自動備份到 Sheets
+  if(rec.mode === 'monthly'){
+    setTimeout(function(){
+      apiPost({action:'backupRecords', key:'inv_records', data:localStorage.getItem('inv3_records')||'[]'}, function(){});
+      apiPost({action:'backupRecords', key:'inv_items',   data:localStorage.getItem('inv3_items')||'[]'},   function(){});
+    }, 2000);
+  }
+  showPage('result');
+}
+
+function sendLineInventoryNotify(rec, modeItems, actionItems){
+  // 月盤：先預覽再發送
+  var lines = buildInvLineMsg(rec, modeItems, actionItems);
+  var msg = lines.join('\n');
+
+  if(rec.mode === 'monthly'){
+    // 月盤顯示預覽讓使用者確認
+    document.getElementById('line-preview-text').textContent = msg;
+    _pendingInvLineSend = function(){
+      api({action:'sendLine', msg:msg}, function(d){
+        if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+        else showToast('❌ 傳送失敗：'+(d&&d.error?d.error:''));
+      });
+    };
+    openOv('line-preview');
+  } else {
+    // 日盤/週盤：直接發送
+    var MAX=4800;
+    if(msg.length<=MAX){
+      api({action:'sendLine', msg:msg}, function(d){
+        if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+      });
+    } else {
+      // 分段傳送
+      var parts=[], current=[], currentLen=0;
+      lines.forEach(function(line){
+        if(currentLen+line.length+1>MAX){
+          parts.push(current.join('\n'));
+          current=[line]; currentLen=line.length;
+        } else {
+          current.push(line); currentLen+=line.length+1;
+        }
+      });
+      if(current.length) parts.push(current.join('\n'));
+      parts.forEach(function(part, i){
+        setTimeout(function(){
+          api({action:'sendLine', msg:part}, function(){});
+        }, i*1500);
+      });
+      showToast('✓ 訊息分段傳送中（共'+parts.length+'則）');
+    }
+  }
+}
+
+
+function histDetailHtml(r){
+  var modeItems=r.mode==='monthly'?items:items.filter(function(i){
+    return i.modes&&i.modes.indexOf(r.mode==='daily'?'D':'W')>-1;
+  });
+  var html='';
+  if(r.mode==='monthly'){
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;padding:7px 13px;border-bottom:1px solid var(--bd)">'+
+      '<div>品項</div><div style="text-align:right">🏪現場</div><div style="text-align:right">📦倉庫</div><div style="text-align:right;color:var(--g)">合計</div>'+
+    '</div>';
+    var lastCat='';
+    modeItems.forEach(function(item){
+      var cS=r.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var cW=r.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+      var tS=Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*100)/100;
+      var tW=Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*100)/100;
+      var tAll=Math.round((tS+tW)*100)/100;
+      if(item.cat!==lastCat){
+        lastCat=item.cat;
+        html+='<div style="padding:5px 13px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;background:#eaeff7;border-top:1px solid var(--bd)">'+item.cat+'</div>';
+      }
+      html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;padding:7px 13px;border-top:1px solid var(--bd);font-size:13px;align-items:center">'+
+        '<div style="font-weight:500">'+item.name+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tS+item.sn+(cS.w?'<br><span style="font-size:11px;color:var(--ink3)">'+cS.w+item.wu+'</span>':'')+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+tW+item.sn+(cW.w?'<br><span style="font-size:11px;color:var(--ink3)">'+cW.w+item.wu+'</span>':'')+'</div>'+
+        '<div style="text-align:right;font-weight:700;color:var(--g)">'+tAll+' '+item.sn+'</div>'+
+      '</div>';
+    });
+  } else {
+    var actionWord=r.mode==='daily'?'需補':'需叫';
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 70px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;padding:7px 13px;border-bottom:1px solid var(--bd)">'+
+      '<div>品項</div><div style="text-align:right">現有</div><div style="text-align:right;color:var(--red)">'+actionWord+'</div>'+
+    '</div>';
+    var lastCat2='';
+    modeItems.forEach(function(item){
+      var c=r.counts[item.id]||{s:0,m:0,l:0,w:0};
+      var total=Math.round((calcTotal(item,c)+(item.sw>0?(c.w||0)/item.sw:0))*100)/100;
+      var cfg=item[r.mode]||{min:0,target:0};
+      var need=Math.max(0,Math.ceil(cfg.target-total));
+      if(item.cat!==lastCat2){
+        lastCat2=item.cat;
+        html+='<div style="padding:5px 13px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;background:#eaeff7;border-top:1px solid var(--bd)">'+item.cat+'</div>';
+      }
+      var needColor=need>0?'color:var(--red);font-weight:700':'color:var(--g)';
+      html+='<div style="display:grid;grid-template-columns:1fr 80px 70px;padding:7px 13px;border-top:1px solid var(--bd);font-size:13px;align-items:center">'+
+        '<div style="font-weight:500">'+item.name+'</div>'+
+        '<div style="text-align:right;color:var(--ink2)">'+total+' '+item.sn+'</div>'+
+        '<div style="text-align:right;'+needColor+'">'+(need>0?'+'+need:'✓')+'</div>'+
+      '</div>';
+    });
+  }
+  return html;
+}
+
+// ── 月盤記錄編輯（從歷史記錄 tab）──────────────────────────
+function editMonthlyFromHist(ri){
+  var r = records[ri];
+  if(!r||r.mode!=='monthly'){ showToast('找不到記錄'); return; }
+
+  var modeItems = getItemsForMode('monthly');
+  if(!modeItems.length){ showToast('無月盤品項'); return; }
+
+  var cats=[], catMap={};
+  modeItems.forEach(function(item){
+    if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
+    catMap[item.cat].push(item);
+  });
+
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px;letter-spacing:.05em">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var cS=(r.counts&&r.counts['S_'+item.id])||{s:0,m:0,l:0,w:0};
+      var cW=(r.counts&&r.counts['W_'+item.id])||{s:0,m:0,l:0,w:0};
+      var tS=Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*100)/100;
+      var tW=Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*100)/100;
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+item.name+'</span>'
+        +'<span style="font-size:11px;color:var(--ink3)">現場</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tS+'" '
+          +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
+          +'data-edit-item="S_'+item.id+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:11px;color:var(--ink3)">倉庫</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tW+'" '
+          +'style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" '
+          +'data-edit-item="W_'+item.id+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:12px;color:var(--ink3)">'+item.sn+'</span>'
+      +'</div>';
+    });
+  });
+
+  document.getElementById('monthly-edit-meta').textContent = r.date+'　'+r.person;
+  document.getElementById('monthly-edit-body').innerHTML = html;
+  window._editingMonthlyRecId   = r.id;
+  window._editingMonthlyItems   = modeItems;
+  window._editingMonthlyDate    = r.date;
+  window._editingMonthlyPerson  = r.person;
+  window._editingMonthlyHistIdx = ri;
+  openOv('monthly-edit');
+}
+
+// ── 月盤儲存 ──────────────────────────────────────────────────
+function saveMonthlyEditOv(){
+  var recId    = window._editingMonthlyRecId;
+  var modeItems = window._editingMonthlyItems;
+  var date     = window._editingMonthlyDate;
+  var person   = window._editingMonthlyPerson;
+  if(!recId||!modeItems){ showToast('找不到編輯狀態'); return; }
+
+  // 讀取所有 input（支援兩種格式的 data 屬性）
+  var itemMap = {};
+  document.querySelectorAll('[data-edit-item],[data-rec-item]').forEach(function(inp){
+    var key = inp.getAttribute('data-edit-item') || inp.getAttribute('data-rec-item');
+    if(!key) return;
+    var itemName = inp.getAttribute('data-item-name') || '';
+    var val = parseFloat(inp.value)||0;
+    var prefix = key.slice(0,2);
+    var itemId  = key.slice(2);
+    // 找品項
+    var item = modeItems.find(function(i){ return String(i.id)===String(itemId); });
+    if(!item) return;
+    var name = item.name;
+    if(!itemMap[name]) itemMap[name]={cat:item.cat, unit:item.sn, qty_scene:0, qty_store:0};
+    if(prefix==='S_') itemMap[name].qty_scene = val;
+    else               itemMap[name].qty_store = val;
+  });
+
+  var data = Object.keys(itemMap).map(function(name){
+    var d = itemMap[name];
+    return {cat:d.cat, item:name, unit:d.unit,
+      qty_scene:d.qty_scene, qty_store:d.qty_store, total:d.qty_scene+d.qty_store};
+  }).filter(function(d){ return d.total>0; });
+
+  var btn = document.getElementById('monthly-edit-save-btn');
+  if(btn){ btn.textContent='儲存中...'; btn.disabled=true; }
+
+  apiPost({action:'invSave', mode:'monthly', id:String(recId), date:date, person:person, data:JSON.stringify(data)},
+    function(d){
+      if(btn){ btn.textContent='💾 儲存修改'; btn.disabled=false; }
+      if(d&&d.ok){
+        showToast('✓ 月盤記錄已更新');
+        closeOv('monthly-edit');
+        // 更新本機 records
+        var ri = records.findIndex(function(r){ return String(r.id)===String(recId); });
+        if(ri>-1){
+          // 把修改後的 counts 同步回 records
+          data.forEach(function(row){
+            var item = modeItems.find(function(i){ return i.name===row.item; });
+            if(!item) return;
+            records[ri].counts['S_'+item.id] = {s:row.qty_scene,m:0,l:0,w:0};
+            records[ri].counts['W_'+item.id] = {s:row.qty_store,m:0,l:0,w:0};
+          });
+          saveRecords();
+        }
+        // 刷新月盤總表
+        if(document.getElementById('hist-monthly-panel') &&
+           document.getElementById('hist-monthly-panel').style.display !== 'none'){
+          renderMonthSummary();
+        }
+      } else {
+        showToast('⚠️ 儲存失敗');
+      }
+    }
+  );
+}
+
+// ── LINE 預覽 ──────────────────────────────────────────────────
+var _pendingInvLineSend = null; // 儲存待發送的函式
+
+function previewInvLine(ri){
+  var r = records[ri];
+  if(!r){ showToast('找不到記錄'); return; }
+  var modeItems = r.mode==='monthly' ? getItemsForMode('monthly') : getItemsForMode(r.mode);
+  var actionItems = [];
+  // 組出訊息預覽
+  var tempRec = r;
+  var lines = buildInvLineMsg(tempRec, modeItems, actionItems);
+  var msg = lines.join('\n');
+  document.getElementById('line-preview-text').textContent = msg;
+  _pendingInvLineSend = function(){
+    api({action:'sendLine', msg:msg}, function(d){
+      if(d&&d.ok) showToast('✓ 已傳送 LINE 通知');
+      else showToast('❌ 傳送失敗');
+    });
+  };
+  openOv('line-preview');
+}
+
+function sendInvLineFromPreview(){
+  closeOv('line-preview');
+  if(_pendingInvLineSend){ _pendingInvLineSend(); _pendingInvLineSend=null; }
+}
+
+// 組 LINE 訊息的共用函式（月盤只顯示最小單位合計）
+function buildInvLineMsg(rec, modeItems, actionItems){
+  var modeLabels={daily:'每日盤補貨',weekly:'每週盤叫貨',monthly:'月盤點'};
+  var lines=['📦 '+modeLabels[rec.mode]+' 完成'];
+  lines.push('📅 '+rec.date+'　👤 '+rec.person);
+
+  if(rec.mode==='monthly'){
+    lines.push('');
+    lines.push('📋 月盤點結果 ─────────────');
+    var cats=[], catMap={};
+    modeItems.forEach(function(item){
+      if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
+      catMap[item.cat].push(item);
+    });
+    cats.forEach(function(cat){
+      lines.push('');
+      lines.push('【'+cat+'】');
+      catMap[cat].forEach(function(item){
+        var cS=rec.counts&&rec.counts['S_'+item.id]?rec.counts['S_'+item.id]:{s:0,m:0,l:0,w:0};
+        var cW=rec.counts&&rec.counts['W_'+item.id]?rec.counts['W_'+item.id]:{s:0,m:0,l:0,w:0};
+        var tAll=Math.round(((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))+
+                             (calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0)))*100)/100;
+        if(tAll===0) return;
+        lines.push(item.name+'　'+tAll+item.sn);
+      });
+    });
+  } else {
+    lines.push('');
+    var actionWord=rec.mode==='daily'?'補貨':'叫貨';
+    if(actionItems&&actionItems.length>0){
+      lines.push('⚠️ 需'+actionWord+'：'+actionItems.length+' 項');
+      actionItems.slice(0,10).forEach(function(x){
+        lines.push('  • '+x.item.name+' +'+x.need+' '+(x.needUnit||x.item.sn));
+      });
+    } else {
+      lines.push('✅ 庫存充足，無需'+actionWord);
+    }
+  }
+  return lines;
+}
+
+function resendInvLine(ri){
+  previewInvLine(ri);
+}
+
+
+// ── API ───────────────────────────────────────────────────────
+
+// ── 工具 ─────────────────────────────────────────────────────
+// ── 歷史記錄 ─────────────────────────────────────────────────
+function showHist(){
+  // 填入月份選擇器（月盤用）
+  var monthlyRecs = records.filter(function(r){ return r.mode==='monthly'; });
+  var months = {};
+  monthlyRecs.forEach(function(r){ var m=(r.date||'').slice(0,7); if(m) months[m]=true; });
+  var monthSel = document.getElementById('hist-month-sel');
+  if(monthSel){
+    monthSel.innerHTML = Object.keys(months).sort().reverse().map(function(m){
+      return '<option value="'+m+'">'+m+'</option>';
+    }).join('') || '<option value="">(無月盤記錄)</option>';
+  }
+  renderAllHist();
+  openOv('hist');
+}
+
+function renderAllHist(){
+  var modeLabels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+  var modeColors={daily:'var(--b)',weekly:'#7B3FA0',monthly:'var(--g)'};
+  var el = document.getElementById('hist-body');
+  if(!records.length){ el.innerHTML='<div class="empty">尚無記錄</div>'; return; }
+  el.innerHTML = records.slice(0,50).map(function(r,ri){
+    var mc=modeColors[r.mode]||'var(--b)';
+    var ml=modeLabels[r.mode]||r.mode;
+    return '<div style="border:1px solid var(--bd);border-radius:var(--r2);margin-bottom:8px;overflow:hidden">'
+      +'<div style="padding:11px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:var(--white)" onclick="toggleHistRow('+ri+')">'
+        +'<div>'
+          +'<div style="font-size:14px;font-weight:700">'+r.date+'</div>'
+          +'<div style="font-size:12px;color:var(--ink3);margin-top:2px">'+r.person+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;background:'+mc+'22;color:'+mc+'">'+ml+'</span>'
+          +'<span id="hist-arrow-'+ri+'" style="color:var(--ink3);font-size:13px">▼</span>'
+        +'</div>'
+      +'</div>'
+      +'<div id="hist-detail-'+ri+'" style="display:none;border-top:1px solid var(--bd);background:var(--bg)">'
+        +histDetailHtml(r)
+        +'<div style="padding:8px 13px;display:flex;gap:8px;justify-content:flex-end">'
+          +(r.mode==='monthly'?'<button onclick="editMonthlyFromHist('+ri+')" style="padding:6px 14px;border:1px solid var(--b);border-radius:8px;background:var(--bl);color:var(--b);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ 編輯</button>':'')
+          +(r.mode!=='daily'?'<button onclick="previewInvLine('+ri+')" style="padding:6px 14px;border:1px solid #1A6B3C;border-radius:8px;background:#E8F5E9;color:#1A6B3C;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 LINE 通知</button>':'')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function toggleHistRow(ri){
+  var detail=document.getElementById('hist-detail-'+ri);
+  var arrow=document.getElementById('hist-arrow-'+ri);
+  if(!detail) return;
+  var open=detail.style.display==='none';
+  detail.style.display=open?'block':'none';
+  if(arrow) arrow.textContent=open?'▲':'▼';
+}
+
+function switchHistTab(tab){
+  document.getElementById('hist-all-panel').style.display     = tab==='all'?'':'none';
+  document.getElementById('hist-monthly-panel').style.display = tab==='monthly'?'':'none';
+  document.getElementById('htab-all').classList.toggle('on',     tab==='all');
+  document.getElementById('htab-monthly').classList.toggle('on', tab==='monthly');
+  if(tab==='monthly') renderMonthSummary();
+}
+
+// ── 品項設定 ─────────────────────────────────────────────────
+var cfgMode = 'daily';
+
+function openCfg(){
+  renderCfgTabs();
+  renderCfgBody();
+  openOv('cfg');
+}
+
+function renderCfgTabs(){
+  var tabs = document.getElementById('cfg-tabs');
+  if(!tabs) return;
+  tabs.innerHTML = ['daily','weekly','monthly'].map(function(m){
+    var labels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+    return '<button class="cfg-tab'+(cfgMode===m?' on':'')+'" onclick="switchCfgTab(&#39;'+m+'&#39;)">'+labels[m]+'</button>';
+  }).join('');
+}
+
+function switchCfgTab(m){ cfgMode=m; renderCfgTabs(); renderCfgBody(); }
+
+function renderCfgBody(){
+  var list = cfgMode==='monthly' ? items : items.filter(function(i){
+    return i.modes && i.modes.indexOf(cfgMode==='daily'?'D':'W')>-1;
+  });
+  var body = document.getElementById('cfg-body');
+  if(!body) return;
+  if(!list.length){ body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink3)">此模式無品項</div>'; return; }
+  body.innerHTML = list.map(function(item){
+    return '<div class="cir-item" id="cir-'+item.id+'" data-item-id="'+item.id+'">'
+      +'<div class="cir-head">'
+        +'<span class="cir-name">'+item.name+'</span>'
+        +'<div style="display:flex;gap:6px">'
+          +'<button class="btn btn-sm" data-up="'+item.id+'">↑</button>'
+          +'<button class="btn btn-sm" data-dn="'+item.id+'">↓</button>'
+          +'<button class="btn btn-d btn-sm" data-del="'+item.id+'">刪除</button>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cir-conv-block">'
+        +'<div class="cir-conv">'
+          +'小：<input class="cf-inp" value="'+item.sn+'" data-upd="'+item.id+'" data-field="sn">'
+          +(item.mn||item.ms?'　中：<input class="cf-inp" value="'+(item.mn||'')+'" data-upd="'+item.id+'" data-field="mn" placeholder="中單位">　1中=<input class="cc-inp" type="number" value="'+(item.ms||0)+'" data-upd="'+item.id+'" data-field="ms">小':'')
+        +'</div>'
+        +'<div class="cir-conv" style="margin-top:4px;color:var(--ink3);font-size:12px">'
+          +'特殊：<input class="cf-inp" value="'+(item.wu||'')+'" data-upd="'+item.id+'" data-field="wu" placeholder="重量單位" style="width:52px">　1'+item.sn+'=<input class="cc-inp" type="number" value="'+(item.sw||0)+'" data-upd="'+item.id+'" data-field="sw" style="width:44px">'+(item.wu||'克')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  // 事件委派
+  body.onclick=function(e){
+    var upBtn=e.target.closest('[data-up]');
+    var dnBtn=e.target.closest('[data-dn]');
+    var delBtn=e.target.closest('[data-del]');
+    if(upBtn) moveItemUp(upBtn.getAttribute('data-up'));
+    if(dnBtn) moveItemDown(dnBtn.getAttribute('data-dn'));
+    if(delBtn && confirm('確定刪除？')) delItem(delBtn.getAttribute('data-del'));
+  };
+  body.onchange=function(e){
+    var inp=e.target.closest('[data-upd]');
+    if(!inp) return;
+    updItemSave(inp.getAttribute('data-upd'), inp.getAttribute('data-field'), inp.value);
+  };
+  body.onblur=function(e){
+    var inp=e.target.closest('[data-upd]');
+    if(!inp) return;
+    updItemSave(inp.getAttribute('data-upd'), inp.getAttribute('data-field'), inp.value);
+  };
+}
+
+function addNewItem(){
+  var name=document.getElementById('ni-name').value.trim();
+  var cat =document.getElementById('ni-cat').value.trim();
+  var sn  =document.getElementById('ni-sn').value.trim();
+  var mn  =document.getElementById('ni-mn').value.trim();
+  var ln  =document.getElementById('ni-ln').value.trim();
+  var ms  =parseFloat(document.getElementById('ni-ms').value)||0;
+  var lm  =parseFloat(document.getElementById('ni-lm').value)||0;
+  var wu  =document.getElementById('ni-wu').value.trim();
+  var sw  =parseFloat(document.getElementById('ni-sw').value)||0;
+  if(!name||!cat||!sn){ showToast('請填寫品項名稱、分類、小單位'); return; }
+  var modes='';
+  if(document.getElementById('ni-daily').checked)   modes+='D';
+  if(document.getElementById('ni-weekly').checked)  modes+='W';
+  var id = String(Date.now());
+  var newItem={id:id,name:name,cat:cat,sn:sn,mn:mn,ln:ln,ms:ms,lm:lm,wu:wu,sw:sw,modes:modes,
+    daily:{min:0,target:0,std:0,refill:0},weekly:{min:0,target:0,countUnit:'s'},monthly:{}};
+  items.push(newItem);
+  saveItems();
+  ['ni-name','ni-cat','ni-sn','ni-mn','ni-ln','ni-ms','ni-lm','ni-wu','ni-sw'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  renderCfgBody();
+  showToast('✓ 已新增：'+name);
+}
+
+// ── 批量設定 ─────────────────────────────────────────────────
+var bulkMode = 'daily';
+var bulkDirty = {};
+
+function openBulk(){
+  bulkMode = 'daily';
+  bulkDirty = {};
+  // 先從雲端同步最新品項設定再打開
+  var ov = document.getElementById('bulk-ov');
+  ov.classList.add('show');
+  renderBulkTabs();
+  // 顯示載入中
+  document.getElementById('bulk-body').innerHTML = '<div style="padding:30px;text-align:center;color:var(--ink3)">⏳ 載入最新設定中…</div>';
+  api({action:'invItemGetAll'}, function(d){
+    if(d && d.ok && d.data && d.data.length > 0){
+      // 合併：保留 extra（daily/weekly/monthly），更新單位欄位
+      d.data.forEach(function(remote){
+        var local = items.find(function(i){ return String(i.id)===String(remote.id); });
+        if(local){
+          local.sn = remote.sn || local.sn;
+          local.mn = remote.mn !== undefined ? remote.mn : local.mn;
+          local.ms = remote.ms !== undefined ? remote.ms : local.ms;
+          local.ln = remote.ln !== undefined ? remote.ln : local.ln;
+          local.lm = remote.lm !== undefined ? remote.lm : local.lm;
+          local.wu = remote.wu !== undefined ? remote.wu : local.wu;
+          local.sw = remote.sw !== undefined ? remote.sw : local.sw;
+          if(remote.daily  && Object.keys(remote.daily).length)  local.daily  = remote.daily;
+          if(remote.weekly && Object.keys(remote.weekly).length) local.weekly = remote.weekly;
+        }
+      });
+    }
+    renderBulkBody();
+  });
+}
+
+function closeBulk(){
+  document.getElementById('bulk-ov').classList.remove('show');
+}
+
+function renderBulkTabs(){
+  var tabs = document.getElementById('bulk-tabs');
+  if(!tabs) return;
+  tabs.innerHTML = ['daily','weekly','monthly'].map(function(m){
+    var labels={daily:'日盤',weekly:'週盤',monthly:'月盤'};
+    return '<button class="bulk-tab'+(bulkMode===m?' on':'')+'" data-bulk-tab="'+m+'">'+labels[m]+'</button>';
+  }).join('');
+  tabs.onclick=function(e){
+    var btn=e.target.closest('[data-bulk-tab]');
+    if(btn) switchBulkTab(btn.getAttribute('data-bulk-tab'));
+  };
+}
+
+function switchBulkTab(m){ bulkMode=m; renderBulkTabs(); renderBulkBody(); }
+
+function renderBulkBody(){
+  var body=document.getElementById('bulk-body');
+  if(!body) return;
+  var modeItems = bulkMode==='monthly' ? items : items.filter(function(i){
+    return i.modes && i.modes.indexOf(bulkMode==='daily'?'D':'W')>-1;
+  });
+  if(!modeItems.length){ body.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink3)">此模式無品項</div>'; return; }
+
+  var cats=[], catMap={};
+  modeItems.forEach(function(i){ if(!catMap[i.cat]){catMap[i.cat]=[];cats.push(i.cat);} catMap[i.cat].push(i); });
+
+  // 用全域索引讓上下移動按鈕可以找到品項在 items 裡的位置
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div class="bulk-cat-head">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var t=item[bulkMode]||{};
+      var globalIdx=items.findIndex(function(i){return i.id===item.id;});
+      html+='<div class="bulk-row" data-id="'+item.id+'">'
+        // 上下移動
+        +'<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">'
+          +'<button class="bulk-move-btn" data-up="'+globalIdx+'">▲</button>'
+          +'<button class="bulk-move-btn" data-dn="'+globalIdx+'">▼</button>'
+        +'</div>'
+        // 品項名稱（可編輯）
+        +'<input class="bulk-name-inp" value="'+item.name+'" data-name-id="'+item.id+'" title="品項名稱">'
+        // 數字欄位
+        +'<div class="bulk-fields">';
+      if(bulkMode==='daily'){
+        html+='<label class="bulk-lbl">標準</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.std!=null?t.std:0)+'" data-field="std" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl">補貨</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.refill!=null?t.refill:0)+'" data-field="refill" data-id="'+item.id+'">';
+      } else if(bulkMode==='weekly'){
+        html+='<label class="bulk-lbl">低標</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.min||0)+'" data-field="min" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl">補至</label>'
+          +'<input class="bulk-inp" type="number" min="0" value="'+(t.target||0)+'" data-field="target" data-id="'+item.id+'">';
+      } else {
+        // 月盤：顯示單位換算設定
+        html+='<label class="bulk-lbl" style="font-size:10px">小單位</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.sn||'')+'" data-unit-field="sn" data-id="'+item.id+'" placeholder="包">'
+          +'<label class="bulk-lbl" style="font-size:10px">中單位</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.mn||'')+'" data-unit-field="mn" data-id="'+item.id+'" placeholder="箱">'
+          +'<label class="bulk-lbl" style="font-size:10px">1中=</label>'
+          +'<input class="bulk-inp" style="width:40px" type="number" min="0" value="'+(item.ms||0)+'" data-unit-field="ms" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl" style="font-size:10px">小　特殊</label>'
+          +'<input class="bulk-inp" style="width:36px" value="'+(item.wu||'')+'" data-unit-field="wu" data-id="'+item.id+'" placeholder="克">'
+          +'<label class="bulk-lbl" style="font-size:10px">1小=</label>'
+          +'<input class="bulk-inp" style="width:40px" type="number" min="0" value="'+(item.sw||0)+'" data-unit-field="sw" data-id="'+item.id+'">'
+          +'<label class="bulk-lbl" style="font-size:10px">特殊</label>';
+      }
+      html+='</div></div>';
+    });
+  });
+  body.innerHTML=html;
+
+  // 事件委派
+  body.onclick=function(e){
+    var upBtn=e.target.closest('[data-up]');
+    var dnBtn=e.target.closest('[data-dn]');
+    if(upBtn){
+      var idx=parseInt(upBtn.getAttribute('data-up'));
+      if(idx>0){ var tmp=items[idx-1];items[idx-1]=items[idx];items[idx]=tmp; renderBulkBody(); }
+    }
+    if(dnBtn){
+      var idx=parseInt(dnBtn.getAttribute('data-dn'));
+      if(idx<items.length-1){ var tmp=items[idx+1];items[idx+1]=items[idx];items[idx]=tmp; renderBulkBody(); }
+    }
+  };
+}
+
+function bulkAddRow(){
+  var name=prompt('新品項名稱：');
+  if(!name||!name.trim()) return;
+  showToast('請使用「新增」按鈕新增品項');
+  closeBulk();
+  openCfg();
+}
+
+function bulkSave(){
+  // 儲存名稱修改
+  document.querySelectorAll('#bulk-body [data-name-id]').forEach(function(inp){
+    var id=inp.getAttribute('data-name-id');
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(item && inp.value.trim()) item.name=inp.value.trim();
+  });
+  // 月盤：儲存單位換算設定
+  document.querySelectorAll('#bulk-body [data-unit-field]').forEach(function(inp){
+    var id=inp.getAttribute('data-id');
+    var field=inp.getAttribute('data-unit-field');
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(!item) return;
+    if(['ms','sw'].indexOf(field)>-1) item[field]=parseFloat(inp.value)||0;
+    else item[field]=inp.value.trim();
+  });
+  // 日盤/週盤：儲存數字設定
+  document.querySelectorAll('#bulk-body .bulk-inp').forEach(function(inp){
+    var id=inp.getAttribute('data-id');
+    var field=inp.getAttribute('data-field');
+    if(!id||!field) return;
+    var val=parseFloat(inp.value)||0;
+    var item=items.find(function(i){return String(i.id)===String(id);});
+    if(!item) return;
+    if(!item[bulkMode]) item[bulkMode]={};
+    item[bulkMode][field]=val;
+  });
+  saveItems();
+  showToast('✓ 已儲存，同步至雲端中…');
+  closeBulk();
+}
+
+// 一鍵還原預設設定值
+function resetToDefaults(){
+  if(!confirm('確定要用預設設定值覆蓋所有品項的標準量/補貨量/低標/目標？\n（只會覆蓋空值的品項，已有設定的不受影響）')) return;
+  items.forEach(function(item){
+    var def = DEFAULT_ITEMS.find(function(d){ return d.id === item.id; });
+    if(!def) return;
+    if(!item.daily  || !Object.keys(item.daily).length)  item.daily  = def.daily  || {};
+    if(!item.weekly || !Object.keys(item.weekly).length) item.weekly = def.weekly || {};
+  });
+  saveItems();
+  showToast('✓ 已套用預設設定值並同步至雲端');
+}
+
+// ── 單位換算工具 ──────────────────────────────────────────────
+function getUnitLabel(item, unitCode){
+  // unitCode: 's'=小, 'm'=中, 'l'=大, 'w'=特殊
+  if(unitCode==='m') return item.mn||item.sn;
+  if(unitCode==='l') return item.ln||item.mn||item.sn;
+  if(unitCode==='w') return item.wu||item.sn;
+  return item.sn;
+}
+
+function unitToSmall(item, qty, unitCode){
+  // 把任意單位換算成最小單位
+  qty = parseFloat(qty)||0;
+  if(unitCode==='m') return qty * (item.ms||1);
+  if(unitCode==='l') return qty * (item.lm||1) * (item.ms||1);
+  if(unitCode==='w') return qty * (item.sw||1);
+  return qty; // 's' 或未知
+}
+
+// ── 推送記錄到 Sheets ─────────────────────────────────────────
+function pushToSheets(rec, modeItems, actionItems){
+  if(!rec) return;
+  // 月盤：存入月盤記錄分頁
+  if(rec.mode==='monthly'){
+    var data = modeItems.map(function(item){
+      var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var cW = rec.counts['W_'+item.id]||{s:0,m:0,l:0,w:0};
+      var tS = Math.round((calcTotal(item,cS)+(item.sw>0?(cS.w||0)/item.sw:0))*100)/100;
+      var tW = Math.round((calcTotal(item,cW)+(item.sw>0?(cW.w||0)/item.sw:0))*100)/100;
+      return {cat:item.cat, item:item.name, unit:item.sn,
+        qty_scene:tS, qty_store:tW, total:Math.round((tS+tW)*100)/100};
+    }).filter(function(d){ return d.total>0; });
+    apiPost({action:'invSave', mode:'monthly', id:String(rec.id), date:rec.date, person:rec.person,
+      data:JSON.stringify(data)}, function(d){
+      if(d&&d.ok) showToast('✓ 月盤記錄已同步至雲端');
+      else showToast('⚠️ 月盤同步失敗：'+(d&&d.error?d.error:''));
+    });
+  } else {
+    // 日盤/週盤：存入盤點記錄分頁
+    var items2 = modeItems.map(function(item){
+      var cS = rec.counts['S_'+item.id]||{s:0,m:0,l:0,w:0};
+      var total = calcTotal(item,cS);
+      return {cat:item.cat, item:item.name, unit:item.sn, qty:total};
+    });
+    api({action:'invSave', mode:rec.mode, id:rec.id, date:rec.date, person:rec.person,
+      data:JSON.stringify(items2)}, function(d){
+      if(d&&d.ok) showToast('✓ 記錄已同步至雲端');
+    });
+  }
+}
+
+
+// ── 品項操作 ─────────────────────────────────────────────────
+function updItemSave(id, field, value){
+  var item = items.find(function(i){ return String(i.id)===String(id); });
+  if(!item) return;
+  if(['ms','lm','sw'].indexOf(field)>-1) item[field]=parseFloat(value)||0;
+  else item[field]=String(value);
+  saveItems();
+}
+
+function delItem(id){
+  if(!confirm('確定刪除此品項？')) return;
+  items = items.filter(function(i){ return String(i.id)!==String(id); });
+  saveItems();
+  renderCfgBody();
+  showToast('已刪除');
+}
+
+function moveItemUp(id){
+  var idx=items.findIndex(function(i){return String(i.id)===String(id);});
+  if(idx<=0) return;
+  var tmp=items[idx-1]; items[idx-1]=items[idx]; items[idx]=tmp;
+  saveItems(); renderCfgBody();
+}
+
+function moveItemDown(id){
+  var idx=items.findIndex(function(i){return String(i.id)===String(id);});
+  if(idx<0||idx>=items.length-1) return;
+  var tmp=items[idx+1]; items[idx+1]=items[idx]; items[idx]=tmp;
+  saveItems(); renderCfgBody();
+}
+
+// ── 月盤總表 ─────────────────────────────────────────────────
+function getPrevMonth(ym){
+  var y=parseInt(ym.slice(0,4)), m=parseInt(ym.slice(5,7));
+  m--; if(m<1){m=12;y--;}
+  return y+'-'+String(m).padStart(2,'0');
+}
+
+function renderMonthSummary(){
+  var selMonth = document.getElementById('hist-month-sel').value;
+  var el = document.getElementById('month-summary-body');
+  if(!selMonth){ el.innerHTML='<div class="empty">請選擇月份</div>'; return; }
+  el.innerHTML='<div class="empty">載入中...</div>';
+
+  api({action:'invMonthlyGetAll', ym:selMonth}, function(d){
+    if(!d||!d.ok){ el.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    var allRecs=d.data||[];
+    var recMap={}, recOrder=[];
+    allRecs.forEach(function(row){
+      var rid=String(row.id);
+      if(!recMap[rid]){recMap[rid]={id:rid,date:row.date,person:row.person,items:[]};recOrder.push(rid);}
+      recMap[rid].items.push(row);
+    });
+    var recs=recOrder.map(function(rid){return recMap[rid];}).sort(function(a,b){return a.date.localeCompare(b.date);});
+    if(!recs.length){el.innerHTML='<div class="empty">此月份無月盤記錄</div>';return;}
+
+    var prevMonth=getPrevMonth(selMonth);
+    api({action:'invMonthlyGetAll', ym:prevMonth}, function(dp){
+      var prevAllRecs=(dp&&dp.ok&&dp.data)||[];
+      var prevMap={},prevOrder=[];
+      prevAllRecs.forEach(function(row){
+        var rid=String(row.id);
+        if(!prevMap[rid]){prevMap[rid]={id:rid,date:row.date,items:[]};prevOrder.push(rid);}
+        prevMap[rid].items.push(row);
+      });
+      var prevRecs=prevOrder.map(function(rid){return prevMap[rid];}).sort(function(a,b){return b.date.localeCompare(a.date);});
+      var prevRec=prevRecs[0]||null;
+      var modeItems=getItemsForMode('monthly');
+      var colDates=recs.map(function(r){return r.date;});
+      var hasPrev=!!prevRec;
+      var firstRec=recs[0], lastRec=recs[recs.length-1];
+
+      function getTotal(rec,item){
+        var found=(rec.items||[]).find(function(row){return row.item===item.name;});
+        return found?parseFloat(found.total)||0:0;
+      }
+      function getPrevTotal(item){
+        if(!prevRec) return null;
+        var found=(prevRec.items||[]).find(function(row){return row.item===item.name;});
+        return found?parseFloat(found.total)||0:0;
+      }
+
+      var cats=[],catMap2={};
+      modeItems.forEach(function(item){
+        if(!catMap2[item.cat]){catMap2[item.cat]=[];cats.push(item.cat);}
+        catMap2[item.cat].push(item);
+      });
+
+      var thHtml='<tr><th style="min-width:90px">品項</th>'
+        +(hasPrev?'<th style="background:#37474F;color:#fff">上月末<div style="font-size:9px;opacity:.75">'+prevRec.date.slice(5)+'</div></th>':'')
+        +colDates.map(function(d,i){
+          var isLast=i===colDates.length-1;
+          var bg=isLast?'background:var(--g);color:#fff':i===0&&colDates.length>1?'background:#2A5A8C;color:#fff':'';
+          var rid=recs[i].id;
+          return '<th style="'+bg+';cursor:pointer" data-edit-monthly="'+rid+'" title="點擊編輯 ✏️">'+d.slice(5)
+            +(isLast&&colDates.length>1?'<div style="font-size:9px;opacity:.8">月末</div>':'')
+            +'<div style="font-size:9px;opacity:.7">✏️</div></th>';
+        }).join('')
+        +'<th>月用量</th></tr>';
+
+      var bodyHtml='';
+      cats.forEach(function(cat){
+        var ci=catMap2[cat];
+        var hasData=ci.some(function(item){return recs.some(function(r){return getTotal(r,item)>0;});});
+        if(!hasData) return;
+        bodyHtml+='<tr class="cat-row"><td colspan="'+(2+colDates.length+(hasPrev?1:0))+'">'+cat+'</td></tr>';
+        ci.forEach(function(item){
+          var pv=hasPrev?getPrevTotal(item):null;
+          var lv=getTotal(lastRec,item);
+          var bv=pv!==null?pv:getTotal(firstRec,item);
+          var usage=Math.max(0,Math.round((bv-lv)*100)/100);
+          var allZero=recs.every(function(r){return getTotal(r,item)===0;})&&(pv===null||pv===0);
+          if(allZero) return;
+          bodyHtml+='<tr>'
+            +'<td>'+item.name+'</td>'
+            +(hasPrev?'<td style="color:var(--ink3)">'+(pv||0)+' '+item.sn+'</td>':'')
+            +recs.map(function(r,i){
+              var v=getTotal(r,item),isLast=i===recs.length-1;
+              var vStr=v?Math.round(v*100)/100:0;
+              return '<td class="'+(isLast?'total-col':'')+'">'+vStr+' '+item.sn+'</td>';
+            }).join('')
+            +'<td class="usage-col">'+(usage||0)+' '+item.sn+'</td></tr>';
+        });
+      });
+
+      el.innerHTML='<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">'+selMonth+' 共'+recs.length+'次盤點'
+        +(hasPrev?'　上月末：'+prevRec.date:'　(無上月末資料)')+'</div>'
+        +'<div style="overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bd)">'
+          +'<table class="ms-table"><thead>'+thHtml+'</thead><tbody>'+bodyHtml+'</tbody></table>'
+        +'</div>'
+        +'<div style="margin-top:8px;font-size:11px;color:var(--ink3)">💡 月用量='+(hasPrev?'上月末':'本月初')+'庫存−本月末庫存</div>';
+
+      window._monthlyRecsFromSheets=recMap;
+      // 表頭事件委派
+      setTimeout(function(){
+        var tbl=document.querySelector('#month-summary-body table');
+        if(tbl) tbl.onclick=function(e){
+          var th=e.target.closest('[data-edit-monthly]');
+          if(th) editMonthlyRecFromSheets(th.getAttribute('data-edit-monthly'));
+        };
+      },100);
+    });
+  });
+}
+
+function editMonthlyRecFromSheets(recId){
+  var recMap=window._monthlyRecsFromSheets||{};
+  var rec=recMap[recId];
+  if(!rec){showToast('找不到記錄，請重新載入');return;}
+  var modeItems=getItemsForMode('monthly');
+  if(!modeItems.length){showToast('無月盤品項');return;}
+  var cats=[],catMap={};
+  modeItems.forEach(function(item){
+    if(!catMap[item.cat]){catMap[item.cat]=[];cats.push(item.cat);}
+    catMap[item.cat].push(item);
+  });
+  var html='';
+  cats.forEach(function(cat){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ink3);margin:10px 0 4px">'+cat+'</div>';
+    catMap[cat].forEach(function(item){
+      var found=(rec.items||[]).find(function(row){return row.item===item.name;});
+      var tS=found?parseFloat(found.qty_scene)||0:0;
+      var tW=found?parseFloat(found.qty_store)||0:0;
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)">'
+        +'<span style="flex:1;font-size:13px;font-weight:600">'+item.name+'</span>'
+        +'<span style="font-size:11px;color:var(--ink3)">現場</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tS+'" style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" data-edit-item="S_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:11px;color:var(--ink3)">倉庫</span>'
+        +'<input type="number" min="0" step="0.01" value="'+tW+'" style="width:60px;padding:4px 6px;border:1.5px solid var(--bd);border-radius:6px;font-size:13px;text-align:center" data-edit-item="W_'+item.id+'" data-item-name="'+item.name+'" data-unit="'+item.sn+'">'
+        +'<span style="font-size:12px;color:var(--ink3)">'+item.sn+'</span>'
+      +'</div>';
+    });
+  });
+  document.getElementById('monthly-edit-meta').textContent=rec.date+'　'+rec.person;
+  document.getElementById('monthly-edit-body').innerHTML=html;
+  window._editingMonthlyRecId=recId;
+  window._editingMonthlyItems=modeItems;
+  window._editingMonthlyDate=rec.date;
+  window._editingMonthlyPerson=rec.person;
+  openOv('monthly-edit');
+}
+
+
+
+
+
+function showPage(p){document.querySelectorAll('.page').forEach(function(el){el.classList.remove('on');});document.getElementById('page-'+p).classList.add('on');}
+function openOv(id){document.getElementById('ov-'+id).classList.add('show');}
+function closeOv(id){document.getElementById('ov-'+id).classList.remove('show');}
+document.addEventListener('click',function(e){document.querySelectorAll('.ov.show').forEach(function(ov){if(e.target===ov)ov.classList.remove('show');});});
+function todayStr(){var d=new Date(),p=function(n){return String(n).padStart(2,'0');};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function goHome2(){if(window.top&&window.top.showPage){window.top.showPage('home');}else{window.top.location.href='index.html';}}
+// ══════════════════════════════════════════════════════════════
+// 自訂數字小鍵盤系統
+// ══════════════════════════════════════════════════════════════
+var _np = { val:'0', mode:'', itemId:'', field:'', isMonthly:false, vals:{}, cb:null };
+
+function npOpen(opts){
+  _np = Object.assign({ val:'0', vals:{}, cb:null }, opts);
+  document.getElementById('np-display').textContent = _np.val;
+  document.getElementById('np-label').textContent = _np.label||'數量';
+  document.getElementById('np-hint').textContent = _np.hint||'';
+  var showTotal = _np.mode==='count';
+  document.getElementById('np-total-row').style.display = showTotal?'flex':'none';
+  if(showTotal){
+    document.getElementById('np-total-unit').textContent = _np.unit||'';
+    npUpdateTotal();
+  }
+  // 渲染單位 tab 列
+  var tabEl = document.getElementById('np-unit-tabs');
+  if(_np.mode==='count' && _np.fields && _np.fields.length > 1){
+    tabEl.style.display = 'flex';
+    npRenderUnitTabs();
+  } else {
+    tabEl.style.display = 'none';
+  }
+  document.getElementById('np-ok-btn').textContent = '✓ 確認';
+  document.getElementById('np-backdrop').classList.add('show');
+  document.getElementById('numpad-wrap').classList.add('show');
+}
+function npRenderUnitTabs(){
+  var item = items.find(function(i){return i.id===_np.itemId;});
+  if(!item) return;
+  var unitNames = {
+    l: item.ln+'（大）',
+    m: item.mn+'（中）',
+    s: item.sn+'（小）',
+    w: (item.wu||'重')+'（重量）'
+  };
+  var html = _np.fields.map(function(f){
+    var isActive = f === _np.field;
+    var val = _np.vals[f] || 0;
+    return '<button class="np-unit-tab'+(isActive?' active':'')+'" onclick="npSwitchField(\''+f+'\')">'+
+      '<span class="np-tab-val">'+(val||0)+'</span>'+
+      '<span class="np-tab-lbl">'+(unitNames[f]||f)+'</span>'+
+    '</button>';
+  }).join('');
+  document.getElementById('np-unit-tabs').innerHTML = html;
+}
+function npSwitchField(f){
+  _np.vals[_np.field] = parseFloat(_np.val)||0;
+  _np.field = f;
+  _np.val = String(_np.vals[f]||0);
+  document.getElementById('np-display').textContent = _np.val;
+  npRenderUnitTabs();
+  npUpdateTotal();
+}
+function npClose(){
+  document.getElementById('np-backdrop').classList.remove('show');
+  document.getElementById('numpad-wrap').classList.remove('show');
+  _np.inpEl=null;
+}
+function npKey(k){
+  var v = _np.val==='0' ? '' : _np.val;
+  if(k==='C')      { _np.val='0'; }
+  else if(k==='DEL'){ _np.val = v.slice(0,-1)||'0'; }
+  else if(k==='.')  { if(v.indexOf('.')===-1) _np.val=(v||'0')+'.'; }
+  else              { if(v.length>=7) return; _np.val = v+k; }
+  document.getElementById('np-display').textContent = _np.val;
+  if(_np.mode==='count'){
+    _np.vals[_np.field] = parseFloat(_np.val)||0;
+    npRenderUnitTabs();
+    npUpdateTotal();
+  }
+}
+function npUpdateTotal(){
+  var item = items.find(function(i){return i.id===_np.itemId;});
+  if(!item) return;
+  var v = _np.vals;
+  var s=parseFloat(v.s)||0, m=parseFloat(v.m)||0, l=parseFloat(v.l)||0, w=parseFloat(v.w)||0;
+  var total=calcTotal(item,{s:s,m:m,l:l})+(item.sw>0?w/item.sw:0);
+  document.getElementById('np-total').textContent=Math.round(total*100)/100;
+}
+function npConfirm(){
+  if(_np.mode==='count'){
+    _np.vals[_np.field] = parseFloat(_np.val)||0;
+    var s=_np.vals.s||0, m=_np.vals.m||0, l=_np.vals.l||0, w=_np.vals.w||0;
+    var item = items.find(function(i){return i.id===_np.itemId;});
+    if(_np.isMonthly){
+      var key=curMonthlyLoc==='現場'?'S':'W';
+      counts[key+'_'+_np.itemId]={s:s,m:m,l:l,w:w};
+      npClose();
+      renderMonthlyLocPage();
+    } else {
+      counts[_np.itemId]={s:s,m:m,l:l,w:w};
+      npClose();
+      renderCountPage();
+    }
+    if(item){
+      var totalSmall=calcTotal(item,{s:s,m:m,l:l})+(item.sw>0?w/item.sw:0);
+      var toastStr=item.name+'：'+Math.round(totalSmall*100)/100+item.sn;
+      if(w>0&&item.wu) toastStr+=' ('+w+item.wu+')';
+      showToast('✓ '+toastStr);
+    }
+  } else if(_np.cb){
+    _np.cb(parseFloat(_np.val)||0);
+    npClose();
+  }
+}
+
+// 攔截 openNumOv 讓它改用小鍵盤
+function openNumOv(itemId){
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var c=counts[itemId]||{l:0,m:0,s:0,w:0};
+  // 取得此模式的盤點單位設定
+  // countUnit：盤到哪個單位就只顯示那個（l=大、m=中、s=小）
+  // 若未設定（預設's'），但品項本身有中/大單位，就顯示所有可用單位
+  var cfg=curMode!=='monthly'?item[curMode]:null;
+  var countUnit=cfg?cfg.countUnit||'s':'s';
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
+  if(item.wu&&item.sw>0&&countUnit==='s') hints.push('1'+item.sn+'='+item.sw+item.wu);
+  // 決定顯示的欄位
+  var fields=[];
+  if(countUnit==='l'){
+    // 只盤大單位
+    fields=['l'];
+  } else if(countUnit==='m'){
+    // 只盤到中單位（中+大）
+    if(item.ln&&item.lm>0) fields.push('l');
+    fields.push('m');
+  } else {
+    // 預設's'：顯示所有有設定換算的單位（大→中→小）
+    if(item.ln&&item.lm>0&&item.mn&&item.ms>0) fields.push('l');
+    if(item.mn&&item.ms>0) fields.push('m');
+    fields.push('s');
+    if(item.wu&&item.sw>0) fields.push('w');
+  }
+  // 焦點欄位：預設從最大可用單位開始
+  var focusField = fields.length ? fields[0] : 's';
+  npOpen({
+    mode:'count', itemId:itemId, isMonthly:false,
+    field:focusField, val:String(c[focusField]||0),
+    fields:fields,
+    vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
+    label:item.name,
+    hint:hints.join('　'), unit:getUnitLabel(item,focusField)
+  });
+}
+// 攔截 openNumOvMonthly
+function openNumOvMonthly(itemId){
+  var item=items.find(function(i){return i.id===itemId;});
+  if(!item) return;
+  var key=curMonthlyLoc==='現場'?'S':'W';
+  var c=counts[key+'_'+itemId]||{l:0,m:0,s:0,w:0};
+  var hints=[];
+  if(item.mn&&item.ms>0) hints.push('1'+item.mn+'='+item.ms+item.sn);
+  if(item.ln&&item.lm>0&&item.mn) hints.push('1'+item.ln+'='+item.lm+item.mn);
+  if(item.wu&&item.sw>0) hints.push('1'+item.sn+'='+item.sw+item.wu);
+  var fields=[];
+  if(item.ln) fields.push('l');
+  if(item.mn) fields.push('m');
+  fields.push('s');
+  if(item.wu&&item.sw>0) fields.push('w');
+  npOpen({
+    mode:'count', itemId:itemId, isMonthly:true,
+    field:'s', val:String(c.s||0),
+    fields:fields,
+    vals:{l:c.l||0,m:c.m||0,s:c.s||0,w:c.w||0},
+    label:item.name+' （'+curMonthlyLoc+'）',
+    hint:hints.join('　'), unit:item.sn
+  });
+}
+
+// 舊的 recalc/confirmNum 保留相容
+function recalc(){ npUpdateTotal&&_np.mode==='count'&&npUpdateTotal(); }
+function recalcW(){ recalc(); }
+function confirmNum(){} // 已被 npConfirm 取代
+
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},2800);}
+</script>
+</body>
+</html>

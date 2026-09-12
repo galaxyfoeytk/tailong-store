@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="瀧飲山潮">
+<title>瀧飲山潮 · 學士店</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --g:#0A7C52;--gl:#E8F5EE;--gm:#3DA86A;--gd:#0A5C42;
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --amber:#8A5500;--amberl:#FFF8E6;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:12px;--r2:8px;
+  --sidebar:230px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;color:var(--ink);font-size:14px;height:100dvh;overflow:hidden;background:var(--bg)}
+
+/* ══ 登入畫面 ══ */
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0A3D28 0%,#0A5C42 50%,#0A7C52 100%);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.login-box{background:var(--white);border-radius:20px;padding:36px 28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo-icon{font-size:44px;display:block;margin-bottom:8px}
+.login-logo-name{font-size:20px;font-weight:900;color:var(--g)}
+.login-logo-sub{font-size:12px;color:var(--ink3);margin-top:3px}
+.login-field{margin-bottom:12px}
+.login-field label{display:block;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.login-field input{width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:15px;font-family:inherit;outline:none;color:var(--ink);background:var(--white)}
+.login-field input:focus{border-color:var(--g)}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.login-btn:active{opacity:.85}
+.login-err{background:var(--redl);color:var(--red);border-radius:var(--r2);padding:10px 14px;font-size:13px;margin-top:10px;display:none;text-align:center}
+.login-syncing{text-align:center;color:var(--ink3);font-size:12px;margin-top:10px;display:none}
+
+/* ══ 主介面 ══ */
+#app{display:none;height:100dvh;flex-direction:column}
+#app.show{display:flex}
+
+/* 頂部 */
+.topbar{background:linear-gradient(135deg,#0A3D28,#0A5C42);color:#fff;padding:0 14px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px}
+.top-left{display:flex;align-items:center;gap:10px}
+.menu-btn{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px;line-height:1;display:none}
+.top-brand{font-size:15px;font-weight:900;white-space:nowrap}
+.top-right{display:flex;align-items:center;gap:8px}
+.top-user-name{font-weight:700;font-size:13px;color:#fff}
+.top-role-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.2);color:#fff;white-space:nowrap}
+.logout-btn{padding:5px 11px;border:1px solid rgba(255,255,255,.4);border-radius:16px;background:transparent;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.logout-btn:active{background:rgba(255,255,255,.15)}
+
+/* 主體 */
+.main-body{flex:1;display:flex;overflow:hidden}
+
+/* 側欄 */
+.sidebar{width:var(--sidebar);background:#0A3D28;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;transition:transform .25s}
+.sidebar-section{padding:6px 0}
+.sidebar-lbl{padding:8px 14px;font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;color:rgba(255,255,255,.75);cursor:pointer;font-size:13px;font-weight:500;border:none;background:transparent;width:100%;text-align:left;font-family:inherit;transition:background .12s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.on{background:rgba(255,255,255,.15);color:#fff;font-weight:700;border-left-color:var(--gm)}
+.nav-item.locked{opacity:.3;cursor:not-allowed;pointer-events:none}
+.nav-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
+
+/* 內容 */
+.content{flex:1;overflow-y:auto;padding:14px}
+.page{display:none}
+.page.on{display:block}
+
+/* 頁面標題 */
+.page-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.page-title{font-size:18px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px}
+.page-sub{font-size:12px;color:var(--ink3);margin-top:2px}
+
+/* 儀表板 */
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dash-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;cursor:pointer;transition:box-shadow .12s,transform .1s;display:flex;flex-direction:column;gap:6px}
+.dash-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-1px)}
+.dash-card.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+.dash-icon{font-size:24px}
+.dash-name{font-size:13px;font-weight:700;color:var(--ink)}
+.dash-desc{font-size:11px;color:var(--ink3)}
+.dash-perm{font-size:10px;font-weight:700;padding:2px 7px;border-radius:7px;display:inline-block;margin-top:2px}
+.perm-full{background:var(--gl);color:var(--g)}
+.perm-view{background:var(--bl);color:var(--b)}
+.perm-lock{background:#f0f0f0;color:#999}
+
+/* 主頁兩欄布局 */
+.home-layout{display:grid;grid-template-columns:260px 1fr;gap:14px;height:100%;min-height:0}
+.home-left{display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-bottom:20px}
+.home-right{overflow-y:auto;padding-bottom:20px;min-width:0}
+.home-section-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+
+/* 主頁內嵌交接版 */
+.ho-inline-wrap{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);overflow:hidden}
+.ho-inline-head{background:linear-gradient(135deg,#1A3A5C,#2A5A8C);padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+.ho-inline-title{color:#fff;font-size:14px;font-weight:900;display:flex;align-items:center;gap:7px}
+.ho-inline-body{padding:14px}
+.ho-inline-tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:14px}
+.ho-inline-tab{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .12s,border-color .12s}
+.ho-inline-tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:700}
+/* 班別 tabs - 緊湊版 */
+.ho-shift-tabs-sm{display:flex;gap:5px;margin-bottom:12px}
+.ho-shift-tab-sm{flex:1;padding:7px 4px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink3);text-align:center;transition:all .12s}
+.ho-shift-tab-sm.on{color:#fff;border-color:transparent}
+.ho-tab-early-sm.on{background:linear-gradient(135deg,#E65100,#FF8F00)}
+.ho-tab-mid-sm.on{background:linear-gradient(135deg,#1565C0,#1E88E5)}
+.ho-tab-late-sm.on{background:linear-gradient(135deg,#4A148C,#7B1FA2)}
+/* textarea 緊湊版 */
+.ho-textarea-sm{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;resize:vertical;min-height:66px;outline:none;color:var(--ink);line-height:1.5;background:var(--white)}
+.ho-textarea-sm:focus{border-color:var(--g)}
+.ho-lbl-sm{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;margin-top:10px}
+.ho-submit-sm{width:100%;padding:11px;background:linear-gradient(135deg,#0A5C42,#0A7C52);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:12px}
+.ho-submit-sm:active{opacity:.85}
+
+/* 帳號管理 */
+.card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:14px;margin-bottom:10px}
+.card-title{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd);background:var(--white)}
+table{width:100%;border-collapse:collapse;min-width:500px}
+thead th{padding:8px 10px;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--bd);background:var(--bg);text-align:left;white-space:nowrap}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#FAFCFF}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700}
+.r1{background:#E3F2FD;color:#0D47A1}.r2{background:#F3E5F5;color:#6A1B9A}
+.r3{background:#E8F5E9;color:#1B5E20}.r4{background:#FFF8E1;color:#E65100}
+.r5{background:#EFEBE9;color:#4E342E}.r6{background:#F1F8E9;color:#558B2F}
+.r7{background:#E0F2F1;color:#00695C}.r8{background:#FAFAFA;color:#616161}
+.enabled-dot{width:8px;height:8px;border-radius:50%;background:var(--gm);display:inline-block;margin-right:4px}
+.disabled-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px}
+
+/* 按鈕 */
+.btn{padding:8px 14px;border-radius:var(--r2);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-primary{background:var(--g);color:#fff}.btn-primary:active{opacity:.8}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:active{opacity:.8}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:active{opacity:.8}
+.btn-outline{background:var(--white);color:var(--ink2);border:1.5px solid var(--bd)}.btn-outline:active{background:var(--bg)}
+.btn-sm{padding:5px 10px;font-size:11px}
+
+/* 表單 overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.sh{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:520px;max-height:88dvh;overflow-y:auto;padding:16px 14px 32px}
+.sh-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.sh-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink3);line-height:1}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.04em}
+.field input,.field select{padding:10px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;width:100%}
+.field input:focus,.field select:focus{border-color:var(--g)}
+.sh-ok{width:100%;margin-top:12px;padding:13px;background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.sh-ok:active{opacity:.8}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;margin-top:12px}
+
+/* 系統框架 */
+.system-frame{width:100%;border:none;height:calc(100dvh - 52px);display:block}
+
+/* 角色說明 */
+.role-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:12px}
+
+/* 同步狀態 */
+.sync-pill{background:rgba(255,255,255,.15);border-radius:12px;padding:3px 10px;font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:5px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0}
+.sync-dot.syncing{background:#fbbf24;animation:blink .8s infinite alternate}
+@keyframes blink{to{opacity:.3}}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F1923;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:600;display:none;pointer-events:none;font-weight:500}
+.empty{text-align:center;color:var(--ink3);padding:32px;font-size:14px}
+
+/* ══ 交接版 ══ */
+.ho-shift-tabs{display:flex;gap:6px;margin-bottom:14px}
+.ho-shift-tab{flex:1;padding:9px 6px;border-radius:var(--r2);border:2px solid var(--bd);background:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--ink3);text-align:center;transition:all .12s}
+.ho-shift-tab.on{color:#fff;border-color:transparent}
+.ho-tab-early.on{background:linear-gradient(135deg,#E65100,#FF8F00)}
+.ho-tab-mid.on{background:linear-gradient(135deg,#1565C0,#1E88E5)}
+.ho-tab-late.on{background:linear-gradient(135deg,#4A148C,#7B1FA2)}
+.ho-form-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);padding:16px;margin-bottom:12px}
+.ho-form-title{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.ho-textarea{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;resize:vertical;min-height:88px;outline:none;color:var(--ink);line-height:1.6;background:var(--white)}
+.ho-textarea:focus{border-color:var(--g)}
+.ho-submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#0A5C42,#0A7C52);color:#fff;border:none;border-radius:var(--r);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px}
+.ho-submit-btn:active{opacity:.85}
+.ho-filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.ho-filter-bar input[type=date]{padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;color:var(--ink)}
+.ho-filter-bar input[type=date]:focus{border-color:var(--g)}
+.ho-filter-sel{padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;color:var(--ink);background:var(--white)}
+.ho-card{background:var(--white);border-radius:var(--r);border:1px solid var(--bd);margin-bottom:10px;overflow:hidden;transition:box-shadow .12s}
+.ho-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.ho-card-head{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.ho-shift-badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;color:#fff}
+.badge-early{background:linear-gradient(135deg,#E65100,#FF8F00)}
+.badge-mid{background:linear-gradient(135deg,#1565C0,#1E88E5)}
+.badge-late{background:linear-gradient(135deg,#4A148C,#7B1FA2)}
+.ho-meta{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:10px}
+.ho-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.ho-section{display:flex;flex-direction:column;gap:4px}
+.ho-sec-lbl{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.lbl-todo{color:#B45309}
+.lbl-note{color:var(--red)}
+.lbl-msg{color:var(--g)}
+.ho-sec-txt{font-size:14px;color:var(--ink);line-height:1.65;white-space:pre-wrap;padding:8px 10px;background:var(--bg);border-radius:var(--r2)}
+.ho-empty-field{font-size:13px;color:var(--ink4);font-style:italic;padding:6px 10px}
+.ho-del-btn{background:none;border:none;color:var(--ink4);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1}
+.ho-del-btn:hover{color:var(--red);background:var(--redl)}
+.ho-page-tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:16px}
+.ho-page-tab{padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--ink3);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .12s}
+.ho-page-tab.on{color:var(--g);border-bottom-color:var(--g);font-weight:700}
+
+@media(max-width:768px){
+  :root{--sidebar:200px}
+  .menu-btn{display:block!important}
+  .sidebar{position:fixed;left:0;top:52px;bottom:0;z-index:200;transform:translateX(-100%)}
+  .sidebar.open{transform:none}
+  .dash-grid{grid-template-columns:1fr 1fr}
+  .top-user-name{display:none}
+  .home-layout{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .home-left{overflow-y:visible}
+  .home-right{overflow-y:visible}
+}
+</style>
+</head>
+<body>
+
+<!-- 登入畫面 -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="login-logo-icon">🌊</span>
+      <div class="login-logo-name">瀧飲山潮</div>
+      <div class="login-logo-sub">學士店 · 員工後台系統</div>
+    </div>
+    <div class="login-field">
+      <label>帳號</label>
+      <input type="text" id="l-user" placeholder="輸入帳號" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>密碼</label>
+      <input type="password" id="l-pass" placeholder="輸入密碼" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">登入</button>
+    <div class="login-err" id="l-err"></div>
+    <div class="login-syncing" id="l-syncing">🔄 連線中...</div>
+  </div>
+</div>
+
+<!-- 主介面 -->
+<div id="app">
+  <div class="topbar">
+    <div class="top-left">
+      <button class="menu-btn" onclick="toggleMenu()">☰</button>
+      <span class="top-brand">🌊 瀧飲山潮</span>
+    </div>
+    <div class="top-right">
+      <div class="sync-pill"><div class="sync-dot syncing" id="sync-dot"></div><span id="sync-txt">同步中</span></div>
+      <span class="top-user-name" id="top-name"></span>
+      <span class="top-role-badge" id="top-role"></span>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+    </div>
+  </div>
+
+  <div class="main-body">
+    <!-- 側欄 -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-lbl">主選單</div>
+        <button class="nav-item on" id="nav-home" onclick="showPage('home')"><span class="nav-icon">🏠</span>儀表板</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-lbl">作業系統</div>
+        <button class="nav-item" id="nav-temp" onclick="showPage('temp')"><span class="nav-icon">🌡️</span>溫度記錄</button>
+        <button class="nav-item" id="nav-jelly" onclick="showPage('jelly')"><span class="nav-icon">🌿</span>仙草凍記錄</button>
+        <button class="nav-item" id="nav-stock" onclick="showPage('stock')"><span class="nav-icon">📦</span>進貨盤點</button>
+        <button class="nav-item" id="nav-elec" onclick="showPage('elec')"><span class="nav-icon">⚡</span>電表記錄</button>
+        <button class="nav-item" id="nav-checklist" onclick="showPage('checklist')"><span class="nav-icon">✅</span>開班 Checklist</button>
+        <button class="nav-item" id="nav-closing" onclick="showPage('closing')"><span class="nav-icon">🏪</span>收班記錄</button>
+        <button class="nav-item" id="nav-inventory" onclick="showPage('inventory')"><span class="nav-icon">🗂️</span>盤補貨系統</button>
+        <button class="nav-item" id="nav-cleaning" onclick="showPage('cleaning')"><span class="nav-icon">🧹</span>清潔管理</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-lbl">系統管理</div>
+        <button class="nav-item" id="nav-accounts" onclick="showPage('accounts')"><span class="nav-icon">👤</span>帳號管理</button>
+      </div>
+    </div>
+
+    <!-- 內容 -->
+    <div class="content" id="content-area">
+
+      <!-- 儀表板 -->
+      <div class="page on" id="page-home" style="padding:12px;overflow-y:auto;height:calc(100dvh - 52px)">
+        <!-- 歡迎列 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div style="font-size:16px;font-weight:900;color:var(--ink)">🏠 儀表板</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px" id="dash-welcome"></div>
+          </div>
+          <div id="dash-date-lbl" style="font-size:12px;color:var(--ink3);text-align:right"></div>
+        </div>
+
+        <div class="home-layout">
+          <!-- 左欄：功能捷徑 -->
+          <div class="home-left">
+            <div>
+              <div class="home-section-lbl">功能捷徑</div>
+              <div class="dash-grid" id="dash-grid" style="grid-template-columns:1fr 1fr"></div>
+            </div>
+          </div>
+
+          <!-- 右欄：交接版（直接嵌入） -->
+          <div class="home-right">
+            <div class="ho-inline-wrap">
+              <div class="ho-inline-head">
+                <div class="ho-inline-title">📋 交接版</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span id="ho-sync-lbl" style="font-size:11px;color:rgba(255,255,255,.6)"></span>
+                  <button onclick="showPage('handover')" style="padding:4px 10px;border:1px solid rgba(255,255,255,.35);border-radius:12px;background:transparent;color:rgba(255,255,255,.8);font-size:11px;cursor:pointer;font-family:inherit">展開 →</button>
+                </div>
+              </div>
+              <div class="ho-inline-body">
+                <!-- 頁簽 -->
+                <div class="ho-inline-tabs">
+                  <button class="ho-inline-tab on" id="hoit-today" onclick="hoInlineTab('today')">📋 交接記錄</button>
+                  <button class="ho-inline-tab" id="hoit-write" onclick="hoInlineTab('write')">✏️ 填寫交接</button>
+                </div>
+
+                <!-- 記錄面板（預設顯示） -->
+                <div id="ho-inline-today">
+                  <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+                    <input type="date" id="ho-today-date" style="padding:6px 8px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:12px;font-family:inherit;outline:none;color:var(--ink);flex:1">
+                    <select class="ho-filter-sel" id="ho-today-shift" style="flex:1">
+                      <option value="all">全部班別</option>
+                      <option value="早班">☀️ 早班</option>
+                      <option value="中班">🌤 中班</option>
+                      <option value="晚班">🌙 晚班</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="hoLoadInlineToday()">查詢</button>
+                    <button class="btn btn-sm" onclick="hoClearDateFilter()" style="background:var(--bg);border:1.5px solid var(--bd);color:var(--ink3)">全部</button>
+                  </div>
+                  <div id="ho-today-list"><div class="empty">載入中...</div></div>
+                </div>
+
+                <!-- 填寫面板 -->
+                <div id="ho-inline-write" style="display:none">
+                  <!-- 班別 + 人員 + 日期 一列 -->
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                    <div>
+                      <div class="ho-lbl-sm" style="color:var(--ink3)">日期</div>
+                      <input type="date" id="ho-date" style="width:100%;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none;color:var(--ink)">
+                    </div>
+                    <div>
+                      <div class="ho-lbl-sm" style="color:var(--ink3)">交班人員</div>
+                      <select id="ho-person" style="width:100%;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+                        <option value="">— 選擇 —</option>
+                      </select>
+                    </div>
+                  </div>
+                  <!-- 班別 -->
+                  <div class="ho-shift-tabs-sm">
+                    <button class="ho-shift-tab-sm ho-tab-early-sm on" id="hoshift-early" onclick="hoPickShift('早班')">☀️ 早班</button>
+                    <button class="ho-shift-tab-sm ho-tab-mid-sm"   id="hoshift-mid"   onclick="hoPickShift('中班')">🌤 中班</button>
+                    <button class="ho-shift-tab-sm ho-tab-late-sm"  id="hoshift-late"  onclick="hoPickShift('晚班')">🌙 晚班</button>
+                  </div>
+                  <!-- 三個文字欄 -->
+                  <div>
+                    <div class="ho-lbl-sm" style="color:#B45309">📝 待辦事項</div>
+                    <textarea class="ho-textarea-sm" id="ho-todos" placeholder="下一班需完成的事…"></textarea>
+                  </div>
+                  <div>
+                    <div class="ho-lbl-sm" style="color:var(--red)">⚠️ 注意事項</div>
+                    <textarea class="ho-textarea-sm" id="ho-notes" placeholder="本班發現的問題或異常…"></textarea>
+                  </div>
+                  <div>
+                    <div class="ho-lbl-sm" style="color:var(--g)">💬 留言給下一班</div>
+                    <textarea class="ho-textarea-sm" id="ho-msg" placeholder="給下一班的話…"></textarea>
+                  </div>
+                  <button class="ho-submit-sm" onclick="hoSubmit()">📤 送出交接記錄</button>
+                </div>
+
+                <!-- 查詢面板 -->
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 各系統用 iframe 載入 -->
+      <div class="page" id="page-temp" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-temp" src="" title="溫度記錄"></iframe>
+      </div>
+      <div class="page" id="page-jelly" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-jelly" src="" title="仙草凍記錄"></iframe>
+      </div>
+      <div class="page" id="page-stock" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-stock" src="" title="進貨盤點"></iframe>
+      </div>
+      <div class="page" id="page-elec" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-elec" src="" title="電表記錄"></iframe>
+      </div>
+      <div class="page" id="page-checklist" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-checklist" src="" title="開班Checklist"></iframe>
+      </div>
+      <div class="page" id="page-closing" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-closing" src="" title="收班記錄"></iframe>
+      </div>
+      <div class="page" id="page-inventory" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-inventory" src="" title="盤補貨系統"></iframe>
+      </div>
+      <div class="page" id="page-cleaning">
+        <iframe class="system-frame" id="frame-cleaning" src="" title="清潔管理"></iframe>
+      </div>
+
+      <!-- 交接版 -->
+      <div class="page" id="page-handover">
+        <div class="page-hd">
+          <div>
+            <div class="page-title">📋 交接版</div>
+            <div class="page-sub">填寫交接事項 · 查詢歷史記錄</div>
+          </div>
+        </div>
+        <!-- 頁簽：填寫 / 查詢 -->
+        <div class="ho-page-tabs">
+          <button class="ho-page-tab on" id="hotab-write" onclick="hoSwitchTab('write')">✏️ 填寫交接</button>
+          <button class="ho-page-tab" id="hotab-read" onclick="hoSwitchTab('read')">📂 查詢記錄</button>
+        </div>
+
+        <!-- 填寫頁 -->
+        <div id="ho-write-panel">
+          <!-- 班別選擇 -->
+          <div class="ho-shift-tabs">
+            <button class="ho-shift-tab ho-tab-early on" id="hoshift-early" onclick="hoPickShift('早班')">☀️ 早班</button>
+            <button class="ho-shift-tab ho-tab-mid"   id="hoshift-mid"   onclick="hoPickShift('中班')">🌤 中班</button>
+            <button class="ho-shift-tab ho-tab-late"  id="hoshift-late"  onclick="hoPickShift('晚班')">🌙 晚班</button>
+          </div>
+          <!-- 日期 + 人員 -->
+          <div class="ho-form-card">
+            <div class="ho-form-title">📅 基本資訊</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="field"><label>日期</label><input type="date" id="ho-date"></div>
+              <div class="field">
+                <label>交班人員</label>
+                <select id="ho-person" style="padding:10px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;background:var(--white);color:var(--ink);outline:none">
+                  <option value="">— 選擇人員 —</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- 待辦事項 -->
+          <div class="ho-form-card">
+            <div class="ho-form-title" style="color:#B45309">📝 待辦事項 <span style="font-size:10px;font-weight:400;color:var(--ink3)"（下一班需完成的事）</span></div>
+            <textarea class="ho-textarea" id="ho-todos" placeholder="例：補發票紙、整理冷藏庫、通知廠商配送…"></textarea>
+          </div>
+          <!-- 注意事項 -->
+          <div class="ho-form-card">
+            <div class="ho-form-title" style="color:var(--red)">⚠️ 注意事項 <span style="font-size:10px;font-weight:400;color:var(--ink3)">（本班發現的問題或異常）</span></div>
+            <textarea class="ho-textarea" id="ho-notes" placeholder="例：三號冰箱溫度偏高、封口機需要校正、食材快不夠…"></textarea>
+          </div>
+          <!-- 留言給下一班 -->
+          <div class="ho-form-card">
+            <div class="ho-form-title" style="color:var(--g)">💬 留言給下一班</div>
+            <textarea class="ho-textarea" id="ho-msg" placeholder="例：今天客人很多辛苦了、備料已提前處理完、新品特調配方在…"></textarea>
+          </div>
+          <button class="ho-submit-btn" onclick="hoSubmit()">📤 送出交接記錄</button>
+          <div style="height:20px"></div>
+        </div>
+
+        <!-- 查詢頁 -->
+        <div id="ho-read-panel" style="display:none">
+          <div class="ho-filter-bar">
+            <input type="date" id="ho-filter-date">
+            <select class="ho-filter-sel" id="ho-filter-shift">
+              <option value="all">全部班別</option>
+              <option value="早班">☀️ 早班</option>
+              <option value="中班">🌤 中班</option>
+              <option value="晚班">🌙 晚班</option>
+            </select>
+            <button class="btn btn-primary" onclick="hoLoad()">🔍 查詢</button>
+            <button class="btn btn-outline" onclick="hoLoadToday()">今日</button>
+          </div>
+          <div id="ho-list"><div class="empty">請選擇日期或按「今日」查詢</div></div>
+        </div>
+      </div>
+
+      <!-- 帳號管理 -->
+      <div class="page" id="page-accounts">
+        <div class="page-hd">
+          <div>
+            <div class="page-title">👤 帳號管理</div>
+            <div class="page-sub">僅限系統最高管理員（角色1）操作</div>
+          </div>
+          <button class="btn btn-primary" onclick="openAccForm()">＋ 新增帳號</button>
+        </div>
+        <div class="card">
+          <div class="card-title">帳號列表</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>帳號</th><th>姓名</th><th>角色</th><th>狀態</th><th>備注</th><th>操作</th></tr></thead>
+              <tbody id="acc-tbody"><tr><td colspan="6" class="empty">載入中...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card" style="background:var(--gl);border-color:rgba(10,124,82,.2)">
+          <div class="card-title" style="color:var(--g)">角色代碼對照</div>
+          <div class="role-grid">
+            <div><span class="badge r1">1</span> 系統最高管理員</div>
+            <div><span class="badge r2">2</span> 營運管理者</div>
+            <div><span class="badge r3">3</span> 店長</div>
+            <div><span class="badge r4">4</span> 副店長</div>
+            <div><span class="badge r5">5</span> 正職員工</div>
+            <div><span class="badge r6">6</span> 工讀生</div>
+            <div><span class="badge r7">7</span> 財務/會計</div>
+            <div><span class="badge r8">8</span> 外部顧問</div>
+          </div>
+        </div>
+
+        <!-- LINE 成員管理 -->
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="card-title" style="margin:0">📲 LINE 成員管理</div>
+            <button class="btn btn-primary btn-sm" onclick="loadLineMembers()">🔄 重新整理</button>
+          </div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">
+            成員在群組傳 <b style="color:var(--ink)">「報到 姓名」</b> 後會自動出現在這裡。也可以手動新增。
+          </div>
+          <div id="line-member-list"><div class="empty">載入中...</div></div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <input id="lm-name" placeholder="姓名" style="flex:1;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
+            <input id="lm-uid"  placeholder="userId（U開頭）" style="flex:2;padding:8px 10px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:13px;font-family:inherit;outline:none">
+            <button class="btn btn-primary btn-sm" onclick="addLineMember()">新增</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-body -->
+</div><!-- /app -->
+
+<!-- 帳號表單 Overlay -->
+<div class="ov" id="ov-acc">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-title"><span id="acc-form-title">新增帳號</span><button class="sh-close" onclick="closeOv('acc')">✕</button></div>
+    <div class="form-grid">
+      <div class="field"><label>帳號 *</label><input type="text" id="acc-username" placeholder="登入帳號（英數字）"></div>
+      <div class="field"><label>密碼 *</label><input type="password" id="acc-password" placeholder="新帳號必填，修改可留空"></div>
+      <div class="field"><label>姓名 *</label><input type="text" id="acc-name" placeholder="顯示姓名"></div>
+      <div class="field"><label>角色 *</label>
+        <select id="acc-role">
+          <option value="1">1 — 系統最高管理員</option>
+          <option value="2">2 — 營運管理者</option>
+          <option value="3">3 — 店長</option>
+          <option value="4">4 — 副店長</option>
+          <option value="5" selected>5 — 正職員工</option>
+          <option value="6">6 — 工讀生</option>
+          <option value="7">7 — 財務/會計</option>
+          <option value="8">8 — 外部顧問</option>
+        </select>
+      </div>
+    </div>
+    <div class="sec-lbl" style="margin-top:4px">備注（選填）</div>
+    <input type="text" id="acc-note" placeholder="備注說明" style="width:100%;padding:10px 11px;border:1.5px solid var(--bd);border-radius:var(--r2);font-size:14px;font-family:inherit;outline:none;margin-top:5px">
+    <button class="sh-ok" onclick="saveAcc()">✓ 儲存帳號</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// ★ 填入你的 Apps Script 部署網址 ★
+// ══════════════════════════════════════
+var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+
+var ROLE_NAMES = {
+  '1':'系統最高管理員','2':'營運管理者','3':'店長',
+  '4':'副店長','5':'正職員工','6':'工讀生','7':'財務/會計','8':'外部顧問'
+};
+
+// 各功能最低可存取的角色（數字越大=限制越少）
+// 代表「角色代碼 <= 此值才可存取」
+var PAGE_PERM = {
+  home:8, handover:6, temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:5, inventory:6, cleaning:6, accounts:1
+};
+// 各功能是否可寫入（角色代碼 <= 此值才可新增/修改）
+var WRITE_PERM = {
+  temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:6, inventory:6, cleaning:6
+};
+
+var currentUser = null;
+var editAccUsername = null;
+var framesLoaded = {};
+
+// ── API ──────────────────────────────
+function api(params, cb){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  // 超過 800 字元自動改 POST
+  if(qs.length > 800){ apiPost(params, cb); return; }
+  fetch(API_URL+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
+  fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: body
+  })
+    .then(function(r){return r.json();})
+    .then(function(d){if(cb)cb(d,null);})
+    .catch(function(e){if(cb)cb(null,e.toString());});
+}
+
+// ── 初始化 ───────────────────────────
+window.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('l-pass').addEventListener('keypress',function(e){ if(e.key==='Enter') doLogin(); });
+  // 檢查是否已有登入 session
+  var saved = sessionStorage.getItem('tw_user');
+  if(saved){
+    try{ currentUser=JSON.parse(saved); initApp(); return; }catch(e){}
+  }
+});
+
+// ── 登入 ─────────────────────────────
+function doLogin(){
+  var user=document.getElementById('l-user').value.trim();
+  var pass=document.getElementById('l-pass').value;
+  if(!user||!pass){ showErr('請輸入帳號和密碼'); return; }
+  showErr('');
+  document.getElementById('login-btn').textContent='驗證中...';
+  document.getElementById('l-syncing').style.display='block';
+  api({action:'twLogin',username:user,password:pass},function(d,e){
+    document.getElementById('login-btn').textContent='登入';
+    document.getElementById('l-syncing').style.display='none';
+    if(e||!d){ showErr('連線失敗，請稍後再試'); return; }
+    if(!d.ok){ showErr(d.error||'帳號或密碼錯誤'); return; }
+    currentUser=d.user;
+    sessionStorage.setItem('tw_user',JSON.stringify(currentUser));
+    initApp();
+  });
+}
+function showErr(msg){
+  var el=document.getElementById('l-err');
+  el.textContent=msg; el.style.display=msg?'block':'none';
+}
+function doLogout(){
+  currentUser=null; sessionStorage.removeItem('tw_user');
+  framesLoaded={};
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-user').value='';
+  document.getElementById('l-pass').value='';
+  // 清除 iframes
+  ['temp','jelly','stock','elec','checklist'].forEach(function(k){
+    document.getElementById('frame-'+k).src='';
+  });
+}
+
+// ── 初始化 App ───────────────────────
+function initApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').classList.add('show');
+  document.getElementById('top-name').textContent=currentUser.name;
+  document.getElementById('top-role').textContent=currentUser.roleName;
+  document.getElementById('dash-welcome').textContent='您好，'+currentUser.name+'！目前角色：'+currentUser.roleName;
+  // 顯示今日日期
+  var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  var wdays=['日','一','二','三','四','五','六'];
+  document.getElementById('dash-date-lbl').textContent=
+    d.getFullYear()+'／'+pad(d.getMonth()+1)+'／'+pad(d.getDate())+' （'+wdays[d.getDay()]+'）';
+  buildNav();
+  buildDash();
+  setSyncStatus(true);
+  hoInit(); // 初始化主頁交接版
+  if(canAccess('accounts')) loadAccounts();
+}
+
+function canAccess(page){
+  return parseInt(currentUser.role) <= (PAGE_PERM[page]||1);
+}
+function canWrite(page){
+  return parseInt(currentUser.role) <= (WRITE_PERM[page]||1);
+}
+
+function buildNav(){
+  ['home','temp','jelly','stock','elec','checklist','closing','inventory','cleaning','accounts'].forEach(function(p){
+    var el=document.getElementById('nav-'+p);
+    if(!el) return;
+    if(!canAccess(p)) el.classList.add('locked');
+    else el.classList.remove('locked');
+  });
+}
+
+function buildDash(){
+  var modules=[
+    {id:'temp',  icon:'🌡️',name:'溫度記錄',  desc:'前冰仙凍溫度'},
+    {id:'jelly', icon:'🌿',name:'仙草凍記錄',desc:'煮好→清洗流程'},
+    {id:'stock', icon:'📦',name:'進貨盤點',  desc:'進貨記錄統整'},
+    {id:'elec',  icon:'⚡',name:'電表記錄',  desc:'每日用電月統計'},
+    {id:'checklist',icon:'✅',name:'開班Checklist',desc:'開收班流程確認'},
+    {id:'closing',  icon:'🏪',name:'收班記錄',    desc:'營業額 · 杯數 · 客群分析'},
+    {id:'inventory',icon:'🗂️',name:'盤補貨系統',desc:'日盤 · 週盤 · 月盤'},
+    {id:'cleaning', icon:'🧹',name:'清潔管理',    desc:'日 · 週 · 月清潔記錄'},
+    {id:'accounts',icon:'👤',name:'帳號管理',desc:'帳號與權限設定'},
+  ];
+  document.getElementById('dash-grid').innerHTML=modules.map(function(m){
+    var ok=canAccess(m.id);
+    var write=canWrite(m.id);
+    var pc=!ok?'perm-lock':write?'perm-full':'perm-view';
+    var pl=!ok?'🔒 無權限':write?'✎ 可操作':'👁 僅查看';
+    return '<div class="dash-card'+(ok?'':' locked')+'" onclick="showPage(\''+m.id+'\')">'
+      +'<div class="dash-icon">'+m.icon+'</div>'
+      +'<div class="dash-name">'+m.name+'</div>'
+      +'<div class="dash-desc">'+m.desc+'</div>'
+      +'<span class="dash-perm '+pc+'">'+pl+'</span>'
+    +'</div>';
+  }).join('');
+}
+
+// ── 頁面切換 ─────────────────────────
+var curPage='home';
+function showPage(p){
+  if(!canAccess(p)){ showToast('您沒有存取此功能的權限'); return; }
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('on'); });
+  document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('on'); });
+  var pg=document.getElementById('page-'+p);
+  if(pg) pg.classList.add('on');
+  var nav=document.getElementById('nav-'+p);
+  if(nav) nav.classList.add('on');
+  curPage=p;
+  closeSidebar();
+  // 第一次進入時才載入 iframe
+  var frames=['temp','jelly','stock','elec','checklist','closing','inventory','cleaning'];
+  if(frames.indexOf(p)>-1 && !framesLoaded[p]){
+    document.getElementById('frame-'+p).src=p+'.html';
+    framesLoaded[p]=true;
+  }
+  if(p==='accounts'){ loadAccounts(); loadLineMembers(); }
+}
+
+function toggleMenu(){ document.getElementById('sidebar').classList.toggle('open'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); }
+document.addEventListener('click',function(e){
+  var sb=document.getElementById('sidebar');
+  if(sb.classList.contains('open')&&!sb.contains(e.target)&&e.target.className!=='menu-btn') closeSidebar();
+});
+
+// ── 同步狀態 ─────────────────────────
+function setSyncStatus(ok){
+  var dot=document.getElementById('sync-dot');
+  var txt=document.getElementById('sync-txt');
+  dot.className='sync-dot'+(ok?'':' syncing');
+  txt.textContent=ok?'已同步':'同步中';
+}
+
+// ══════════════════════════════════════
+// 帳號管理
+// ══════════════════════════════════════
+function openAccForm(username){
+  editAccUsername=username||null;
+  document.getElementById('acc-form-title').textContent=username?'修改帳號':'新增帳號';
+  document.getElementById('acc-username').value=username||'';
+  document.getElementById('acc-username').disabled=!!username;
+  document.getElementById('acc-password').value='';
+  document.getElementById('acc-name').value='';
+  document.getElementById('acc-note').value='';
+  if(username){
+    // 從列表填入現有資料
+    api({action:'twGetAccounts'},function(d){
+      if(!d||!d.ok) return;
+      var user=d.data.find(function(u){return u.username===username;});
+      if(!user) return;
+      document.getElementById('acc-name').value=user.name||'';
+      document.getElementById('acc-role').value=user.role||'5';
+      document.getElementById('acc-note').value=user.note||'';
+    });
+  }
+  openOv('acc');
+}
+
+function saveAcc(){
+  var username=document.getElementById('acc-username').value.trim();
+  var password=document.getElementById('acc-password').value;
+  var name=document.getElementById('acc-name').value.trim();
+  var role=document.getElementById('acc-role').value;
+  var note=document.getElementById('acc-note').value.trim();
+  if(!username||!name){ showToast('帳號和姓名為必填'); return; }
+  if(!editAccUsername&&!password){ showToast('新帳號必須設定密碼'); return; }
+  api({action:'twSaveAccount',username:username,password:password,name:name,role:role,note:note},
+  function(d){
+    if(d&&d.ok){ closeOv('acc'); loadAccounts(); showToast('✓ '+d.message); }
+    else showToast(d&&d.error||'儲存失敗');
+  });
+}
+
+// ── LINE 成員管理 ─────────────────────────────────────────────
+function loadLineMembers(){
+  var el = document.getElementById('line-member-list');
+  if(!el) return;
+  el.innerHTML = '<div class="empty">載入中...</div>';
+  api({action:'getGroupMembers'}, function(d){
+    if(!d||!d.ok){ el.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    if(!d.members||!d.members.length){
+      el.innerHTML='<div class="empty">尚無成員，請在群組傳「報到 姓名」</div>'; return;
+    }
+    var html = '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr style="background:#f5f7fa"><th style="padding:7px 10px;text-align:left;font-size:12px;color:var(--ink3)">姓名</th><th style="padding:7px 10px;text-align:left;font-size:12px;color:var(--ink3)">userId</th><th style="padding:7px 10px;width:60px"></th></tr></thead><tbody>';
+    d.members.forEach(function(m){
+      html += '<tr style="border-top:1px solid var(--bd)">'+
+        '<td style="padding:8px 10px;font-weight:700">'+m.name+'</td>'+
+        '<td style="padding:8px 10px;font-size:11px;color:var(--ink3);font-family:monospace">'+m.userId+'</td>'+
+        '<td style="padding:8px 10px">'+
+          '<button onclick="deleteLineMember(\''+m.userId+'\')" style="padding:3px 8px;border:1px solid var(--bd);border-radius:4px;background:var(--white);color:var(--red);font-size:12px;cursor:pointer">刪除</button>'+
+        '</td>'+
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  });
+}
+
+function addLineMember(){
+  var name = document.getElementById('lm-name').value.trim();
+  var uid  = document.getElementById('lm-uid').value.trim();
+  if(!name){ showToastG('請填入姓名'); return; }
+  if(!uid||!uid.startsWith('U')){ showToastG('userId 格式錯誤（需 U 開頭）'); return; }
+  api({action:'setMemberName', userId:uid, name:name}, function(d){
+    if(d&&d.ok){
+      document.getElementById('lm-name').value='';
+      document.getElementById('lm-uid').value='';
+      loadLineMembers();
+      showToastG('✓ 已新增：'+name);
+    }
+  });
+}
+
+function deleteLineMember(uid){
+  if(!confirm('確定刪除此成員？')) return;
+  api({action:'deleteLineMember', userId:uid}, function(d){
+    if(d&&d.ok){ loadLineMembers(); showToastG('✓ 已刪除'); }
+  });
+}
+
+function showToastG(m){
+  var t=document.getElementById('toast');
+  if(t){ t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+}
+
+function loadAccounts(){
+  api({action:'twGetAccounts'},function(d){
+    var tbody=document.getElementById('acc-tbody');
+    if(!d||!d.ok){ tbody.innerHTML='<tr><td colspan="6" class="empty">載入失敗</td></tr>'; return; }
+    if(!d.data.length){ tbody.innerHTML='<tr><td colspan="6" class="empty">尚無帳號</td></tr>'; return; }
+    tbody.innerHTML=d.data.map(function(r){
+      var rc='r'+(r.role||'5');
+      var rn=ROLE_NAMES[r.role]||r.role;
+      var isSelf=r.username===currentUser.username;
+      return '<tr>'
+        +'<td style="font-family:monospace;font-weight:600">'+r.username+'</td>'
+        +'<td>'+r.name+'</td>'
+        +'<td><span class="badge '+rc+'">'+rn+'</span></td>'
+        +'<td>'+(r.enabled
+          ?'<span class="enabled-dot"></span><span style="color:var(--g);font-weight:600">啟用</span>'
+          :'<span class="disabled-dot"></span><span style="color:var(--red);font-weight:600">停用</span>')
+        +'</td>'
+        +'<td style="color:var(--ink3)">'+r.note+'</td>'
+        +'<td><div style="display:flex;gap:5px;flex-wrap:wrap">'
+          +'<button class="btn btn-outline btn-sm" onclick="openAccForm(\''+r.username+'\')">修改</button>'
+          +(isSelf?'':
+            '<button class="btn btn-sm '+(r.enabled?'btn-amber':'btn-primary')+'" onclick="toggleAcc(\''+r.username+'\','+(r.enabled?'false':'true')+')">'+(r.enabled?'停用':'啟用')+'</button>'
+            +'<button class="btn btn-danger btn-sm" onclick="delAcc(\''+r.username+'\')">刪除</button>'
+          )
+        +'</div></td>'
+      +'</tr>';
+    }).join('');
+  });
+}
+
+function toggleAcc(username,enabled){
+  api({action:'twToggleAccount',username:username,enabled:enabled},
+  function(d){ if(d&&d.ok) loadAccounts(); });
+}
+function delAcc(username){
+  if(!confirm('確定刪除帳號「'+username+'」？')) return;
+  api({action:'twDeleteAccount',username:username},
+  function(d){ if(d&&d.ok){ loadAccounts(); showToast('已刪除：'+username); } });
+}
+
+// ── Overlay ──────────────────────────
+function openOv(id){ document.getElementById('ov-'+id).classList.add('show'); }
+function closeOv(id){ document.getElementById('ov-'+id).classList.remove('show'); }
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.ov.show').forEach(function(ov){ if(e.target===ov) ov.classList.remove('show'); });
+});
+
+// ══════════════════════════════════════
+// 交接版
+// ══════════════════════════════════════
+var HO_PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
+var hoShift = '早班';
+var hoEditId = null;
+
+function hoInit(){
+  // 載入今日記錄（主頁預設顯示）
+  hoLoadInlineToday();
+}
+
+// 切到填寫頁簽時才初始化表單
+function hoInitWriteForm(){
+  var d=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  var today=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  var de=document.getElementById('ho-date');
+  if(de && !de.value) de.value=today;
+  var df=document.getElementById('ho-filter-date');
+  if(df && !df.value) df.value=today;
+  function fillPersonSel(persons){
+    var sel=document.getElementById('ho-person');
+    if(!sel) return;
+    sel.innerHTML='<option value="">— 選擇 —</option>';
+    persons.forEach(function(p){ sel.innerHTML+='<option value="'+p+'">'+p+'</option>'; });
+    if(currentUser&&currentUser.name){
+      var opt=sel.querySelector('option[value="'+currentUser.name+'"]');
+      if(opt) opt.selected=true;
+    }
+  }
+  fillPersonSel(HO_PERSONS);
+  api({action:'getEmps'},function(res){ if(res&&res.ok&&res.data&&res.data.length) fillPersonSel(res.data); });
+  var h=new Date().getHours();
+  hoPickShift(h<14?'早班':(h<19?'中班':'晚班'));
+}
+
+function hoInlineTab(tab){
+  ['write','today'].forEach(function(t){
+    document.getElementById('ho-inline-'+t).style.display = t===tab?'':'none';
+    var btn=document.getElementById('hoit-'+t);
+    if(btn) btn.classList.toggle('on', t===tab);
+  });
+  if(tab==='today') hoLoadInlineToday();
+  if(tab==='write') hoInitWriteForm();
+}
+
+function hoPickShift(shift){
+  hoShift=shift;
+  var map={early:'早班',mid:'中班',late:'晚班'};
+  Object.keys(map).forEach(function(k){
+    var el=document.getElementById('hoshift-'+k);
+    if(el) el.classList.toggle('on', map[k]===shift);
+  });
+}
+
+function hoSubmit(){
+  var date  =document.getElementById('ho-date').value;
+  var person=document.getElementById('ho-person').value;
+  var todos =document.getElementById('ho-todos').value.trim();
+  var notes =document.getElementById('ho-notes').value.trim();
+  var msg   =document.getElementById('ho-msg').value.trim();
+  if(!date)  { showToast('請選擇日期'); return; }
+  if(!person){ showToast('請選擇交班人員'); return; }
+  if(!todos&&!notes&&!msg){ showToast('請至少填寫一項內容'); return; }
+  var btn=document.querySelector('.ho-submit-sm')||document.querySelector('.ho-submit-btn');
+  if(btn){ btn.textContent='⏳ 送出中...'; btn.disabled=true; }
+  var params={action:'handoverSave',date:date,shift:hoShift,person:person,todos:todos,notes:notes,msg:msg};
+  if(hoEditId) params.id=hoEditId;
+  api(params,function(d){
+    if(btn){ btn.textContent='📤 送出交接記錄'; btn.disabled=false; }
+    if(!d||!d.ok){ showToast('❌ 儲存失敗'); return; }
+    showToast('✓ 交接記錄已送出');
+    document.getElementById('ho-todos').value='';
+    document.getElementById('ho-notes').value='';
+    document.getElementById('ho-msg').value='';
+    hoEditId=null;
+    // 送出後切回今日記錄
+    hoInlineTab('today');
+  });
+}
+
+function hoLoadInlineToday(){
+  var now=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  var today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  var shiftEl=document.getElementById('ho-today-shift');
+  var dateEl=document.getElementById('ho-today-date');
+  var shiftVal=shiftEl?shiftEl.value:'all';
+  var dateVal=dateEl?dateEl.value:'';
+  var list=document.getElementById('ho-today-list');
+  if(list) list.innerHTML='<div class="empty" style="padding:16px">⏳ 載入中...</div>';
+  var params={action:'handoverGetAll'};
+  if(dateVal) params.date=dateVal;
+  if(shiftVal&&shiftVal!=='all') params.shift=shiftVal;
+  api(params,function(res){
+    if(!list) return;
+    if(!res||!res.ok){ list.innerHTML='<div class="empty" style="padding:16px">載入失敗</div>'; return; }
+    if(!res.data||!res.data.length){
+      list.innerHTML='<div class="empty" style="padding:16px">'+(dateVal?dateVal+' 無記錄':'尚無交接記錄')+'</div>';
+      return;
+    }
+    list.innerHTML=res.data.map(function(r){ return hoCardHtml(r,true); }).join('');
+  });
+}
+
+function hoClearDateFilter(){
+  var dateEl=document.getElementById('ho-today-date');
+  if(dateEl) dateEl.value='';
+  hoLoadInlineToday();
+}
+
+function hoLoadToday(){
+  var now=new Date(), pad=function(n){return String(n).padStart(2,'0');};
+  document.getElementById('ho-filter-date').value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  document.getElementById('ho-filter-shift').value='all';
+  hoLoad();
+}
+
+function hoLoad(){
+  var date =document.getElementById('ho-filter-date').value;
+  var shift=document.getElementById('ho-filter-shift').value;
+  var list =document.getElementById('ho-list');
+  if(list) list.innerHTML='<div class="empty">⏳ 載入中...</div>';
+  var params={action:'handoverGetAll'};
+  if(date) params.date=date;
+  if(shift&&shift!=='all') params.shift=shift;
+  api(params,function(res){
+    if(!list) return;
+    if(!res||!res.ok){ list.innerHTML='<div class="empty">載入失敗</div>'; return; }
+    if(!res.data.length){ list.innerHTML='<div class="empty">此日期沒有交接記錄</div>'; return; }
+    list.innerHTML=res.data.map(function(r){ return hoCardHtml(r,true); }).join('');
+  });
+}
+
+function hoCardHtml(r, compact){
+  var shiftBadge={'早班':'badge-early','中班':'badge-mid','晚班':'badge-late'};
+  var shiftIcon={'早班':'☀️','中班':'🌤','晚班':'🌙'};
+  var bc=shiftBadge[r.shift]||'badge-mid';
+  var si=shiftIcon[r.shift]||'';
+  var canDel=currentUser&&parseInt(currentUser.role)<=4;
+  return '<div class="ho-card">'+
+    '<div class="ho-card-head">'+
+      '<div style="display:flex;align-items:center;gap:7px">'+
+        '<span class="ho-shift-badge '+bc+'">'+si+' '+r.shift+'</span>'+
+        '<span style="font-size:13px;font-weight:700">'+r.date+'</span>'+
+        '<span style="font-size:12px;color:var(--ink3)">'+r.person+'</span>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:6px">'+
+        '<span style="font-size:11px;color:var(--ink3)">'+r.ts.slice(5,16)+'</span>'+
+        (canDel?'<button class="ho-del-btn" onclick="hoDel(\''+r.id+'\')">🗑</button>':'')+
+      '</div>'+
+    '</div>'+
+    '<div class="ho-card-body" style="'+(compact?'gap:7px':'')+'">'+
+      (r.todos?'<div class="ho-section"><div class="ho-sec-lbl lbl-todo">📝 待辦</div><div class="ho-sec-txt" style="font-size:13px">'+hoEsc(r.todos)+'</div></div>':'')+
+      (r.notes?'<div class="ho-section"><div class="ho-sec-lbl lbl-note">⚠️ 注意</div><div class="ho-sec-txt" style="font-size:13px">'+hoEsc(r.notes)+'</div></div>':'')+
+      (r.msg  ?'<div class="ho-section"><div class="ho-sec-lbl lbl-msg">💬 留言</div><div class="ho-sec-txt" style="font-size:13px">'+hoEsc(r.msg)+'</div></div>':'')+
+      (!r.todos&&!r.notes&&!r.msg?'<div class="ho-empty-field">（無內容）</div>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function hoDel(id){
+  if(!confirm('確定刪除？')) return;
+  api({action:'handoverDelete',id:id},function(d){
+    if(d&&d.ok){ showToast('已刪除'); hoLoadInlineToday(); hoLoad(); }
+    else showToast('刪除失敗');
+  });
+}
+function hoEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// hoSwitchTab 保留給 page-handover 的舊頁簽（保持相容）
+function hoSwitchTab(tab){
+  var wp=document.getElementById('ho-write-panel');
+  var rp=document.getElementById('ho-read-panel');
+  if(wp) wp.style.display=tab==='write'?'':'none';
+  if(rp) rp.style.display=tab==='read'?'':'none';
+  var tw=document.getElementById('hotab-write');
+  var tr=document.getElementById('hotab-read');
+  if(tw) tw.classList.toggle('on',tab==='write');
+  if(tr) tr.classList.toggle('on',tab==='read');
+  if(tab==='read') hoLoadToday();
+}
+// hoSwitchTab 已在新版定義，此處為相容保留結尾
+
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){ t.style.display='none'; },2800); }
+</script>
+</body>
+</html>
