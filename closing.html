@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script src="store-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -419,7 +420,7 @@ canvas{width:100%!important}
 </div>
 
 <script>
-var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var API_URL = StoreConfig.getApiUrl();
 var PERSONS = ['榮富','冠銘','柏廷','鈞凱','家暉','宥霖','冠文'];
 var PRODUCTS = [
   {key:'original', name:'原味風凍', color:'#4A7CB5'},

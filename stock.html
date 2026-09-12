@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script src="store-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -514,7 +515,7 @@ tbody tr:last-child td{border-bottom:none}
 
 <script>
 // ★ 填入你的 Apps Script 部署網址 ★
-var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var API_URL = StoreConfig.getApiUrl();
 
 function apiCall(params, cb){
   if(!API_URL) return;

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script src="store-config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>溫度記錄</title>
@@ -352,7 +353,7 @@ function npDone(){
   npClose();
 }
 
-var API_URL = 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec';
+var API_URL = StoreConfig.getApiUrl();
 
 var POS = ['一號','二號','三號','四號','五號','六號','七號','八號'];
 var selYM = '', selDay = '', selTime = '10';
