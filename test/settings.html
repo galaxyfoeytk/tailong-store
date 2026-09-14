@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="store-config.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>設定 · 學士店</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF0D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:14px}
+button,input,select{font-family:inherit;font-size:14px}
+button{cursor:pointer}
+
+/* 頂欄 */
+.top{background:var(--b);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:20}
+.top-title{font-weight:900;font-size:16px}
+.top-sub{font-size:11px;opacity:.75;margin-top:1px}
+.who{font-size:11px;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;white-space:nowrap}
+
+/* 分頁列 */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:var(--white);border-bottom:1px solid var(--bd);position:sticky;top:56px;z-index:19;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:8px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--white);color:var(--ink2);font-weight:700;font-size:13px}
+.tab[aria-selected="true"]{background:var(--b);border-color:var(--b);color:#fff}
+
+.wrap{padding:14px;max-width:860px;margin:0 auto}
+.panel{display:none}
+.panel.on{display:block}
+
+.card{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card-h{font-weight:900;font-size:15px;margin:0 0 4px}
+.card-note{font-size:12px;color:var(--ink3);line-height:1.6;margin:0 0 12px}
+
+/* 表單 */
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+.f{flex:1 1 130px;min-width:0}
+.f label{display:block;font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px}
+.f input,.f select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--ink)}
+.f input:focus,.f select:focus{outline:2px solid var(--bm);outline-offset:1px;border-color:var(--bm)}
+
+.btn{padding:9px 16px;border:none;border-radius:var(--r2);background:var(--b);color:#fff;font-weight:700;white-space:nowrap}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.btn.ghost{background:var(--white);color:var(--ink2);border:1px solid var(--bd)}
+.btn.danger{background:var(--red)}
+.btn.sm{padding:6px 11px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* 清單 */
+.list{border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden}
+.item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd);background:var(--white)}
+.item:last-child{border-bottom:none}
+.item-main{flex:1;min-width:0}
+.item-name{font-weight:700}
+.item-meta{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5}
+.off{opacity:.5}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--bl);color:var(--b);margin-left:6px}
+.pill.flav{background:var(--amberl);color:var(--amber)}
+.pill.stop{background:var(--redl);color:var(--red)}
+.empty{padding:22px 12px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.7}
+
+.sub-h{font-weight:700;font-size:13px;color:var(--ink2);margin:16px 0 8px}
+.sub-h:first-child{margin-top:0}
+
+/* 提示 */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:22px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .18s;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+.toast.bad{background:var(--red)}
+
+.gate{padding:56px 22px;text-align:center;color:var(--ink2);line-height:1.9}
+.gate h2{color:var(--b)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="top-title">設定</div>
+    <div class="top-sub">瀧飲山潮 · 學士店</div>
+  </div>
+  <span class="who" id="who"></span>
+</div>
+
+<div id="gate" class="gate" style="display:none"></div>
+
+<div id="app" style="display:none">
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="wrap" id="panels"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   設定頁 — 集中管理各店的人員、產品、貨物等主檔
+   改一個地方，系統各功能頁下次載入就會讀到新資料
+   ══════════════════════════════════════════════════ */
+var API_URL = StoreConfig.getApiUrl();
+var ME = null;
+
+/* ── API ───────────────────────────────────────── */
+function apiGet(params, cb){
+  var qs = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);
+  }).join('&');
+  fetch(API_URL+'?'+qs).then(function(r){return r.json();})
+    .then(function(d){ cb&&cb(d); })
+    .catch(function(e){ console.warn(e); cb&&cb(null); });
+}
+function apiPost(params, cb){
+  var body = Object.keys(params).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(String(params[k]));
+  }).join('&');
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+    .then(function(r){return r.json();})
+    .then(function(d){ cb&&cb(d); })
+    .catch(function(e){ console.warn(e); cb&&cb(null); });
+}
+
+/* ── 小工具 ─────────────────────────────────────── */
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+var toastTimer;
+function toast(msg, bad){
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (bad ? ' bad' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.className = 'toast'; }, 2600);
+}
+function done(d, okMsg, reload){
+  if(!d){ toast('連線失敗，請檢查網路後再試一次', true); return false; }
+  if(!d.ok){ toast(d.error || '儲存失敗', true); return false; }
+  toast(d.message || okMsg);
+  if(reload) reload();
+  return true;
+}
+function val(id){ return ($(id).value || '').trim(); }
+function clear(){ for(var i=0;i<arguments.length;i++) $(arguments[i]).value=''; }
+
+/* ── 分頁定義 ───────────────────────────────────── */
+var TABS = [
+  {id:'emp',   name:'人員',    render:renderEmp},
+  {id:'prod',  name:'產品',    render:renderProd},
+  {id:'inv',   name:'盤點品項', render:renderInv},
+  {id:'stock', name:'進貨品項', render:renderStock},
+  {id:'jelly', name:'仙草凍',  render:renderJelly},
+  {id:'clean', name:'清潔',    render:renderClean},
+  {id:'cost',  name:'成本',    render:renderCost},
+  {id:'acc',   name:'帳號',    render:renderAcc},
+  {id:'line',  name:'LINE 通知', render:renderLine}
+];
+
+function buildTabs(){
+  $('tabs').innerHTML = TABS.map(function(t,i){
+    return '<button class="tab" role="tab" id="tab-'+t.id+'" aria-selected="'+(i===0)+'" '+
+           'onclick="go(\''+t.id+'\')">'+esc(t.name)+'</button>';
+  }).join('');
+  $('panels').innerHTML = TABS.map(function(t,i){
+    return '<section class="panel'+(i===0?' on':'')+'" id="panel-'+t.id+'"></section>';
+  }).join('');
+}
+var loaded = {};
+function go(id){
+  TABS.forEach(function(t){
+    $('tab-'+t.id).setAttribute('aria-selected', t.id===id);
+    $('panel-'+t.id).classList.toggle('on', t.id===id);
+  });
+  if(!loaded[id]){ loaded[id]=true; TABS.filter(function(t){return t.id===id;})[0].render(); }
+}
+function panel(id, html){ $('panel-'+id).innerHTML = html; }
+function busy(id, label){
+  panel(id, '<div class="card"><div class="empty">載入'+esc(label)+'…</div></div>');
+}
+
+/* ══════════════════════════════════════════════════
+   人員
+   ══════════════════════════════════════════════════ */
+function renderEmp(){
+  busy('emp','人員名單');
+  apiGet({action:'getEmps'}, function(d){
+    var list = (d && d.ok && d.data) ? d.data : [];
+    panel('emp',
+      '<div class="card">'+
+        '<h2 class="card-h">人員名單</h2>'+
+        '<p class="card-note">這份名單是全系統共用的。在這裡新增一位夥伴，溫度記錄、盤點、進貨、開收班、仙草凍等頁面的人員選單都會同步出現。</p>'+
+        '<div class="row">'+
+          '<div class="f"><label>姓名</label><input id="emp-name" placeholder="輸入姓名" autocomplete="off"></div>'+
+          '<button class="btn" onclick="empAdd()">新增夥伴</button>'+
+        '</div>'+
+        (list.length
+          ? '<div class="list">'+list.map(function(n){
+              return '<div class="item"><div class="item-main"><div class="item-name">'+esc(n)+'</div></div>'+
+                     '<button class="btn danger sm" onclick="empDel(\''+esc(n)+'\')">移除</button></div>';
+            }).join('')+'</div>'
+          : '<div class="empty">還沒有任何夥伴。<br>新增第一位，各功能頁的人員選單就會出現他。</div>')+
+      '</div>');
+  });
+}
+function empAdd(){
+  var n = val('emp-name');
+  if(!n){ toast('請先輸入姓名', true); return; }
+  apiGet({action:'addEmp', name:n}, function(d){
+    if(done(d,'已新增')) { clear('emp-name'); loaded.emp=false; go('emp'); }
+  });
+}
+function empDel(n){
+  if(!confirm('確定要把「'+n+'」從人員名單移除嗎？\n\n移除後，所有頁面的人員選單都不會再出現他。\n已經記錄過的歷史資料不受影響。')) return;
+  apiGet({action:'deleteEmp', name:n}, function(d){
+    if(done(d,'已移除')) { loaded.emp=false; go('emp'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   產品（收班記錄的飲品品項）
+   ══════════════════════════════════════════════════ */
+function renderProd(){
+  busy('prod','產品品項');
+  apiGet({action:'prodItemGetAll'}, function(d){
+    var list = (d && d.ok && d.data) ? d.data : [];
+    panel('prod',
+      '<div class="card">'+
+        '<h2 class="card-h">飲品品項</h2>'+
+        '<p class="card-note">收班表單的「買／取」欄位會依這份清單產生，佔比與加總也依此計算。'+
+        '新增品項時，收班記錄會自動補上對應欄位。<br>'+
+        '停用的品項只是不再出現在表單上，欄位與歷史資料都會保留。</p>'+
+        '<div class="row">'+
+          '<div class="f"><label>名稱</label><input id="pd-name" placeholder="例如：烏龍" autocomplete="off"></div>'+
+          '<div class="f"><label>代碼（英文）</label><input id="pd-code" placeholder="例如：Oolong" autocomplete="off"></div>'+
+          '<div class="f" style="flex:0 0 92px"><label>分類</label>'+
+            '<select id="pd-cat"><option value="風味">風味</option><option value="原味">原味</option></select></div>'+
+          '<button class="btn" onclick="prodAdd()">新增品項</button>'+
+        '</div>'+
+        (list.length
+          ? '<div class="list">'+list.map(function(it){
+              return '<div class="item'+(it.enabled?'':' off')+'">'+
+                '<div class="item-main">'+
+                  '<div class="item-name">'+esc(it.name)+
+                    '<span class="pill'+(it.cat==='風味'?' flav':'')+'">'+esc(it.cat)+'</span>'+
+                    (it.enabled?'':'<span class="pill stop">已停用</span>')+
+                  '</div>'+
+                  '<div class="item-meta">代碼 '+esc(it.code)+'　收班欄位：'+esc(it.name)+'買 / '+esc(it.name)+'取</div>'+
+                '</div>'+
+                (it.enabled
+                  ? '<button class="btn danger sm" onclick="prodStop(\''+esc(it.id)+'\',\''+esc(it.name)+'\')">停用</button>'
+                  : '<button class="btn ghost sm" onclick="prodOn('+JSON.stringify(it).replace(/"/g,'&quot;')+')">重新啟用</button>')+
+              '</div>';
+            }).join('')+'</div>'
+          : '<div class="empty">尚未建立品項。</div>')+
+      '</div>');
+  });
+}
+function prodAdd(){
+  var name = val('pd-name'), code = val('pd-code');
+  if(!name){ toast('請輸入品項名稱', true); return; }
+  if(!code){ toast('請輸入英文代碼', true); return; }
+  apiPost({action:'prodItemSave', name:name, code:code, cat:$('pd-cat').value}, function(d){
+    if(done(d,'已新增品項')) { clear('pd-name','pd-code'); loaded.prod=false; go('prod'); }
+  });
+}
+function prodStop(id, name){
+  if(!confirm('確定要停用「'+name+'」嗎？\n\n收班表單將不再顯示這個品項，\n但 Sheets 欄位與過去的記錄都會完整保留。')) return;
+  apiPost({action:'prodItemDelete', id:id}, function(d){
+    if(done(d,'已停用')) { loaded.prod=false; go('prod'); }
+  });
+}
+function prodOn(it){
+  apiPost({action:'prodItemSave', id:it.id, code:it.code, name:it.name,
+           cat:it.cat, order:it.order, enabled:'true', jelly:it.jelly||''}, function(d){
+    if(done(d,'已重新啟用')) { loaded.prod=false; go('prod'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   盤點品項
+   ══════════════════════════════════════════════════ */
+function renderInv(){
+  busy('inv','盤點品項');
+  apiGet({action:'invItemGetAll'}, function(d){
+    var list = (d && d.ok && d.data) ? d.data : [];
+    panel('inv',
+      '<div class="card">'+
+        '<h2 class="card-h">盤點品項</h2>'+
+        '<p class="card-note">日盤、週盤、月盤的清單依此產生。'+
+        '「小單位」是最小計數單位，中、大單位填了換算倍數才會在盤點時提供換算。</p>'+
+        '<div class="row">'+
+          '<div class="f"><label>名稱</label><input id="iv-name" placeholder="例如：封口膜" autocomplete="off"></div>'+
+          '<div class="f" style="flex:0 0 96px"><label>分類</label><input id="iv-cat" placeholder="耗材" autocomplete="off"></div>'+
+          '<div class="f" style="flex:0 0 96px"><label>盤點週期</label>'+
+            '<select id="iv-modes">'+
+              '<option value="DW">日盤＋週盤</option><option value="D">只有日盤</option>'+
+              '<option value="W">只有週盤</option><option value="M">只有月盤</option>'+
+              '<option value="DWM">日週月都盤</option>'+
+            '</select></div>'+
+        '</div>'+
+        '<div class="row">'+
+          '<div class="f" style="flex:0 0 90px"><label>小單位</label><input id="iv-sn" placeholder="個"></div>'+
+          '<div class="f" style="flex:0 0 90px"><label>中單位</label><input id="iv-mn" placeholder="條"></div>'+
+          '<div class="f" style="flex:0 0 110px"><label>一中＝幾小</label><input id="iv-ms" type="number" inputmode="decimal" placeholder="50"></div>'+
+          '<div class="f" style="flex:0 0 90px"><label>大單位</label><input id="iv-ln" placeholder="箱"></div>'+
+          '<div class="f" style="flex:0 0 110px"><label>一大＝幾中</label><input id="iv-lm" type="number" inputmode="decimal" placeholder="20"></div>'+
+          '<button class="btn" onclick="invAdd()">新增品項</button>'+
+        '</div>'+
+        (list.length
+          ? '<div class="list">'+list.map(function(it){
+              var u = [it.sn];
+              if(it.mn) u.push(it.mn+'（'+it.ms+it.sn+'）');
+              if(it.ln) u.push(it.ln+'（'+it.lm+it.mn+'）');
+              return '<div class="item"><div class="item-main">'+
+                '<div class="item-name">'+esc(it.name)+'<span class="pill">'+esc(it.cat||'未分類')+'</span></div>'+
+                '<div class="item-meta">'+esc(u.join(' · '))+'　週期 '+esc(it.modes)+'</div></div>'+
+                '<button class="btn danger sm" onclick="invDel(\''+esc(it.id)+'\',\''+esc(it.name)+'\')">刪除</button></div>';
+            }).join('')+'</div>'
+          : '<div class="empty">尚未建立盤點品項。</div>')+
+      '</div>');
+  });
+}
+function invAdd(){
+  var name = val('iv-name');
+  if(!name){ toast('請輸入品項名稱', true); return; }
+  if(!val('iv-sn')){ toast('請填寫小單位，盤點時需要它計數', true); return; }
+  apiPost({action:'invItemSave', name:name, cat:val('iv-cat'), modes:$('iv-modes').value,
+    sn:val('iv-sn'), mn:val('iv-mn'), ms:val('iv-ms')||0,
+    ln:val('iv-ln'), lm:val('iv-lm')||0, wu:'', sw:0, extra:'{}'}, function(d){
+    if(done(d,'已新增')) { clear('iv-name','iv-cat','iv-sn','iv-mn','iv-ms','iv-ln','iv-lm'); loaded.inv=false; go('inv'); }
+  });
+}
+function invDel(id, name){
+  if(!confirm('確定要刪除盤點品項「'+name+'」嗎？\n\n之後的盤點清單不會再出現它，\n已經盤過的歷史記錄不受影響。')) return;
+  apiPost({action:'invItemDelete', id:id}, function(d){
+    if(done(d,'已刪除')) { loaded.inv=false; go('inv'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   進貨品項 + 來源
+   ══════════════════════════════════════════════════ */
+function renderStock(){
+  busy('stock','進貨設定');
+  apiGet({action:'stockItemGetAll'}, function(a){
+    apiGet({action:'stockSourceGetAll'}, function(b){
+      var items = (a && a.ok && a.data) ? a.data : [];
+      var srcs  = (b && b.ok && b.data) ? b.data : [];
+      panel('stock',
+        '<div class="card">'+
+          '<h2 class="card-h">進貨品項</h2>'+
+          '<p class="card-note">進貨登記時可選的品項。單位由小到大填寫，換算倍數用來換算成最小單位總量。</p>'+
+          '<div class="row">'+
+            '<div class="f"><label>品項名稱</label><input id="sk-name" placeholder="例如：鮮奶" autocomplete="off"></div>'+
+            '<div class="f" style="flex:0 0 110px"><label>分類</label>'+
+              '<select id="sk-cat">'+
+                '<option value="dry">常溫</option><option value="cold">冷藏</option>'+
+                '<option value="pkg">包材</option><option value="sup">耗材</option>'+
+                '<option value="hw">五金</option>'+
+              '</select></div>'+
+          '</div>'+
+          '<div class="row">'+
+            '<div class="f" style="flex:0 0 90px"><label>最小單位</label><input id="sk-u1" placeholder="瓶"></div>'+
+            '<div class="f" style="flex:0 0 90px"><label>中單位</label><input id="sk-u2" placeholder="箱"></div>'+
+            '<div class="f" style="flex:0 0 110px"><label>一中＝幾小</label><input id="sk-q2" type="number" inputmode="decimal" placeholder="12"></div>'+
+            '<button class="btn" onclick="stockAdd()">新增品項</button>'+
+          '</div>'+
+          (items.length
+            ? '<div class="list">'+items.map(function(it){
+                var u = (it.units||[]).map(function(x){ return x.n+'×'+x.q; }).join(' · ');
+                return '<div class="item"><div class="item-main">'+
+                  '<div class="item-name">'+esc(it.name)+'</div>'+
+                  '<div class="item-meta">'+esc(u||'未設定單位')+'</div></div>'+
+                  '<button class="btn danger sm" onclick="stockDel(\''+esc(it.id)+'\',\''+esc(it.name)+'\')">刪除</button></div>';
+              }).join('')+'</div>'
+            : '<div class="empty">尚未建立進貨品項。</div>')+
+        '</div>'+
+        '<div class="card">'+
+          '<h2 class="card-h">進貨來源</h2>'+
+          '<p class="card-note">登記進貨時可選的來源，例如廠商、倉庫或人員採買。</p>'+
+          '<div class="row">'+
+            '<div class="f"><label>來源名稱</label><input id="sr-name" placeholder="例如：廠商直送" autocomplete="off"></div>'+
+            '<button class="btn" onclick="srcAdd()">新增來源</button>'+
+          '</div>'+
+          (srcs.length
+            ? '<div class="list">'+srcs.map(function(s){
+                return '<div class="item"><div class="item-main"><div class="item-name">'+esc(s)+'</div></div>'+
+                  '<button class="btn danger sm" onclick="srcDel(\''+esc(s)+'\')">刪除</button></div>';
+              }).join('')+'</div>'
+            : '<div class="empty">尚未建立進貨來源。</div>')+
+        '</div>');
+    });
+  });
+}
+function stockAdd(){
+  var name = val('sk-name');
+  if(!name){ toast('請輸入品項名稱', true); return; }
+  var u1 = val('sk-u1') || '個';
+  var units = [{n:u1, q:1}];
+  if(val('sk-u2')) units.push({n:val('sk-u2'), q:parseFloat(val('sk-q2'))||1});
+  apiPost({action:'stockItemSave', name:name, cat:$('sk-cat').value, units:JSON.stringify(units)}, function(d){
+    if(done(d,'已新增')) { clear('sk-name','sk-u1','sk-u2','sk-q2'); loaded.stock=false; go('stock'); }
+  });
+}
+function stockDel(id, name){
+  if(!confirm('確定要刪除進貨品項「'+name+'」嗎？\n\n已登記的進貨記錄不受影響。')) return;
+  apiPost({action:'stockItemDelete', id:id}, function(d){
+    if(done(d,'已刪除')) { loaded.stock=false; go('stock'); }
+  });
+}
+function srcAdd(){
+  var n = val('sr-name');
+  if(!n){ toast('請輸入來源名稱', true); return; }
+  apiPost({action:'stockSourceSave', name:n}, function(d){
+    if(done(d,'已新增')) { clear('sr-name'); loaded.stock=false; go('stock'); }
+  });
+}
+function srcDel(n){
+  if(!confirm('確定要刪除來源「'+n+'」嗎？')) return;
+  apiPost({action:'stockSourceDelete', name:n}, function(d){
+    if(done(d,'已刪除')) { loaded.stock=false; go('stock'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   仙草凍品項 / 桶號
+   ══════════════════════════════════════════════════ */
+function renderJelly(){
+  busy('jelly','仙草凍設定');
+  apiGet({action:'jellyGetConfig'}, function(d){
+    var items = (d && d.items) ? d.items : [];
+    panel('jelly',
+      '<div class="card">'+
+        '<h2 class="card-h">仙草凍品項與桶號</h2>'+
+        '<p class="card-note">仙草凍生產記錄的品項與桶號選單依此產生。'+
+        '人員清單已統一由「人員」分頁管理，這裡不再重複設定。</p>'+
+        '<div class="row">'+
+          '<div class="f"><label>品項名稱</label><input id="jl-item" placeholder="例如：芋香" autocomplete="off"></div>'+
+          '<button class="btn" onclick="jellyAddItem()">新增品項</button>'+
+        '</div>'+
+        (items.length
+          ? items.map(function(it){
+              return '<div class="sub-h">'+esc(it.name)+'　<span style="font-weight:400;color:var(--ink3)">'+
+                     (it.barrels.length||0)+' 桶</span>'+
+                     ' <button class="btn danger sm" style="float:right" onclick="jellyDelItem(\''+esc(it.name)+'\')">刪除品項</button></div>'+
+                '<div class="row">'+
+                  '<div class="f"><label>新增桶號到「'+esc(it.name)+'」</label>'+
+                    '<input id="jb-'+esc(it.name)+'" placeholder="例如：6號桶" autocomplete="off"></div>'+
+                  '<button class="btn ghost" onclick="jellyAddBarrel(\''+esc(it.name)+'\')">新增桶號</button>'+
+                '</div>'+
+                (it.barrels.length
+                  ? '<div class="list">'+it.barrels.map(function(b){
+                      return '<div class="item"><div class="item-main"><div class="item-name">'+esc(b)+'</div></div>'+
+                        '<button class="btn danger sm" onclick="jellyDelBarrel(\''+esc(it.name)+'\',\''+esc(b)+'\')">刪除</button></div>';
+                    }).join('')+'</div>'
+                  : '<div class="empty">這個品項還沒有桶號。</div>');
+            }).join('')
+          : '<div class="empty">尚未建立仙草凍品項。</div>')+
+      '</div>');
+  });
+}
+function jellyAddItem(){
+  var n = val('jl-item');
+  if(!n){ toast('請輸入品項名稱', true); return; }
+  apiGet({action:'jellyAddItem', name:n}, function(d){
+    if(done(d,'已新增品項')) { clear('jl-item'); loaded.jelly=false; go('jelly'); }
+  });
+}
+function jellyDelItem(n){
+  if(!confirm('確定要刪除仙草凍品項「'+n+'」嗎？\n\n它底下的桶號會一併移除。\n已完成的生產記錄不受影響。')) return;
+  apiGet({action:'jellyDelItem', name:n}, function(d){
+    if(done(d,'已刪除')) { loaded.jelly=false; go('jelly'); }
+  });
+}
+function jellyAddBarrel(item){
+  var el = $('jb-'+item);
+  var b = (el.value||'').trim();
+  if(!b){ toast('請輸入桶號', true); return; }
+  apiGet({action:'jellyAddBarrel', item:item, barrel:b}, function(d){
+    if(done(d,'已新增桶號')) { loaded.jelly=false; go('jelly'); }
+  });
+}
+function jellyDelBarrel(item, b){
+  if(!confirm('確定要刪除「'+item+' － '+b+'」嗎？')) return;
+  apiGet({action:'jellyDelBarrel', item:item, barrel:b}, function(d){
+    if(done(d,'已刪除')) { loaded.jelly=false; go('jelly'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   清潔：項目 / 區塊 / 器具
+   ══════════════════════════════════════════════════ */
+function renderClean(){
+  busy('clean','清潔設定');
+  apiGet({action:'cleanAreaGetAll'}, function(a){
+    apiGet({action:'cleanToolGetAll'}, function(t){
+      apiGet({action:'cleanItemGetAll'}, function(i){
+        var areas = (a && a.ok && a.data) ? a.data : [];
+        var tools = (t && t.ok && t.data) ? t.data : [];
+        var items = (i && i.ok && i.data) ? i.data : [];
+        var MODE = {daily:'日清潔', weekly:'週清潔', monthly:'月清潔'};
+        panel('clean',
+          '<div class="card">'+
+            '<h2 class="card-h">清潔項目</h2>'+
+            '<p class="card-note">清潔表單的檢查項目。勾選「需要填備註」時，員工執行後必須描述狀況。</p>'+
+            '<div class="row">'+
+              '<div class="f" style="flex:0 0 100px"><label>週期</label>'+
+                '<select id="cl-mode"><option value="daily">日清潔</option>'+
+                '<option value="weekly">週清潔</option><option value="monthly">月清潔</option></select></div>'+
+              '<div class="f" style="flex:0 0 120px"><label>區域</label>'+
+                '<select id="cl-area">'+areas.map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+'</select></div>'+
+              '<div class="f" style="flex:0 0 120px"><label>器具</label>'+
+                '<select id="cl-tool"><option value="">不指定</option>'+
+                tools.map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+'</select></div>'+
+            '</div>'+
+            '<div class="row">'+
+              '<div class="f"><label>清潔內容</label><input id="cl-task" placeholder="描述要做什麼" autocomplete="off"></div>'+
+              '<div class="f" style="flex:0 0 130px"><label>需要填備註</label>'+
+                '<select id="cl-need"><option value="false">不需要</option><option value="true">需要</option></select></div>'+
+              '<button class="btn" onclick="cleanAdd()">新增項目</button>'+
+            '</div>'+
+            ['daily','weekly','monthly'].map(function(m){
+              var g = items.filter(function(x){ return x.mode===m; });
+              if(!g.length) return '';
+              return '<div class="sub-h">'+MODE[m]+'（'+g.length+' 項）</div>'+
+                '<div class="list">'+g.map(function(it){
+                  return '<div class="item"><div class="item-main">'+
+                    '<div class="item-name">'+esc(it.task)+'</div>'+
+                    '<div class="item-meta">'+esc(it.area)+(it.tool?'　器具：'+esc(it.tool):'')+
+                    (it.needNote?'　需填備註':'')+'</div></div>'+
+                    '<button class="btn danger sm" onclick="cleanDel(\''+esc(it.id)+'\')">停用</button></div>';
+                }).join('')+'</div>';
+            }).join('')+
+            (items.length ? '' : '<div class="empty">尚未建立清潔項目。</div>')+
+          '</div>'+
+          '<div class="card">'+
+            '<h2 class="card-h">清潔區域</h2>'+
+            '<p class="card-note">店內的清潔分區，新增後會出現在上方的區域選單。</p>'+
+            '<div class="row">'+
+              '<div class="f"><label>區域名稱</label><input id="ca-name" placeholder="例如：冰塊櫃" autocomplete="off"></div>'+
+              '<button class="btn" onclick="areaAdd()">新增區域</button>'+
+            '</div>'+
+            (areas.length
+              ? '<div class="list">'+areas.map(function(x){
+                  return '<div class="item"><div class="item-main"><div class="item-name">'+esc(x)+'</div></div>'+
+                    '<button class="btn danger sm" onclick="areaDel(\''+esc(x)+'\')">刪除</button></div>';
+                }).join('')+'</div>'
+              : '<div class="empty">尚未建立清潔區域。</div>')+
+          '</div>'+
+          '<div class="card">'+
+            '<h2 class="card-h">清潔器具</h2>'+
+            '<p class="card-note">執行清潔時會用到的工具。</p>'+
+            '<div class="row">'+
+              '<div class="f"><label>器具名稱</label><input id="ct-name" placeholder="例如：抹布" autocomplete="off"></div>'+
+              '<button class="btn" onclick="toolAdd()">新增器具</button>'+
+            '</div>'+
+            (tools.length
+              ? '<div class="list">'+tools.map(function(x){
+                  return '<div class="item"><div class="item-main"><div class="item-name">'+esc(x)+'</div></div>'+
+                    '<button class="btn danger sm" onclick="toolDel(\''+esc(x)+'\')">刪除</button></div>';
+                }).join('')+'</div>'
+              : '<div class="empty">尚未建立清潔器具。</div>')+
+          '</div>');
+      });
+    });
+  });
+}
+function cleanAdd(){
+  var task = val('cl-task');
+  if(!task){ toast('請輸入清潔內容', true); return; }
+  apiPost({action:'cleanItemSave', mode:$('cl-mode').value, area:$('cl-area').value,
+    tool:$('cl-tool').value, task:task, needNote:$('cl-need').value,
+    noteTip:$('cl-need').value==='true'?'請描述狀況':'', order:99}, function(d){
+    if(done(d,'已新增')) { clear('cl-task'); loaded.clean=false; go('clean'); }
+  });
+}
+function cleanDel(id){
+  if(!confirm('確定要停用這個清潔項目嗎？\n\n清潔表單不會再顯示它，歷史記錄會保留。')) return;
+  apiPost({action:'cleanItemDelete', id:id}, function(d){
+    if(done(d,'已停用')) { loaded.clean=false; go('clean'); }
+  });
+}
+function areaAdd(){
+  var n = val('ca-name');
+  if(!n){ toast('請輸入區域名稱', true); return; }
+  apiPost({action:'cleanAreaSave', name:n}, function(d){
+    if(done(d,'已新增')) { clear('ca-name'); loaded.clean=false; go('clean'); }
+  });
+}
+function areaDel(n){
+  if(!confirm('確定要刪除區域「'+n+'」嗎？')) return;
+  apiPost({action:'cleanAreaDelete', name:n}, function(d){
+    if(done(d,'已刪除')) { loaded.clean=false; go('clean'); }
+  });
+}
+function toolAdd(){
+  var n = val('ct-name');
+  if(!n){ toast('請輸入器具名稱', true); return; }
+  apiPost({action:'cleanToolSave', name:n}, function(d){
+    if(done(d,'已新增')) { clear('ct-name'); loaded.clean=false; go('clean'); }
+  });
+}
+function toolDel(n){
+  if(!confirm('確定要刪除器具「'+n+'」嗎？')) return;
+  apiPost({action:'cleanToolDelete', name:n}, function(d){
+    if(done(d,'已刪除')) { loaded.clean=false; go('clean'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   成本設定
+   ══════════════════════════════════════════════════ */
+function renderCost(){
+  busy('cost','成本設定');
+  apiGet({action:'getClosingConfig'}, function(c){
+    apiGet({action:'cfgGetAll', prefix:'closing:'}, function(p){
+      var cfg = c || {wage:225, rent:1300, utility:500};
+      var pr  = (p && p.ok && p.data) ? p.data : {};
+      panel('cost',
+        '<div class="card">'+
+          '<h2 class="card-h">營運成本</h2>'+
+          '<p class="card-note">收班時的「平時數」與「每日盈虧」用這三個數字計算。'+
+          '<strong>新店開幕前務必改成實際數字</strong>——盈虧是在送出收班的當下就算好寫入的，事後修改不會回頭更正已送出的記錄。</p>'+
+          '<div class="row">'+
+            '<div class="f"><label>時薪（元）</label><input id="cs-wage" type="number" inputmode="decimal" value="'+esc(cfg.wage)+'"></div>'+
+            '<div class="f"><label>每日房租（元）</label><input id="cs-rent" type="number" inputmode="decimal" value="'+esc(cfg.rent)+'"></div>'+
+            '<div class="f"><label>每日水電（元）</label><input id="cs-util" type="number" inputmode="decimal" value="'+esc(cfg.utility)+'"></div>'+
+          '</div>'+
+          '<button class="btn" onclick="costSave()">儲存營運成本</button>'+
+        '</div>'+
+        '<div class="card">'+
+          '<h2 class="card-h">寄杯組單價</h2>'+
+          '<p class="card-note">收班時用來計算寄杯組金額，會從營業額中扣除後才算均杯單價。</p>'+
+          '<div class="row">'+
+            '<div class="f"><label>原味組（元）</label><input id="cs-po" type="number" inputmode="decimal" value="'+esc(pr['closing:priceOrig']||650)+'"></div>'+
+            '<div class="f"><label>風味組（元）</label><input id="cs-pf" type="number" inputmode="decimal" value="'+esc(pr['closing:priceFlav']||750)+'"></div>'+
+            '<div class="f"><label>超值組（元）</label><input id="cs-ps" type="number" inputmode="decimal" value="'+esc(pr['closing:priceSuper']||1400)+'"></div>'+
+          '</div>'+
+          '<button class="btn" onclick="priceSave()">儲存寄杯單價</button>'+
+        '</div>');
+    });
+  });
+}
+function costSave(){
+  apiGet({action:'setClosingConfig', wage:val('cs-wage')||0,
+          rent:val('cs-rent')||0, utility:val('cs-util')||0}, function(d){
+    done(d, '已儲存營運成本');
+  });
+}
+function priceSave(){
+  var keys = [['closing:priceOrig','cs-po'],['closing:priceFlav','cs-pf'],['closing:priceSuper','cs-ps']];
+  var left = keys.length, bad = false;
+  keys.forEach(function(k){
+    apiPost({action:'cfgSet', key:k[0], value:val(k[1])||0}, function(d){
+      if(!d || !d.ok) bad = true;
+      if(--left === 0) toast(bad ? '部分單價未能儲存，請再試一次' : '已儲存寄杯單價', bad);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   帳號
+   ══════════════════════════════════════════════════ */
+var ROLES = {'1':'系統最高管理員','2':'營運管理者','3':'店長','4':'副店長',
+             '5':'正職員工','6':'工讀生','7':'財務/會計','8':'外部顧問'};
+function renderAcc(){
+  busy('acc','帳號');
+  apiGet({action:'twGetAccounts'}, function(d){
+    var list = (d && d.ok && d.data) ? d.data : [];
+    panel('acc',
+      '<div class="card">'+
+        '<h2 class="card-h">登入帳號</h2>'+
+        '<p class="card-note">這份帳號只在本店有效。你在多家店都要能登入的話，每一家都需要各自建立一組。</p>'+
+        '<div class="row">'+
+          '<div class="f"><label>帳號</label><input id="ac-user" autocomplete="off"></div>'+
+          '<div class="f"><label>密碼</label><input id="ac-pass" type="password" autocomplete="new-password"></div>'+
+          '<div class="f"><label>姓名</label><input id="ac-name" autocomplete="off"></div>'+
+          '<div class="f" style="flex:0 0 130px"><label>角色</label>'+
+            '<select id="ac-role">'+Object.keys(ROLES).map(function(k){
+              return '<option value="'+k+'"'+(k==='5'?' selected':'')+'>'+k+' '+ROLES[k]+'</option>';
+            }).join('')+'</select></div>'+
+          '<button class="btn" onclick="accSave()">新增帳號</button>'+
+        '</div>'+
+        (list.length
+          ? '<div class="list">'+list.map(function(a){
+              return '<div class="item'+(a.enabled?'':' off')+'"><div class="item-main">'+
+                '<div class="item-name">'+esc(a.name||a.username)+
+                  '<span class="pill">'+esc(a.roleName||ROLES[a.role]||'')+'</span>'+
+                  (a.enabled?'':'<span class="pill stop">已停用</span>')+'</div>'+
+                '<div class="item-meta">帳號 '+esc(a.username)+'</div></div>'+
+                '<button class="btn ghost sm" onclick="accToggle(\''+esc(a.username)+'\','+(!a.enabled)+')">'+
+                (a.enabled?'停用':'啟用')+'</button></div>';
+            }).join('')+'</div>'
+          : '<div class="empty">尚無帳號資料。</div>')+
+      '</div>');
+  });
+}
+function accSave(){
+  var u = val('ac-user');
+  if(!u){ toast('請輸入帳號', true); return; }
+  if(!val('ac-pass')){ toast('請設定密碼', true); return; }
+  apiGet({action:'twSaveAccount', username:u, password:val('ac-pass'),
+          name:val('ac-name'), role:$('ac-role').value}, function(d){
+    if(done(d,'已新增帳號')) { clear('ac-user','ac-pass','ac-name'); loaded.acc=false; go('acc'); }
+  });
+}
+function accToggle(u, on){
+  apiGet({action:'twToggleAccount', username:u, enabled:on?'true':'false'}, function(d){
+    if(done(d, on?'已啟用':'已停用')) { loaded.acc=false; go('acc'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   LINE 通知成員
+   ══════════════════════════════════════════════════ */
+function renderLine(){
+  busy('line','LINE 成員');
+  apiGet({action:'getGroupMembers'}, function(d){
+    var ms = (d && d.members) ? d.members : [];
+    panel('line',
+      '<div class="card">'+
+        '<h2 class="card-h">LINE 通知成員</h2>'+
+        '<p class="card-note">系統發送通知時，可以 @ 這些成員。'+
+        '要加入名單的夥伴，請在店裡的 LINE 群組對本店機器人輸入「報到 姓名」（中間空一格），系統會自動記錄。</p>'+
+        (ms.length
+          ? '<div class="list">'+ms.map(function(m){
+              return '<div class="item"><div class="item-main">'+
+                '<div class="item-name">'+esc(m.name)+'</div>'+
+                '<div class="item-meta">'+esc(String(m.userId).slice(0,10))+'…</div></div>'+
+                '<button class="btn ghost sm" onclick="lineRename(\''+esc(m.userId)+'\',\''+esc(m.name)+'\')">改名</button>'+
+                '<button class="btn danger sm" onclick="lineDel(\''+esc(m.userId)+'\',\''+esc(m.name)+'\')">移除</button></div>';
+            }).join('')+'</div>'
+          : '<div class="empty">還沒有成員報到。<br>請夥伴在群組輸入「報到 姓名」完成登記。</div>')+
+      '</div>');
+  });
+}
+function lineRename(uid, old){
+  var n = prompt('把「'+old+'」改成什麼名字？', old);
+  if(n===null) return;
+  n = n.trim();
+  if(!n){ toast('名字不能空白', true); return; }
+  apiGet({action:'setMemberName', userId:uid, name:n}, function(d){
+    if(done(d,'已改名')) { loaded.line=false; go('line'); }
+  });
+}
+function lineDel(uid, name){
+  if(!confirm('確定要把「'+name+'」移出通知名單嗎？\n\n之後系統通知不會再 @ 他。\n他可以重新在群組輸入「報到 姓名」加回來。')) return;
+  apiGet({action:'deleteLineMember', userId:uid}, function(d){
+    if(done(d,'已移除')) { loaded.line=false; go('line'); }
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   權限檢查與啟動
+   ══════════════════════════════════════════════════ */
+(function init(){
+  document.querySelector('.top-sub').textContent =
+    StoreConfig.getBrandName() + ' · ' + StoreConfig.getStoreName();
+  document.title = '設定 · ' + StoreConfig.getStoreName();
+
+  var raw = null;
+  try { raw = sessionStorage.getItem('tw_user'); } catch(e){}
+  if(!raw){
+    $('gate').style.display = 'block';
+    $('gate').innerHTML = '<h2>請先登入</h2><p>設定頁需要登入後才能使用。<br>請回到系統首頁登入，再從側邊選單進入設定。</p>';
+    return;
+  }
+  try { ME = JSON.parse(raw); } catch(e){ ME = null; }
+  if(!ME){
+    $('gate').style.display = 'block';
+    $('gate').innerHTML = '<h2>登入資料已失效</h2><p>請回到首頁重新登入。</p>';
+    return;
+  }
+
+  var role = parseInt(ME.role, 10) || 9;
+  $('who').textContent = (ME.name || ME.username) + '　' + (ME.roleName || '');
+
+  if(role > 3){
+    $('gate').style.display = 'block';
+    $('gate').innerHTML = '<h2>你沒有設定權限</h2>'+
+      '<p>設定頁只開放給店長以上的角色使用。<br>'+
+      '目前登入的是「'+esc(ME.roleName || ('角色 '+role))+'」。<br><br>'+
+      '需要調整設定，請聯絡店長或管理者。</p>';
+    return;
+  }
+
+  $('app').style.display = 'block';
+  buildTabs();
+  go('emp');
+})();
+</script>
+</body>
+</html>
