@@ -14,6 +14,11 @@
       apiUrl: 'https://script.google.com/macros/s/AKfycbx3Aa4hVPPVYP8MwEEXVXTHLHHY2pQQ4f9A9BsMCymwKPGuxS7AsZ-AdQsBSX9gnBg/exec'
     },
 
+    changping: {
+      name: '昌平店',
+      apiUrl: 'https://script.google.com/macros/s/AKfycbzgmuhiiw8eZS2mcX8HZjrZZ0YdAWYEb9NPkSg6QNLv4xN45PvFrQJ70yXZ-HiNLMYG/exec'
+    },
+
     // ── 緊急回退用 ────────────────────────────────────────────
     // 若新後端出問題，把書籤網址加上 ?store=xueshi_old
     // 即可暫時切回舊帳號的後端（資料寫入舊試算表）
@@ -21,11 +26,6 @@
       name: '學士店（舊帳號備援）',
       apiUrl: 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec'
     }
-    // 開二店時範例（把下面這段取消註解、填入二店的部署網址）：
-    // store2: {
-    //   name: '二店',
-    //   apiUrl: 'https://script.google.com/macros/s/xxxxxxxxxxxxxxxx/exec'
-    // }
   };
 
   // 沒有帶 ?store= 參數、也沒有本機記錄時，預設用哪一店
