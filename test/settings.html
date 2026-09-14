@@ -152,34 +152,40 @@ function val(id){ return ($(id).value || '').trim(); }
 function clear(){ for(var i=0;i<arguments.length;i++) $(arguments[i]).value=''; }
 
 /* ── 分頁定義 ───────────────────────────────────── */
+/* minRole：可使用該分頁的最低角色代碼（數字越小權限越高）
+   帳號分頁沿用首頁既有政策，只開放給 1 級，不因設定頁而放寬 */
 var TABS = [
-  {id:'emp',   name:'人員',    render:renderEmp},
-  {id:'prod',  name:'產品',    render:renderProd},
-  {id:'inv',   name:'盤點品項', render:renderInv},
-  {id:'stock', name:'進貨品項', render:renderStock},
-  {id:'jelly', name:'仙草凍',  render:renderJelly},
-  {id:'clean', name:'清潔',    render:renderClean},
-  {id:'cost',  name:'成本',    render:renderCost},
-  {id:'acc',   name:'帳號',    render:renderAcc},
-  {id:'line',  name:'LINE 通知', render:renderLine}
+  {id:'emp',   name:'人員',    minRole:3, render:renderEmp},
+  {id:'prod',  name:'產品',    minRole:3, render:renderProd},
+  {id:'inv',   name:'盤點品項', minRole:3, render:renderInv},
+  {id:'stock', name:'進貨品項', minRole:3, render:renderStock},
+  {id:'jelly', name:'仙草凍',  minRole:3, render:renderJelly},
+  {id:'clean', name:'清潔',    minRole:3, render:renderClean},
+  {id:'cost',  name:'成本',    minRole:2, render:renderCost},
+  {id:'acc',   name:'帳號',    minRole:1, render:renderAcc},
+  {id:'line',  name:'LINE 通知', minRole:3, render:renderLine}
 ];
+var MY_TABS = [];
 
 function buildTabs(){
-  $('tabs').innerHTML = TABS.map(function(t,i){
+  $('tabs').innerHTML = MY_TABS.map(function(t,i){
     return '<button class="tab" role="tab" id="tab-'+t.id+'" aria-selected="'+(i===0)+'" '+
            'onclick="go(\''+t.id+'\')">'+esc(t.name)+'</button>';
   }).join('');
-  $('panels').innerHTML = TABS.map(function(t,i){
+  $('panels').innerHTML = MY_TABS.map(function(t,i){
     return '<section class="panel'+(i===0?' on':'')+'" id="panel-'+t.id+'"></section>';
   }).join('');
 }
 var loaded = {};
 function go(id){
-  TABS.forEach(function(t){
+  MY_TABS.forEach(function(t){
     $('tab-'+t.id).setAttribute('aria-selected', t.id===id);
     $('panel-'+t.id).classList.toggle('on', t.id===id);
   });
-  if(!loaded[id]){ loaded[id]=true; TABS.filter(function(t){return t.id===id;})[0].render(); }
+  if(!loaded[id]){
+    loaded[id]=true;
+    MY_TABS.filter(function(t){return t.id===id;})[0].render();
+  }
 }
 function panel(id, html){ $('panel-'+id).innerHTML = html; }
 function busy(id, label){
@@ -793,8 +799,9 @@ function lineDel(uid, name){
   }
 
   $('app').style.display = 'block';
+  MY_TABS = TABS.filter(function(t){ return role <= t.minRole; });
   buildTabs();
-  go('emp');
+  go(MY_TABS[0].id);
 })();
 </script>
 </body>

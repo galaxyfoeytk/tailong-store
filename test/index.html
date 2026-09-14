@@ -284,6 +284,7 @@ tbody tr:hover td{background:#FAFCFF}
       </div>
       <div class="sidebar-section">
         <div class="sidebar-lbl">系統管理</div>
+        <button class="nav-item" id="nav-settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span>系統設定</button>
         <button class="nav-item" id="nav-accounts" onclick="showPage('accounts')"><span class="nav-icon">👤</span>帳號管理</button>
       </div>
     </div>
@@ -392,6 +393,9 @@ tbody tr:hover td{background:#FAFCFF}
       <!-- 各系統用 iframe 載入 -->
       <div class="page" id="page-temp" style="padding:0;margin:-14px">
         <iframe class="system-frame" id="frame-temp" src="" title="溫度記錄"></iframe>
+      </div>
+      <div class="page" id="page-settings" style="padding:0;margin:-14px">
+        <iframe class="system-frame" id="frame-settings" src="" title="系統設定"></iframe>
       </div>
       <div class="page" id="page-jelly" style="padding:0;margin:-14px">
         <iframe class="system-frame" id="frame-jelly" src="" title="仙草凍記錄"></iframe>
@@ -584,7 +588,7 @@ var ROLE_NAMES = {
 // 各功能最低可存取的角色（數字越大=限制越少）
 // 代表「角色代碼 <= 此值才可存取」
 var PAGE_PERM = {
-  home:8, handover:6, temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:5, inventory:6, cleaning:6, accounts:1
+  home:8, handover:6, temp:6, jelly:5, stock:4, elec:6, checklist:5, closing:5, inventory:6, cleaning:6, accounts:1, settings:3
 };
 // 各功能是否可寫入（角色代碼 <= 此值才可新增/修改）
 var WRITE_PERM = {
@@ -738,7 +742,7 @@ function showPage(p){
   curPage=p;
   closeSidebar();
   // 第一次進入時才載入 iframe
-  var frames=['temp','jelly','stock','elec','checklist','closing','inventory','cleaning'];
+  var frames=['temp','jelly','stock','elec','checklist','closing','inventory','cleaning','settings'];
   if(frames.indexOf(p)>-1 && !framesLoaded[p]){
     document.getElementById('frame-'+p).src=p+'.html';
     framesLoaded[p]=true;
