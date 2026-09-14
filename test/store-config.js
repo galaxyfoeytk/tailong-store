@@ -10,6 +10,15 @@
   var STORES = {
     xueshi: {
       name: '學士店',
+      // 2026/09 搬遷至公司帳號後的新部署網址
+      apiUrl: 'https://script.google.com/macros/s/AKfycbx3Aa4hVPPVYP8MwEEXVXTHLHHY2pQQ4f9A9BsMCymwKPGuxS7AsZ-AdQsBSX9gnBg/exec'
+    },
+
+    // ── 緊急回退用 ────────────────────────────────────────────
+    // 若新後端出問題，把書籤網址加上 ?store=xueshi_old
+    // 即可暫時切回舊帳號的後端（資料寫入舊試算表）
+    xueshi_old: {
+      name: '學士店（舊帳號備援）',
       apiUrl: 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec'
     }
     // 開二店時範例（把下面這段取消註解、填入二店的部署網址）：
