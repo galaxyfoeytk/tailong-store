@@ -17,20 +17,24 @@
   var STORES = {
     xueshi: {
       name: '學士店',
+      hq: true,                 // 納入總部統計
       // 2026/09 搬遷至公司帳號後的新部署網址
       apiUrl: 'https://script.google.com/macros/s/AKfycbx3Aa4hVPPVYP8MwEEXVXTHLHHY2pQQ4f9A9BsMCymwKPGuxS7AsZ-AdQsBSX9gnBg/exec'
     },
 
     changping: {
       name: '昌平店',
+      hq: true,                 // 納入總部統計
       apiUrl: 'https://script.google.com/macros/s/AKfycbzgmuhiiw8eZS2mcX8HZjrZZ0YdAWYEb9NPkSg6QNLv4xN45PvFrQJ70yXZ-HiNLMYG/exec'
     },
 
     // ── 緊急回退用 ────────────────────────────────────────────
     // 若新後端出問題，把書籤網址加上 ?store=xueshi_old
     // 即可暫時切回舊帳號的後端（資料寫入舊試算表）
+    // hq:false — 不納入總部統計，否則學士店會被重複計算
     xueshi_old: {
       name: '學士店（舊帳號備援）',
+      hq: false,
       apiUrl: 'https://script.google.com/macros/s/AKfycbxCl8Kk2rj083r4CEbaf4eB3uSPmDE5aNv-92KD-NTfbARMXTjjgxC9uVWcZfNQ54GG/exec'
     }
   };
@@ -73,6 +77,14 @@
     getStoreCode: function () { return code; },
     getBrandName: function () { return BRAND_NAME; },
     allStores: STORES,
+    // 總部統計用：回傳所有納入統計的店（排除備援項目）
+    hqStores: function () {
+      return Object.keys(STORES)
+        .filter(function (k) { return STORES[k].hq === true; })
+        .map(function (k) {
+          return { code: k, name: STORES[k].name, apiUrl: STORES[k].apiUrl };
+        });
+    },
     applyBranding: applyBranding
   };
 

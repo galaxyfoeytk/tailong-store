@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="store-config.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>總部看板</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;--gm:#3DA86A;
+  --amber:#8A5500;--amberl:#FFF0D0;
+  --red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;--ink4:#C8D4DF;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;
+  --r:14px;--r2:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:14px}
+button,input,select{font-family:inherit;font-size:14px}
+button{cursor:pointer}
+
+.top{background:var(--b);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:30}
+.top-title{font-weight:900;font-size:16px}
+.top-sub{font-size:11px;opacity:.75;margin-top:1px}
+.who{font-size:11px;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px;white-space:nowrap}
+
+/* 篩選列 */
+.filters{background:var(--white);border-bottom:1px solid var(--bd);padding:10px 12px;position:sticky;top:56px;z-index:29}
+.fgroup{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.fgroup::-webkit-scrollbar{display:none}
+.fgroup+.fgroup{margin-top:7px}
+.chip{flex:0 0 auto;padding:6px 13px;border-radius:18px;border:1px solid var(--bd);background:var(--white);color:var(--ink2);font-weight:700;font-size:12.5px}
+.chip[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
+.chip.store[aria-pressed="true"]{background:var(--g);border-color:var(--g)}
+.range{display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap}
+.range input{padding:6px 8px;border:1px solid var(--bd);border-radius:8px;font-size:12.5px}
+.range span{font-size:12px;color:var(--ink3)}
+
+.wrap{padding:14px;max-width:1080px;margin:0 auto}
+.card{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card-h{font-weight:900;font-size:15px;margin:0 0 3px}
+.card-note{font-size:12px;color:var(--ink3);margin:0 0 12px;line-height:1.6}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px;margin-bottom:12px}
+.kpi{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:12px 13px}
+.kpi-lbl{font-size:11px;color:var(--ink3);font-weight:700}
+.kpi-val{font-size:22px;font-weight:900;margin-top:3px;letter-spacing:-.5px}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:3px}
+.kpi.rev .kpi-val{color:var(--b)}
+.kpi.pos .kpi-val{color:var(--g)}
+.kpi.neg .kpi-val{color:var(--red)}
+
+/* 圖表 */
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px}
+.lg{display:flex;align-items:center;gap:5px;color:var(--ink2)}
+.sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+
+/* 表格 */
+.tblwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:var(--r2)}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--bd)}
+th{background:var(--bl);color:var(--b);font-weight:700;font-size:12px;position:sticky;top:0}
+td:first-child,th:first-child{text-align:left}
+td.txt,th.txt{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:#FAFCFE}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:var(--bl);color:var(--b)}
+.tag.s1{background:var(--gl);color:var(--g)}
+.tag.s2{background:var(--amberl);color:var(--amber)}
+.neg{color:var(--red)}
+
+.empty{padding:30px 14px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8}
+.err{padding:12px;background:var(--redl);color:var(--red);border-radius:var(--r2);font-size:13px;line-height:1.7;margin-bottom:12px}
+.gate{padding:56px 22px;text-align:center;color:var(--ink2);line-height:1.9}
+.gate h2{color:var(--b)}
+.muted{color:var(--ink3)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="top-title">總部看板</div>
+    <div class="top-sub" id="brand">瀧飲山丘</div>
+  </div>
+  <span class="who" id="who"></span>
+</div>
+
+<div id="gate" class="gate" style="display:none"></div>
+
+<div id="app" style="display:none">
+  <div class="filters">
+    <div class="fgroup" id="f-store"></div>
+    <div class="fgroup" id="f-rec"></div>
+    <div class="range">
+      <span>期間</span>
+      <input type="date" id="d1"> <span>→</span> <input type="date" id="d2">
+      <button class="chip" onclick="quick(30)">近 30 天</button>
+      <button class="chip" onclick="quick(90)">近 90 天</button>
+      <button class="chip" onclick="quick(0)">本月</button>
+    </div>
+  </div>
+  <div class="wrap" id="out"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   總部看板 — 跨店歷史數據檢視（唯讀）
+   直接呼叫各店的 Apps Script API，在瀏覽器端合併
+   ══════════════════════════════════════════════════ */
+var STORES = StoreConfig.hqStores();
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+/* ── 數字格式 ───────────────────────────────────── */
+function money(n){ return '$' + Math.round(n||0).toLocaleString('en-US'); }
+function num(n,d){ var f=Math.pow(10,d||0); return (Math.round((n||0)*f)/f).toLocaleString('en-US'); }
+function pct(n){ return (Math.round((n||0)*1000)/10) + '%'; }
+function ymd(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ── 狀態 ───────────────────────────────────────── */
+var state = { store:'all', rec:'closing', d1:'', d2:'' };
+var RECS = [
+  {id:'closing', name:'營運（收班）'},
+  {id:'inv',     name:'盤點'},
+  {id:'stock',   name:'進貨'},
+  {id:'jelly',   name:'仙草凍'},
+  {id:'elec',    name:'用電'},
+  {id:'clean',   name:'清潔'}
+];
+
+/* ── 跨店抓取 ───────────────────────────────────── */
+function targets(){
+  return state.store==='all' ? STORES : STORES.filter(function(s){ return s.code===state.store; });
+}
+function fetchAll(buildParams, cb){
+  var list = targets();
+  var out = [], errs = [], left = list.length;
+  if(!left){ cb([], ['沒有可查詢的店面']); return; }
+  list.forEach(function(st){
+    var p  = buildParams(st);
+    var qs = Object.keys(p).map(function(k){
+      return encodeURIComponent(k)+'='+encodeURIComponent(p[k]); }).join('&');
+    fetch(st.apiUrl+'?'+qs)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok !== false){
+          var rows = d.data || d.members || [];
+          rows.forEach(function(r){ r._store = st.name; r._code = st.code; });
+          out = out.concat(rows);
+        } else {
+          errs.push(st.name + '：' + ((d&&d.error) || '讀取失敗'));
+        }
+        if(--left===0) cb(out, errs);
+      })
+      .catch(function(){
+        errs.push(st.name + '：連線失敗');
+        if(--left===0) cb(out, errs);
+      });
+  });
+}
+
+/* ── 迷你 SVG 圖表（不依賴任何外部套件）──────────── */
+function lineChart(series, opts){
+  opts = opts || {};
+  var W=700, H=210, P={t:12,r:12,b:26,l:52};
+  var all=[]; series.forEach(function(s){ s.pts.forEach(function(p){ all.push(p.v); }); });
+  if(!all.length) return '<div class="empty">這段期間沒有資料。</div>';
+  var max=Math.max.apply(null,all), min=Math.min.apply(null,all.concat([0]));
+  if(max===min) max=min+1;
+  var labels = series[0].pts.map(function(p){ return p.k; });
+  var n = labels.length;
+  var x = function(i){ return P.l + (n<=1 ? 0 : (W-P.l-P.r)*i/(n-1)); };
+  var y = function(v){ return P.t + (H-P.t-P.b)*(1-(v-min)/(max-min)); };
+
+  var grid='', ticks=4;
+  for(var g=0; g<=ticks; g++){
+    var gv=min+(max-min)*g/ticks, gy=y(gv);
+    grid += '<line x1="'+P.l+'" y1="'+gy+'" x2="'+(W-P.r)+'" y2="'+gy+'" stroke="#E4EAF2"/>'+
+            '<text x="'+(P.l-7)+'" y="'+(gy+4)+'" font-size="10" fill="#7A8A9C" text-anchor="end">'+
+            (opts.money?num(gv/1000,1)+'k':num(gv,0))+'</text>';
+  }
+  var paths = series.map(function(s){
+    var d = s.pts.map(function(p,i){ return (i?'L':'M')+x(i)+' '+y(p.v); }).join(' ');
+    var dots = s.pts.map(function(p,i){
+      return '<circle cx="'+x(i)+'" cy="'+y(p.v)+'" r="2.6" fill="'+s.c+'"><title>'+
+             esc(p.k)+'　'+(opts.money?money(p.v):num(p.v,1))+'</title></circle>'; }).join('');
+    return '<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2.2" stroke-linejoin="round"/>'+dots;
+  }).join('');
+  var step = Math.max(1, Math.ceil(n/7));
+  var xlab = labels.map(function(l,i){
+    return i%step ? '' : '<text x="'+x(i)+'" y="'+(H-8)+'" font-size="10" fill="#7A8A9C" text-anchor="middle">'+esc(l)+'</text>';
+  }).join('');
+
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img">'+grid+paths+xlab+'</svg>'+
+    '<div class="legend">'+series.map(function(s){
+      return '<span class="lg"><span class="sw" style="background:'+s.c+'"></span>'+esc(s.name)+'</span>';
+    }).join('')+'</div>';
+}
+
+function barChart(items, opts){
+  opts=opts||{};
+  if(!items.length) return '<div class="empty">沒有可比較的資料。</div>';
+  var W=700, rowH=30, H=items.length*rowH+10, L=110;
+  var max=Math.max.apply(null,items.map(function(i){return i.v;}));
+  if(max<=0) max=1;
+  var bars = items.map(function(it,i){
+    var w=(W-L-70)*it.v/max, yy=i*rowH+6;
+    return '<rect x="'+L+'" y="'+yy+'" width="'+Math.max(w,1)+'" height="17" rx="4" fill="'+(it.c||'#4A7CB5')+'"/>'+
+      '<text x="'+(L-8)+'" y="'+(yy+13)+'" font-size="12" fill="#3A4A5C" text-anchor="end">'+esc(it.k)+'</text>'+
+      '<text x="'+(L+w+7)+'" y="'+(yy+13)+'" font-size="11.5" font-weight="700" fill="#0F1923">'+
+      (opts.money?money(it.v):num(it.v,opts.d||0))+'</text>';
+  }).join('');
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img">'+bars+'</svg>';
+}
+
+var PAL=['#1A3A5C','#3DA86A','#C07000','#5B2D8E','#C0302A','#4A7CB5','#1A6B3C','#8A5500'];
+
+/* ── 篩選列 ─────────────────────────────────────── */
+function buildFilters(){
+  $('f-store').innerHTML =
+    '<button class="chip store" aria-pressed="true" onclick="setStore(\'all\')">全部門市</button>' +
+    STORES.map(function(s){
+      return '<button class="chip store" aria-pressed="false" onclick="setStore(\''+s.code+'\')">'+esc(s.name)+'</button>';
+    }).join('');
+  $('f-rec').innerHTML = RECS.map(function(r,i){
+    return '<button class="chip" aria-pressed="'+(i===0)+'" onclick="setRec(\''+r.id+'\')">'+esc(r.name)+'</button>';
+  }).join('');
+}
+function setStore(code){
+  state.store = code;
+  var btns = $('f-store').querySelectorAll('.chip');
+  btns[0].setAttribute('aria-pressed', code==='all');
+  STORES.forEach(function(s,i){ btns[i+1].setAttribute('aria-pressed', s.code===code); });
+  load();
+}
+function setRec(id){
+  state.rec = id;
+  var btns = $('f-rec').querySelectorAll('.chip');
+  RECS.forEach(function(r,i){ btns[i].setAttribute('aria-pressed', r.id===id); });
+  load();
+}
+function quick(days){
+  var now = new Date(), s;
+  if(days===0) s = new Date(now.getFullYear(), now.getMonth(), 1);
+  else { s = new Date(); s.setDate(s.getDate()-days+1); }
+  $('d1').value = ymd(s); $('d2').value = ymd(now);
+  state.d1 = $('d1').value; state.d2 = $('d2').value;
+  load();
+}
+
+/* ── 載入 ───────────────────────────────────────── */
+function load(){
+  state.d1 = $('d1').value; state.d2 = $('d2').value;
+  $('out').innerHTML = '<div class="card"><div class="empty">讀取各店資料中…</div></div>';
+  ({closing:loadClosing, inv:loadInv, stock:loadStock,
+    jelly:loadJelly, elec:loadElec, clean:loadClean})[state.rec]();
+}
+function errBox(errs){
+  return errs.length ? '<div class="err">部分資料未能讀取：<br>'+errs.map(esc).join('<br>')+'</div>' : '';
+}
+function inRange(d){
+  if(state.d1 && d < state.d1) return false;
+  if(state.d2 && d > state.d2) return false;
+  return true;
+}
+
+/* ── 營運（收班）───────────────────────────────── */
+function loadClosing(){
+  fetchAll(function(){ return {action:'closingGetAll', startDate:state.d1, endDate:state.d2}; },
+  function(rows, errs){
+    rows = rows.filter(function(r){ return r.date; });
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有收班記錄。<br>試著把期間拉長，或切換其他門市。</div></div>'; return; }
+
+    var rev=0, cups=0, profit=0, panda=0, deliv=0, orig=0, flav=0;
+    rows.forEach(function(r){
+      rev+=+r.revenue||0; cups+=+r.totalCups||0; profit+=+r.dailyProfit||0;
+      panda+=+r.pandaAmt||0; deliv+=+r.deliveryAmt||0;
+      orig+=+r.origTotal||0; flav+=+r.flavTotal||0;
+    });
+    var days = {}; rows.forEach(function(r){ days[r.date]=1; });
+    var dayCount = Object.keys(days).length;
+    var avgCup = cups>0 ? rev/cups : 0;
+
+    // 每日營業額趨勢（依店分線）
+    var byDate = {};
+    rows.forEach(function(r){
+      byDate[r.date] = byDate[r.date] || {};
+      byDate[r.date][r._store] = (byDate[r.date][r._store]||0) + (+r.revenue||0);
+    });
+    var dates = Object.keys(byDate).sort();
+    var names = state.store==='all' ? STORES.map(function(s){return s.name;})
+                                    : [targets()[0].name];
+    var series = names.map(function(nm,i){
+      return { name:nm, c:PAL[i%PAL.length],
+               pts:dates.map(function(d){ return {k:d.slice(5), v:byDate[d][nm]||0}; }) };
+    });
+
+    // 店別比較
+    var byStore={};
+    rows.forEach(function(r){
+      byStore[r._store] = byStore[r._store] || {rev:0,cups:0,profit:0,days:{}};
+      byStore[r._store].rev += +r.revenue||0;
+      byStore[r._store].cups += +r.totalCups||0;
+      byStore[r._store].profit += +r.dailyProfit||0;
+      byStore[r._store].days[r.date]=1;
+    });
+
+    rows.sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+    $('out').innerHTML = errBox(errs) +
+      '<div class="kpis">'+
+        kpi('總營業額', money(rev), dayCount+' 個營業日', 'rev')+
+        kpi('總杯數', num(cups), '日均 '+num(cups/(dayCount||1),0)+' 杯')+
+        kpi('均杯單價', money(avgCup), '含外送與寄杯')+
+        kpi('盈虧合計', money(profit), profit>=0?'期間為正':'期間為負', profit>=0?'pos':'neg')+
+        kpi('原味 / 風味', num(orig)+' / '+num(flav), orig+flav>0?('風味佔 '+pct(flav/(orig+flav))):'—')+
+        kpi('熊貓外送', money(panda), '外送金額 '+money(deliv))+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">每日營業額</h2>'+
+        '<p class="card-note">滑過線上的點可看當日金額。縱軸單位為千元。</p>'+
+        lineChart(series, {money:true})+'</div>'+
+      (state.store==='all' ? '<div class="card"><h2 class="card-h">門市比較</h2>'+
+        '<p class="card-note">期間累計，括號內為營業天數。</p>'+
+        barChart(Object.keys(byStore).map(function(nm,i){
+          return {k:nm+'（'+Object.keys(byStore[nm].days).length+'天）', v:byStore[nm].rev, c:PAL[i%PAL.length]};
+        }), {money:true})+'</div>' : '')+
+      '<div class="card"><h2 class="card-h">每日明細</h2>'+
+        '<p class="card-note">共 '+rows.length+' 筆，由新到舊。</p>'+
+        table(['日期','門市','人員','營業額','總杯數','均杯單價','原味','風味','盈虧'],
+          rows.map(function(r){
+            return ['<span class="txt">'+esc(r.date)+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              esc(r.person||'—'), money(r.revenue), num(r.totalCups),
+              money(r.avgPrice), num(r.origTotal), num(r.flavTotal),
+              '<span class="'+((+r.dailyProfit||0)<0?'neg':'')+'">'+money(r.dailyProfit)+'</span>'];
+          }), [0,1,2])+
+      '</div>';
+  });
+}
+
+/* ── 盤點 ───────────────────────────────────────── */
+function loadInv(){
+  var ym = (state.d1||'').slice(0,7);
+  fetchAll(function(){ return {action:'invGetAll', ym:''}; }, function(rows, errs){
+    rows = rows.filter(function(r){
+      var d = String(r.date||'').slice(0,10); return d && inRange(d);
+    });
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有盤點記錄。</div></div>'; return; }
+
+    var need = rows.filter(function(r){ return (+r.need||0) > 0; });
+    var byItem={};
+    need.forEach(function(r){
+      var k=r.item||'—';
+      byItem[k] = byItem[k] || {qty:0, times:0, unit:r.needUnit||r.unit||''};
+      byItem[k].qty += +r.need||0; byItem[k].times++;
+    });
+    var top = Object.keys(byItem).map(function(k){
+      return {k:k, v:byItem[k].times, qty:byItem[k].qty, unit:byItem[k].unit};
+    }).sort(function(a,b){ return b.v-a.v; }).slice(0,12);
+
+    var sess={}; rows.forEach(function(r){ sess[r.id]=1; });
+    rows.sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+
+    $('out').innerHTML = errBox(errs)+
+      '<div class="kpis">'+
+        kpi('盤點筆數', num(rows.length), Object.keys(sess).length+' 次盤點')+
+        kpi('需補貨品項', num(need.length), '佔 '+pct(need.length/rows.length))+
+        kpi('不重複品項', num(Object.keys(byItem).length), '曾出現缺貨')+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">最常需要補貨的品項</h2>'+
+        '<p class="card-note">依「出現需補貨的次數」排序。次數高代表這個品項的最低存量可能設得太低，值得檢討。</p>'+
+        barChart(top.map(function(t,i){ return {k:t.k, v:t.v, c:PAL[i%PAL.length]}; }))+'</div>'+
+      '<div class="card"><h2 class="card-h">盤點明細</h2>'+
+        '<p class="card-note">共 '+rows.length+' 筆，由新到舊。</p>'+
+        table(['日期','門市','類型','人員','品項','現有','需補','單位'],
+          rows.slice(0,400).map(function(r){
+            return ['<span class="txt">'+esc(String(r.date).slice(0,10))+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              esc(r.mode||''), esc(r.person||''), '<span class="txt">'+esc(r.item||'')+'</span>',
+              num(r.current,1), (+r.need>0?'<strong>'+num(r.need,1)+'</strong>':'—'), esc(r.needUnit||r.unit||'')];
+          }), [0,1,2,3,4,7])+
+      '</div>';
+  });
+}
+
+/* ── 進貨 ───────────────────────────────────────── */
+function loadStock(){
+  fetchAll(function(){ return {action:'stockGetAll'}; }, function(rows, errs){
+    rows = rows.filter(function(r){ return r.date && inRange(r.date); });
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有進貨記錄。</div></div>'; return; }
+
+    var amt=0, exp=0, inv=0;
+    var bySrc={}, byCat={};
+    rows.forEach(function(r){
+      var a = +r.amt||0; amt+=a;
+      if(r.expense) exp+=a;
+      if(r.invoice) inv+=a;
+      bySrc[r.src||'未填'] = (bySrc[r.src||'未填']||0)+a;
+      byCat[r.catName||'未分類'] = (byCat[r.catName||'未分類']||0)+a;
+    });
+    rows.sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+    $('out').innerHTML = errBox(errs)+
+      '<div class="kpis">'+
+        kpi('進貨總額', money(amt), rows.length+' 筆')+
+        kpi('已列支出', money(exp), '佔 '+pct(amt?exp/amt:0))+
+        kpi('有發票', money(inv), '佔 '+pct(amt?inv/amt:0))+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">進貨來源</h2>'+
+        '<p class="card-note">依金額排序。可看出哪些來源佔比最重。</p>'+
+        barChart(Object.keys(bySrc).map(function(k,i){ return {k:k,v:bySrc[k],c:PAL[i%PAL.length]}; })
+          .sort(function(a,b){return b.v-a.v;}), {money:true})+'</div>'+
+      '<div class="card"><h2 class="card-h">分類佔比</h2>'+
+        barChart(Object.keys(byCat).map(function(k,i){ return {k:k,v:byCat[k],c:PAL[(i+3)%PAL.length]}; })
+          .sort(function(a,b){return b.v-a.v;}), {money:true})+'</div>'+
+      '<div class="card"><h2 class="card-h">進貨明細</h2>'+
+        '<p class="card-note">共 '+rows.length+' 筆，由新到舊。</p>'+
+        table(['日期','門市','品項','來源','金額','支出','發票','人員'],
+          rows.slice(0,400).map(function(r){
+            return ['<span class="txt">'+esc(r.date)+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              '<span class="txt">'+esc(r.itemName||'')+'</span>', esc(r.src||'—'),
+              money(r.amt), r.expense?'是':'否', r.invoice?'有':'無', esc(r.person||'')];
+          }), [0,1,2,3,5,6,7])+
+      '</div>';
+  });
+}
+
+/* ── 仙草凍 ─────────────────────────────────────── */
+function loadJelly(){
+  fetchAll(function(){ return {action:'jellyGetLogs'}; }, function(rows, errs){
+    rows = rows.filter(function(r){
+      var d = String(r.finishedAt||'').slice(0,10).replace(/\//g,'-');
+      r._d = d; return d && inRange(d);
+    });
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有完成的仙草凍記錄。</div></div>'; return; }
+
+    var byItem={}, wsum=0, dsum=0, dn=0;
+    rows.forEach(function(r){
+      var k=r.item||'—';
+      byItem[k]=(byItem[k]||0)+1;
+      wsum += +r.weight||0;
+      var m = +r.durMs||0; if(m>0){ dsum+=m; dn++; }
+    });
+    var byDate={};
+    rows.forEach(function(r){ byDate[r._d]=(byDate[r._d]||0)+1; });
+    var dates=Object.keys(byDate).sort();
+
+    $('out').innerHTML = errBox(errs)+
+      '<div class="kpis">'+
+        kpi('完成桶數', num(rows.length), dates.length+' 個生產日')+
+        kpi('總重量', num(wsum,1)+' kg', '平均 '+num(wsum/rows.length,1)+' kg/桶')+
+        kpi('平均製程', dn?num(dsum/dn/60,0)+' 分':'—', '煮好到清洗')+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">每日完成桶數</h2>'+
+        lineChart([{name:'完成桶數', c:PAL[1], pts:dates.map(function(d){ return {k:d.slice(5), v:byDate[d]}; })}])+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">品項分布</h2>'+
+        barChart(Object.keys(byItem).map(function(k,i){ return {k:k,v:byItem[k],c:PAL[i%PAL.length]}; })
+          .sort(function(a,b){return b.v-a.v;}))+'</div>'+
+      '<div class="card"><h2 class="card-h">生產明細</h2>'+
+        '<p class="card-note">共 '+rows.length+' 桶，由新到舊。</p>'+
+        table(['完成日','門市','品項','桶號','重量','製程時長','煮好人員'],
+          rows.sort(function(a,b){return String(b.finishedAt).localeCompare(String(a.finishedAt));})
+            .slice(0,400).map(function(r){
+            return ['<span class="txt">'+esc(r._d)+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              '<span class="txt">'+esc(r.item||'')+'</span>', esc(r.barrel||''),
+              num(r.weight,1), esc(r.dur||'—'), esc((r.cook&&r.cook.p)||'')];
+          }), [0,1,2,3,5,6])+
+      '</div>';
+  });
+}
+
+/* ── 用電 ───────────────────────────────────────── */
+function loadElec(){
+  fetchAll(function(){ return {action:'elecGetAll'}; }, function(rows, errs){
+    rows = rows.filter(function(r){ return r.date && inRange(r.date); });
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有電表記錄。</div></div>'; return; }
+
+    // 依店計算每日用電（相鄰讀數差）
+    var byStore = {};
+    rows.forEach(function(r){ (byStore[r._store]=byStore[r._store]||[]).push(r); });
+    var series = [], total = 0, dayN = 0;
+    Object.keys(byStore).forEach(function(nm,i){
+      var list = byStore[nm].slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+      var pts = [];
+      for(var k=1;k<list.length;k++){
+        var use = (+list[k].reading||0) - (+list[k-1].reading||0);
+        if(use>=0 && use<2000){ pts.push({k:list[k].date.slice(5), v:use}); total+=use; dayN++; }
+      }
+      if(pts.length) series.push({name:nm, c:PAL[i%PAL.length], pts:pts});
+    });
+
+    rows.sort(function(a,b){ return b.date.localeCompare(a.date); });
+    $('out').innerHTML = errBox(errs)+
+      '<div class="kpis">'+
+        kpi('期間用電', num(total)+' 度', dayN+' 天')+
+        kpi('日均用電', dayN?num(total/dayN,1)+' 度':'—', '相鄰讀數差計算')+
+        kpi('記錄筆數', num(rows.length), '')+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">每日用電量</h2>'+
+        '<p class="card-note">由相鄰兩天的電表讀數相減得出。中間有漏記的日子會造成單日偏高。</p>'+
+        (series.length?lineChart(series):'<div class="empty">資料不足以計算用電量，至少需要連續兩天的讀數。</div>')+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">電表明細</h2>'+
+        table(['日期','門市','電表讀數','仙草凍桶數','製冰機時數','備注'],
+          rows.slice(0,400).map(function(r){
+            return ['<span class="txt">'+esc(r.date)+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              num(r.reading), num(r.jellyCount), num(r.iceMachineHours,1),
+              '<span class="txt">'+esc(r.noteText||r.note||'')+'</span>'];
+          }), [0,1,5])+
+      '</div>';
+  });
+}
+
+/* ── 清潔 ───────────────────────────────────────── */
+function loadClean(){
+  fetchAll(function(){ return {action:'cleanRecordGetAll', startDate:state.d1, endDate:state.d2}; },
+  function(rows, errs){
+    if(!rows.length){ $('out').innerHTML = errBox(errs)+'<div class="card"><div class="empty">這段期間沒有清潔記錄。</div></div>'; return; }
+    var total=0, doneN=0, byMode={};
+    rows.forEach(function(r){
+      (r.items||[]).forEach(function(it){ total++; if(it.done) doneN++; });
+      byMode[r.mode||'—'] = (byMode[r.mode||'—']||0)+1;
+    });
+    var MODE={daily:'日清潔',weekly:'週清潔',monthly:'月清潔'};
+    rows.sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); });
+
+    $('out').innerHTML = errBox(errs)+
+      '<div class="kpis">'+
+        kpi('提交次數', num(rows.length), '')+
+        kpi('檢查項目', num(total), '累計')+
+        kpi('完成率', total?pct(doneN/total):'—', doneN+' / '+total, doneN/total>=0.95?'pos':'')+
+      '</div>'+
+      '<div class="card"><h2 class="card-h">清潔週期分布</h2>'+
+        barChart(Object.keys(byMode).map(function(k,i){
+          return {k:MODE[k]||k, v:byMode[k], c:PAL[i%PAL.length]}; }))+'</div>'+
+      '<div class="card"><h2 class="card-h">提交記錄</h2>'+
+        table(['日期','門市','週期','人員','項目數','完成','提交時間'],
+          rows.slice(0,300).map(function(r){
+            var n=(r.items||[]).length, dn=(r.items||[]).filter(function(x){return x.done;}).length;
+            return ['<span class="txt">'+esc(r.date)+'</span>',
+              '<span class="tag '+(r._code==='xueshi'?'s1':'s2')+'">'+esc(r._store)+'</span>',
+              esc(MODE[r.mode]||r.mode||''), esc(r.person||''), num(n),
+              (dn===n?'全部完成':dn+' / '+n), '<span class="txt">'+esc(r.submittedAt||'')+'</span>'];
+          }), [0,1,2,3,5,6])+
+      '</div>';
+  });
+}
+
+/* ── 共用元件 ───────────────────────────────────── */
+function kpi(lbl, val, sub, cls){
+  return '<div class="kpi '+(cls||'')+'"><div class="kpi-lbl">'+esc(lbl)+'</div>'+
+    '<div class="kpi-val">'+val+'</div>'+
+    (sub?'<div class="kpi-sub">'+esc(sub)+'</div>':'')+'</div>';
+}
+function table(heads, rows, txtCols){
+  txtCols = txtCols || [];
+  var th = heads.map(function(h,i){
+    return '<th'+(txtCols.indexOf(i)>-1?' class="txt"':'')+'>'+esc(h)+'</th>'; }).join('');
+  var tb = rows.map(function(r){
+    return '<tr>'+r.map(function(c,i){
+      return '<td'+(txtCols.indexOf(i)>-1?' class="txt"':'')+'>'+c+'</td>'; }).join('')+'</tr>';
+  }).join('');
+  return '<div class="tblwrap"><table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table></div>';
+}
+
+/* ── 啟動 ───────────────────────────────────────── */
+(function init(){
+  $('brand').textContent = StoreConfig.getBrandName() + '　多店營運總覽';
+  document.title = '總部看板 · ' + StoreConfig.getBrandName();
+
+  var raw=null;
+  try{ raw = sessionStorage.getItem('tw_user'); }catch(e){}
+  var me = null;
+  try{ me = raw ? JSON.parse(raw) : null; }catch(e){}
+
+  if(!me){
+    $('gate').style.display='block';
+    $('gate').innerHTML = '<h2>請先登入</h2><p>總部看板需要登入後才能檢視。<br>請回到系統首頁登入，再從側邊選單進入。</p>';
+    return;
+  }
+  var role = parseInt(me.role,10) || 9;
+  $('who').textContent = (me.name||me.username)+'　'+(me.roleName||'');
+  if(role > 2){
+    $('gate').style.display='block';
+    $('gate').innerHTML = '<h2>你沒有檢視權限</h2>'+
+      '<p>總部看板包含跨店營運數據，<br>只開放給營運管理者以上的角色。<br><br>'+
+      '目前登入的是「'+esc(me.roleName||('角色 '+role))+'」。</p>';
+    return;
+  }
+  if(!STORES.length){
+    $('gate').style.display='block';
+    $('gate').innerHTML = '<h2>尚未設定門市</h2><p>請在 store-config.js 中將門市標記為 hq: true。</p>';
+    return;
+  }
+
+  $('app').style.display='block';
+  buildFilters();
+  quick(30);
+})();
+</script>
+</body>
+</html>
