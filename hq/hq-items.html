@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="hq-config.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>貨品主檔</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;--g:#1A6B3C;--gl:#E8F5EE;
+  --amber:#8A5500;--amberl:#FFF0D0;--red:#C0302A;--redl:#FDECEA;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;--r:13px;--r2:9px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:14px;padding:16px}
+button,input,select,textarea{font-family:inherit;font-size:14px}
+button{cursor:pointer}
+
+.card{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:15px;margin-bottom:12px}
+.h{font-weight:900;font-size:15px;margin:0 0 3px}
+.note{font-size:12px;color:var(--ink3);line-height:1.7;margin:0 0 13px}
+.note b{color:var(--ink2)}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:9px}
+.f{flex:1 1 130px;min-width:0}
+.f.sm{flex:0 0 96px}.f.md{flex:0 0 130px}
+.f label{display:block;font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r2);background:var(--white);color:var(--ink)}
+.f input:focus,.f select:focus{outline:2px solid var(--bm);outline-offset:1px}
+.hint{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.5}
+
+.btn{padding:9px 16px;border:none;border-radius:var(--r2);background:var(--b);color:#fff;font-weight:700;white-space:nowrap}
+.btn.ghost{background:var(--white);color:var(--ink2);border:1px solid var(--bd)}
+.btn.danger{background:var(--red)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.costbox{background:var(--gl);border:1px solid #BFE3CE;border-radius:var(--r2);padding:11px 13px;margin:4px 0 11px}
+.costbox .lbl{font-size:11px;color:var(--g);font-weight:700}
+.costbox .val{font-size:19px;font-weight:900;color:var(--g);margin-top:2px}
+.costbox .calc{font-size:11.5px;color:var(--ink2);margin-top:4px;line-height:1.6}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--bd);border-radius:var(--r2)}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:8px 10px;border-bottom:1px solid var(--bd);text-align:right}
+th{background:var(--bl);color:var(--b);font-weight:700;font-size:11.5px}
+td.t,th.t{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:#FAFCFE}
+tr.off{opacity:.45}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:9px;background:var(--bl);color:var(--b)}
+.pill.w{background:var(--purplel);color:var(--purple)}
+.pill.d{background:var(--amberl);color:var(--amber)}
+.pill.off{background:var(--redl);color:var(--red)}
+.up{color:var(--red);font-weight:700}
+.down{color:var(--g);font-weight:700}
+
+.empty{padding:26px 14px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.8}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--ink);color:#fff;padding:11px 18px;border-radius:22px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .18s;max-width:92vw;text-align:center;white-space:pre-line;line-height:1.6}
+.toast.on{opacity:1}
+.toast.bad{background:var(--red)}
+.warn{background:var(--redl);color:var(--red);padding:13px 15px;border-radius:var(--r2);line-height:1.8;font-size:13px}
+
+dialog{border:none;border-radius:var(--r);padding:0;max-width:440px;width:92vw;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+dialog::backdrop{background:rgba(15,25,35,.45)}
+/* 舊瀏覽器不支援 showModal 時的備援顯示 */
+dialog[data-fallback]{display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:80;background:var(--white)}
+.dlgmask{position:fixed;inset:0;background:rgba(15,25,35,.45);z-index:79}
+.dlg{padding:18px}
+.dlg h3{margin:0 0 4px;font-size:16px;font-weight:900}
+</style>
+</head>
+<body>
+
+<div id="gate" style="display:none"></div>
+
+<div id="app" style="display:none">
+  <div class="card">
+    <h2 class="h" id="formTitle">新增貨品</h2>
+    <p class="note">貨品主檔是總部的核心。<b>最小單位成本會自動算出</b>，不用手填。
+      日後改價時，系統會自動記錄一筆價格異動，<b>過去的入庫與出庫紀錄完全不受影響</b>。</p>
+
+    <div class="row">
+      <div class="f md"><label>品項編碼</label><input id="code" placeholder="例如 PKG-CUP700" autocomplete="off">
+        <div class="hint">建立後不可更改</div></div>
+      <div class="f"><label>品項名稱</label><input id="name" placeholder="例如 外帶杯700ml" autocomplete="off"></div>
+      <div class="f sm"><label>分類</label><input id="cat" placeholder="包材" autocomplete="off"></div>
+    </div>
+
+    <div class="row">
+      <div class="f sm"><label>小單位</label><input id="sn" placeholder="個"></div>
+      <div class="f sm"><label>中單位</label><input id="mn" placeholder="條"></div>
+      <div class="f sm"><label>一中＝幾小</label><input id="ms" type="number" inputmode="decimal" placeholder="50"></div>
+      <div class="f sm"><label>大單位</label><input id="ln" placeholder="箱"></div>
+      <div class="f sm"><label>一大＝幾中</label><input id="lm" type="number" inputmode="decimal" placeholder="20"></div>
+    </div>
+
+    <div class="row">
+      <div class="f sm"><label>進價（元）</label><input id="price" type="number" inputmode="decimal" placeholder="1200"></div>
+      <div class="f sm"><label>進價單位</label>
+        <select id="priceUnit"><option value="s">小單位</option><option value="m">中單位</option><option value="l" selected>大單位</option></select></div>
+      <div class="f md"><label>供應商</label><input id="supplier" placeholder="選填" autocomplete="off"></div>
+      <div class="f sm"><label>安全庫存</label><input id="safe" type="number" inputmode="decimal" placeholder="以小單位計"></div>
+    </div>
+
+    <div class="costbox">
+      <div class="lbl">最小單位成本（自動計算）</div>
+      <div class="val" id="costVal">—</div>
+      <div class="calc" id="costCalc">填入單位換算與進價後自動算出</div>
+    </div>
+
+    <div class="row">
+      <div class="f md"><label>進貨形式</label>
+        <select id="toWarehouse">
+          <option value="true">進倉：先入倉庫再撥給各店</option>
+          <option value="false">直送：廠商直接送到門市</option>
+        </select></div>
+      <div class="f"><label>適用門市</label>
+        <select id="stores"><option value="ALL">全部門市</option></select>
+        <div class="hint">限定門市後，出貨給其他店會被擋下</div></div>
+    </div>
+
+    <div id="priceChangeBox" style="display:none">
+      <div class="row">
+        <div class="f sm"><label>價格生效日</label><input id="effectDate" type="date"></div>
+        <div class="f"><label>改價原因</label><input id="priceReason" placeholder="例如 廠商調漲、換供應商" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="f"><label>備註</label><input id="note" placeholder="選填" autocomplete="off"></div>
+      <div class="f sm"><label>登記人</label><input id="person" placeholder="你的名字" autocomplete="off"></div>
+      <button class="btn" id="saveBtn" onclick="save()">新增貨品</button>
+      <button class="btn ghost" id="cancelBtn" onclick="resetForm()" style="display:none">取消編輯</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="h">貨品清單</h2>
+    <p class="note" id="listNote"></p>
+    <div id="list"></div>
+  </div>
+</div>
+
+<dialog id="hisDlg"><div class="dlg">
+  <h3 id="hisTitle">價格異動歷程</h3>
+  <p class="note" id="hisNote"></p>
+  <div id="hisBody"></div>
+  <div style="text-align:right;margin-top:12px">
+    <button class="btn ghost" onclick="dlgClose('hisDlg')">關閉</button>
+  </div>
+</div></dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function v(id){ return ($(id).value||'').trim(); }
+function nv(id){ return parseFloat(v(id))||0; }
+
+var T;
+function toast(m, bad){
+  var t=$('toast'); t.textContent=m; t.className='toast on'+(bad?' bad':'');
+  clearTimeout(T); T=setTimeout(function(){ t.className='toast'; }, 3600);
+}
+
+var ITEMS=[], STORES=[], EDITING=null;
+
+/* ── 成本即時計算 ───────────────────────────────── */
+function smallPer(unit){
+  var ms=nv('ms')||1, lm=nv('lm')||1;
+  if(unit==='m') return ms;
+  if(unit==='l') return lm*ms;
+  return 1;
+}
+function updateCost(){
+  var sn=v('sn')||'小單位';
+  var pu=$('priceUnit').value;
+  var price=nv('price');
+  var per=smallPer(pu);
+  if(!price || !per){ $('costVal').textContent='—'; $('costCalc').textContent='填入單位換算與進價後自動算出'; return; }
+  var cost=Math.round(price/per*10000)/10000;
+  var un=pu==='m'?(v('mn')||'中單位'):pu==='l'?(v('ln')||'大單位'):sn;
+  $('costVal').textContent = cost + ' 元 / ' + sn;
+  $('costCalc').textContent = price+' 元/'+un+' ÷ '+per+' '+sn+' = '+cost+' 元/'+sn;
+
+  // 編輯中且價格有變 → 顯示改價原因欄
+  if(EDITING){
+    var changed = (EDITING.price !== price || EDITING.priceUnit !== pu);
+    $('priceChangeBox').style.display = changed ? 'block' : 'none';
+    if(changed && !v('effectDate')) $('effectDate').value = new Date().toISOString().slice(0,10);
+  }
+}
+['ms','lm','price','sn','mn','ln'].forEach(function(id){
+  document.addEventListener('DOMContentLoaded', function(){
+    $(id).addEventListener('input', updateCost);
+  });
+});
+
+/* ── 載入 ───────────────────────────────────────── */
+function load(){
+  $('list').innerHTML='<div class="empty">載入貨品資料…</div>';
+  HQ.get({action:'whConfig'}).then(function(c){
+    STORES = (c && c.stores) || [];
+    $('stores').innerHTML = '<option value="ALL">全部門市</option>' +
+      STORES.map(function(s){ return '<option value="'+esc(s.code)+'">只給 '+esc(s.name)+'</option>'; }).join('');
+    return HQ.get({action:'whItemGetAll'});
+  }).then(function(d){
+    ITEMS = (d && d.data) || [];
+    render();
+  }).catch(function(e){
+    $('list').innerHTML='<div class="warn">無法連線到總部系統。<br>請確認 hq-config.js 的網址已填入，且 Apps Script 已部署。</div>';
+  });
+}
+
+function storeLabel(st){
+  if(st==='ALL' || !st) return '全部門市';
+  var names = (Array.isArray(st)?st:[st]).map(function(c){
+    var f = STORES.filter(function(s){ return s.code===c; })[0];
+    return f ? f.name : c;
+  });
+  return names.join('、');
+}
+
+function render(){
+  var on = ITEMS.filter(function(i){ return i.enabled; });
+  $('listNote').textContent = '共 ' + ITEMS.length + ' 項，啟用中 ' + on.length +
+    ' 項。停用的貨品不會出現在入庫與出貨選單，但歷史紀錄完整保留。';
+
+  if(!ITEMS.length){
+    $('list').innerHTML='<div class="empty">還沒有建立任何貨品。<br>先在上方新增第一項，之後入庫與出貨才選得到。</div>';
+    return;
+  }
+  $('list').innerHTML =
+    '<div class="tblwrap"><table><thead><tr>'+
+    '<th class="t">編碼</th><th class="t">名稱</th><th class="t">分類</th>'+
+    '<th class="t">單位換算</th><th>進價</th><th>最小單位成本</th>'+
+    '<th class="t">形式</th><th class="t">適用門市</th><th>安全庫存</th><th></th>'+
+    '</tr></thead><tbody>'+
+    ITEMS.map(function(it){
+      var u = it.sn;
+      if(it.mn) u += ' ← '+it.mn+'×'+it.ms;
+      if(it.ln) u += ' ← '+it.ln+'×'+it.lm;
+      var pun = it.priceUnit==='m'?it.mn:it.priceUnit==='l'?it.ln:it.sn;
+      return '<tr class="'+(it.enabled?'':'off')+'">'+
+        '<td class="t">'+esc(it.code)+'</td>'+
+        '<td class="t"><strong>'+esc(it.name)+'</strong>'+(it.enabled?'':' <span class="pill off">停用</span>')+'</td>'+
+        '<td class="t">'+esc(it.cat||'—')+'</td>'+
+        '<td class="t" style="font-size:11.5px;color:var(--ink3)">'+esc(u)+'</td>'+
+        '<td>'+it.price+'/'+esc(pun||'')+'</td>'+
+        '<td><strong>'+it.cost+'</strong> /'+esc(it.sn)+'</td>'+
+        '<td class="t"><span class="pill '+(it.toWarehouse?'w':'d')+'">'+(it.toWarehouse?'進倉':'直送')+'</span></td>'+
+        '<td class="t">'+esc(storeLabel(it.stores))+'</td>'+
+        '<td>'+(it.safe||'—')+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="btn ghost sm" onclick="edit(\''+esc(it.code)+'\')">編輯</button> '+
+          '<button class="btn ghost sm" onclick="history(\''+esc(it.code)+'\')">價格歷程</button> '+
+          (it.enabled?'<button class="btn danger sm" onclick="stop(\''+esc(it.code)+'\')">停用</button>':'')+
+        '</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+/* ── 編輯 ───────────────────────────────────────── */
+function edit(code){
+  var it = ITEMS.filter(function(i){ return i.code===code; })[0];
+  if(!it) return;
+  EDITING = it;
+  $('code').value=it.code; $('code').disabled=true;
+  $('name').value=it.name; $('cat').value=it.cat;
+  $('sn').value=it.sn; $('mn').value=it.mn; $('ms').value=it.ms||'';
+  $('ln').value=it.ln; $('lm').value=it.lm||'';
+  $('price').value=it.price; $('priceUnit').value=it.priceUnit;
+  $('supplier').value=it.supplier; $('safe').value=it.safe||'';
+  $('toWarehouse').value = it.toWarehouse ? 'true':'false';
+  $('stores').value = it.stores==='ALL' ? 'ALL' : (it.stores[0]||'ALL');
+  $('note').value=it.note;
+  $('formTitle').textContent='編輯貨品：'+it.name;
+  $('saveBtn').textContent='儲存變更';
+  $('cancelBtn').style.display='';
+  $('priceChangeBox').style.display='none';
+  $('priceReason').value=''; $('effectDate').value='';
+  updateCost();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function resetForm(){
+  EDITING=null;
+  ['code','name','cat','sn','mn','ms','ln','lm','price','supplier','safe','note','priceReason','effectDate']
+    .forEach(function(id){ $(id).value=''; });
+  $('code').disabled=false;
+  $('priceUnit').value='l'; $('toWarehouse').value='true'; $('stores').value='ALL';
+  $('formTitle').textContent='新增貨品';
+  $('saveBtn').textContent='新增貨品';
+  $('cancelBtn').style.display='none';
+  $('priceChangeBox').style.display='none';
+  updateCost();
+}
+
+/* ── 儲存 ───────────────────────────────────────── */
+function save(){
+  if(!v('code')){ toast('請填寫品項編碼', true); return; }
+  if(!v('name')){ toast('請填寫品項名稱', true); return; }
+  if(!v('sn')){ toast('請填寫小單位，這是庫存計算的基準', true); return; }
+
+  var changed = EDITING && (EDITING.price !== nv('price') || EDITING.priceUnit !== $('priceUnit').value);
+  if(changed && !v('priceReason')){
+    toast('價格有變動，請填寫改價原因\n（方便日後查詢為什麼漲價）', true);
+    $('priceReason').focus();
+    return;
+  }
+
+  $('saveBtn').disabled = true;
+  HQ.post({
+    action:'whItemSave',
+    code:v('code'), name:v('name'), cat:v('cat'),
+    sn:v('sn'), mn:v('mn'), ms:nv('ms'), ln:v('ln'), lm:nv('lm'),
+    price:nv('price'), priceUnit:$('priceUnit').value,
+    stores:$('stores').value, toWarehouse:$('toWarehouse').value,
+    safe:nv('safe'), supplier:v('supplier'), note:v('note'),
+    person:v('person'),
+    effectDate:v('effectDate'), priceReason:v('priceReason')
+  }).then(function(d){
+    $('saveBtn').disabled = false;
+    if(!d || !d.ok){ toast((d&&d.error)||'儲存失敗', true); return; }
+    toast(d.message);
+    resetForm();
+    load();
+  }).catch(function(){
+    $('saveBtn').disabled = false;
+    toast('連線失敗，請稍後再試', true);
+  });
+}
+
+function stop(code){
+  var it = ITEMS.filter(function(i){ return i.code===code; })[0];
+  if(!confirm('確定要停用「'+it.name+'」嗎？\n\n入庫與出貨的選單不會再出現它，\n但已經登記的紀錄與庫存數字完全保留。')) return;
+  HQ.post({action:'whItemDelete', code:code}).then(function(d){
+    if(!d||!d.ok){ toast((d&&d.error)||'停用失敗', true); return; }
+    toast(d.message); load();
+  });
+}
+
+/* ── 彈窗開關（相容舊瀏覽器）─────────────────────── */
+function dlgOpen(id){
+  var d = $(id);
+  if(typeof d.showModal === 'function'){ d.showModal(); return; }
+  var mask = document.createElement('div');
+  mask.className = 'dlgmask';
+  mask.id = id + '-mask';
+  mask.onclick = function(){ dlgClose(id); };
+  document.body.appendChild(mask);
+  d.setAttribute('data-fallback','1');
+  d.setAttribute('open','');
+}
+function dlgClose(id){
+  var d = $(id);
+  if(typeof d.close === 'function' && !d.hasAttribute('data-fallback')){ d.close(); return; }
+  d.removeAttribute('data-fallback');
+  d.removeAttribute('open');
+  var m = $(id + '-mask');
+  if(m) m.remove();
+}
+
+/* ── 價格歷程 ───────────────────────────────────── */
+function history(code){
+  var it = ITEMS.filter(function(i){ return i.code===code; })[0];
+  $('hisTitle').textContent = '價格異動歷程：' + it.name;
+  $('hisNote').textContent = '每次改價都會留下紀錄。過去的入庫與出貨已經把當時的成本寫死在各自的紀錄裡，不會因為改價而變動。';
+  $('hisBody').innerHTML = '<div class="empty">讀取中…</div>';
+  dlgOpen('hisDlg');
+  HQ.get({action:'whPriceHistory', code:code}).then(function(d){
+    var rows = (d && d.data) || [];
+    if(!rows.length){
+      $('hisBody').innerHTML = '<div class="empty">這項貨品還沒有改過價。<br>目前成本 '+it.cost+' 元/'+esc(it.sn)+'</div>';
+      return;
+    }
+    $('hisBody').innerHTML =
+      '<div class="tblwrap"><table><thead><tr>'+
+      '<th class="t">生效日</th><th>原價</th><th>新價</th><th>成本變化</th><th>漲跌</th><th class="t">原因</th>'+
+      '</tr></thead><tbody>'+
+      rows.map(function(r){
+        var cls = r.diff>0?'up':r.diff<0?'down':'';
+        var sign = r.diff>0?'▲':r.diff<0?'▼':'—';
+        return '<tr><td class="t">'+esc(r.date)+'</td>'+
+          '<td>'+r.oldPrice+'</td><td><strong>'+r.newPrice+'</strong></td>'+
+          '<td>'+r.oldCost+' → '+r.newCost+'</td>'+
+          '<td class="'+cls+'">'+sign+' '+Math.abs(Math.round(r.diff*1000)/10)+'%</td>'+
+          '<td class="t">'+esc(r.reason||'—')+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+
+/* ── 啟動 ───────────────────────────────────────── */
+(function init(){
+  if(!HQ.ready){
+    $('gate').style.display='block';
+    $('gate').innerHTML='<div class="card"><div class="warn">'+
+      '<b>尚未設定總部 API 網址</b><br>'+
+      '請打開 hq-config.js，把 HQ_API 換成總部 Apps Script 的部署網址。</div></div>';
+    return;
+  }
+  $('app').style.display='block';
+  ['ms','lm','price','sn','mn','ln'].forEach(function(id){
+    $(id).addEventListener('input', updateCost);
+  });
+  $('priceUnit').addEventListener('change', updateCost);
+  load();
+})();
+</script>
+</body>
+</html>

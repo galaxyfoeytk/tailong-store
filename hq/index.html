@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script src="hq-config.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>瀧飲山丘 總部系統</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+:root{
+  --b:#1A3A5C;--bl:#E8F0FA;--bm:#4A7CB5;
+  --g:#1A6B3C;--gl:#E8F5EE;
+  --amber:#8A5500;--amberl:#FFF0D0;
+  --purple:#5B2D8E;--purplel:#F3E8FF;
+  --red:#C0302A;--redl:#FDECEA;
+  --ink:#0F1923;--ink2:#3A4A5C;--ink3:#7A8A9C;
+  --bg:#EFF2F7;--white:#fff;--bd:#D4DCE8;--r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans TC',sans-serif;font-size:14px}
+button{font-family:inherit;cursor:pointer}
+
+.shell{display:flex;min-height:100vh}
+
+/* 側欄 */
+.side{width:210px;flex:0 0 210px;background:var(--b);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.side-top{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.14)}
+.side-brand{font-weight:900;font-size:17px;letter-spacing:.5px}
+.side-sub{font-size:11px;opacity:.7;margin-top:2px}
+.side-nav{flex:1;overflow-y:auto;padding:10px 0}
+.side-lbl{font-size:10px;opacity:.55;padding:12px 16px 5px;font-weight:700;letter-spacing:1px}
+.nav{display:flex;align-items:center;gap:9px;width:100%;padding:11px 16px;background:none;border:none;color:rgba(255,255,255,.85);font-size:13.5px;font-weight:500;text-align:left}
+.nav:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav[aria-current="page"]{background:rgba(255,255,255,.16);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #fff}
+.nav-ic{font-size:15px;width:19px;text-align:center;flex:0 0 auto}
+.nav.soon{opacity:.4;cursor:default}
+.nav.soon:hover{background:none;color:rgba(255,255,255,.85)}
+.side-foot{padding:11px 16px;border-top:1px solid rgba(255,255,255,.14);font-size:10.5px;opacity:.6;line-height:1.6}
+
+/* 主區 */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.bar{background:var(--white);border-bottom:1px solid var(--bd);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.bar-t{font-weight:900;font-size:16px}
+.bar-d{font-size:11.5px;color:var(--ink3);margin-top:1px}
+.body{flex:1;padding:18px}
+iframe{width:100%;height:calc(100vh - 56px);border:none;display:block}
+
+/* 首頁磚 */
+.hero{background:linear-gradient(135deg,var(--b),#2C5580);color:#fff;border-radius:var(--r);padding:26px 24px;margin-bottom:16px}
+.hero h1{margin:0 0 6px;font-size:22px;font-weight:900;letter-spacing:-.3px}
+.hero p{margin:0;opacity:.85;font-size:13.5px;line-height:1.75}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.tile{background:var(--white);border:1px solid var(--bd);border-radius:var(--r);padding:17px;text-align:left;transition:transform .12s,box-shadow .12s;display:block;width:100%}
+.tile:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(26,58,92,.1)}
+.tile-ic{font-size:24px;margin-bottom:9px}
+.tile-t{font-weight:900;font-size:15px;margin-bottom:4px}
+.tile-d{font-size:12px;color:var(--ink3);line-height:1.65}
+.tile.soon{opacity:.55;cursor:default}
+.tile.soon:hover{transform:none;box-shadow:none}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--amberl);color:var(--amber);margin-left:6px;vertical-align:middle}
+
+.warn{background:var(--redl);color:var(--red);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;line-height:1.85;font-size:13px}
+.warn b{display:block;font-size:14.5px;margin-bottom:5px}
+code{background:rgba(0,0,0,.06);padding:1px 6px;border-radius:5px;font-size:12px}
+
+@media(max-width:820px){
+  .shell{flex-direction:column}
+  .side{width:100%;flex:none;height:auto;position:static}
+  .side-nav{display:flex;overflow-x:auto;padding:7px}
+  .side-lbl{display:none}
+  .nav{width:auto;flex:0 0 auto;padding:9px 13px;white-space:nowrap}
+  .nav[aria-current="page"]{box-shadow:inset 0 -3px 0 #fff}
+  .side-foot{display:none}
+  iframe{height:calc(100vh - 150px)}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="side-top">
+      <div class="side-brand">瀧飲山丘</div>
+      <div class="side-sub">總部管理系統</div>
+    </div>
+    <nav class="side-nav" id="nav"></nav>
+    <div class="side-foot" id="foot"></div>
+  </aside>
+
+  <div class="main">
+    <div class="bar">
+      <div>
+        <div class="bar-t" id="bt">總覽</div>
+        <div class="bar-d" id="bd"></div>
+      </div>
+    </div>
+    <div class="body" id="body"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   總部系統入口
+   ══════════════════════════════════════════════════ */
+var PAGES = [
+  { group:'貨品管理' },
+  { id:'home',  ic:'🏠', name:'總覽',     desc:'系統狀態與快速入口' },
+  { id:'items', ic:'📦', name:'貨品主檔', file:'hq-items.html',
+    desc:'建立所有貨品、單位換算、進價與成本，改價不影響歷史紀錄' },
+  { id:'inbound', ic:'📥', name:'總部入庫', file:'hq-inbound.html',
+    desc:'廠商送到倉庫的貨，登記後自動累加庫存' },
+
+  { group:'庫存與撥補' },
+  { id:'stock',  ic:'📊', name:'庫存總覽', soon:true, desc:'兩倉即時結存與庫存價值' },
+  { id:'outbound', ic:'🚚', name:'撥補出貨', soon:true, desc:'從倉庫送貨到各門市' },
+  { id:'direct', ic:'🏪', name:'廠商直送', soon:true, desc:'各店直接向廠商進的貨' },
+
+  { group:'分析' },
+  { id:'purchase', ic:'💰', name:'採購統計', soon:true, desc:'倉庫入庫＋廠商直送的總採購' },
+  { id:'dash',     ic:'📈', name:'營運儀表板', soon:true, desc:'業績與營運數據分析' }
+];
+
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+function buildNav(){
+  $('nav').innerHTML = PAGES.map(function(p){
+    if(p.group) return '<div class="side-lbl">'+esc(p.group)+'</div>';
+    return '<button class="nav'+(p.soon?' soon':'')+'" id="nav-'+p.id+'" '+
+      (p.soon?'disabled':'onclick="go(\''+p.id+'\')"')+'>'+
+      '<span class="nav-ic">'+p.ic+'</span>'+esc(p.name)+'</button>';
+  }).join('');
+}
+
+function go(id){
+  var p = PAGES.filter(function(x){ return x.id===id; })[0];
+  if(!p || p.soon) return;
+  PAGES.forEach(function(x){
+    if(!x.id) return;
+    var el = $('nav-'+x.id);
+    if(el) el.setAttribute('aria-current', x.id===id ? 'page' : 'false');
+  });
+  $('bt').textContent = p.name;
+  $('bd').textContent = p.desc || '';
+  if(id === 'home'){ renderHome(); return; }
+  $('body').style.padding = '0';
+  $('body').innerHTML = '<iframe src="'+p.file+'" title="'+esc(p.name)+'"></iframe>';
+}
+
+function renderHome(){
+  $('body').style.padding = '18px';
+  var warn = HQ.ready ? '' :
+    '<div class="warn"><b>尚未設定總部 API 網址</b>'+
+    '請打開 <code>hq-config.js</code>，把 <code>HQ_API</code> 換成總部 Apps Script 的部署網址，'+
+    '否則所有功能都無法讀取資料。</div>';
+
+  $('body').innerHTML = warn +
+    '<div class="hero">'+
+      '<h1>瀧飲山丘 總部系統</h1>'+
+      '<p>總部與門市是兩套獨立的系統。這裡管理倉庫進出、貨品主檔與跨店採購；'+
+      '門市的日常操作仍在各店自己的系統進行，總部會定期同步他們的進貨與盤點資料。</p>'+
+    '</div>'+
+    '<div class="tiles">'+
+      PAGES.filter(function(p){ return p.id && p.id!=='home'; }).map(function(p){
+        return '<button class="tile'+(p.soon?' soon':'')+'" '+
+          (p.soon?'disabled':'onclick="go(\''+p.id+'\')"')+'>'+
+          '<div class="tile-ic">'+p.ic+'</div>'+
+          '<div class="tile-t">'+esc(p.name)+(p.soon?'<span class="badge">尚未開放</span>':'')+'</div>'+
+          '<div class="tile-d">'+esc(p.desc)+'</div></button>';
+      }).join('')+
+    '</div>';
+}
+
+(function init(){
+  buildNav();
+  $('foot').innerHTML = HQ.ready
+    ? 'API 已連線<br>' + HQ.apiUrl.slice(0,34) + '…'
+    : '⚠ 尚未設定 API 網址';
+  go('home');
+})();
+</script>
+</body>
+</html>
